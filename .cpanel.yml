@@ -1,0 +1,6 @@
+deployment:
+  tasks:
+    - export DEPLOY_PATH="/home/convosoftserver/public_html/backend.convosoftserver.com/"
+    - echo "Starting deployment to $DEPLOY_PATH"
+    - rsync -av --delete ./ $DEPLOY_PATH
+    - echo "Deployment completed successfully"
