@@ -1,1 +1,1 @@
-test up auto test ttt
+test up auto update working
