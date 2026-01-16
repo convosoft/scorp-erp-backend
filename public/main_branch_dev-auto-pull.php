@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 header('Content-Type: text/plain');
 
 // Configuration
-$secret = 'dev===o/fZHG5LL4P59lptCcsdQWv05xoQ==';
+$secret = 'jklj(*&*(^78kdsfjkd13245==asdf!==';
 $project_path = '/home/convosoftserver/public_html/devapi.convosoftserver.com';
 $branch = 'main';
 $log_file = 'dev-deploy.log';
