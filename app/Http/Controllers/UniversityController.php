@@ -1846,7 +1846,7 @@ class UniversityController extends Controller
                 ->leftJoin('deal_applications as a', 'd.id', '=', 'a.deal_id')
                 ->select(
                     'u.id',
-                    'u.name as brand',
+                    'u.name as name',
                     \DB::raw('COUNT(DISTINCT d.id) as admissions'),
                     \DB::raw('COUNT(DISTINCT a.id) as applications')
                 )
