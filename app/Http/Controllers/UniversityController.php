@@ -153,7 +153,7 @@ class UniversityController extends Controller
             ->paginate($perPage, ['*'], 'page', $page);
 
         // University statistics grouped by country
-        $universityStatsByCountries = University::selectRaw('count(id) as total_universities, country')
+        $universityStatsByCountries = University::selectRaw('count(id) as total_universities, country')->where('uni_status', '0')
             ->groupBy('country')
             ->get();
 
@@ -185,7 +185,7 @@ class UniversityController extends Controller
             'status' => 'success',
             'message' => 'University list retrieved successfully.',
             'data' => [
-                'number_of_tiles' => 10,
+                'number_of_tiles' => 15,
                 'statuses' => $sortedStatuses,
                 'universities' => $universities->items(),
                 'current_page' => $universities->currentPage(),
@@ -352,7 +352,7 @@ class UniversityController extends Controller
             'status' => 'success',
             'message' => 'University list retrieved successfully.',
             'data' => [
-                'number_of_tiles' => 10,
+                'number_of_tiles' => 15,
                 'statuses' => $sortedStatuses,
                 'universities' => $universities,
                 'europe_total' => $europeCount,
