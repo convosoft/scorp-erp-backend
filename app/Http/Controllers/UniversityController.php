@@ -1855,7 +1855,7 @@ class UniversityController extends Controller
                 ->where('u.type', 'company')
                 ->where('a.university_id', $request->university_id)
                 ->groupBy('u.id','u.name')
-                ->orderBy('u.name')
+                ->orderBy('applications')
                 ->get();
 
             return response()->json([
