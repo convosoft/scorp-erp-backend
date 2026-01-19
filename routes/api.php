@@ -132,29 +132,29 @@ Route::get('/proxy-image', function (Request $request) {
 });
     Route::get('/getencrypted', function (Request $request) {
         $plaintext = $request->query('plaintext');
-        
+
         // More comprehensive validation
         if (!$plaintext ) {
             return response()->json([
                 'error' => 'Valid plaintext parameter is required'
             ], 400);
         }
-        
+
         // Make sure encryptData function is available
         if (!function_exists('encryptData')) {
             return response()->json([
                 'error' => 'Encryption service unavailable'
             ], 500);
         }
-        
+
         try {
             $encrypted = encryptData($plaintext);
-            
+
             return response()->json([
                 'encrypted' => $encrypted,
                 'plaintext_length' => $plaintext
             ]);
-            
+
         } catch (Exception $e) {
             return response()->json([
                 'error' => 'Encryption failed',
@@ -165,29 +165,29 @@ Route::get('/proxy-image', function (Request $request) {
 
     Route::get('/getdecrypted', function (Request $request) {
         $encryptedtext = $request->query('encryptedtext');
-        
+
         // More comprehensive validation
         if (!$encryptedtext ) {
             return response()->json([
                 'error' => 'Valid encryptedtext parameter is required'
             ], 400);
         }
-        
+
         // Make sure encryptData function is available
         if (!function_exists('decryptData')) {
             return response()->json([
                 'error' => 'decryption service unavailable'
             ], 500);
         }
-        
+
         try {
             $plaintext = decryptData($encryptedtext);
-            
+
             return response()->json([
                 'encryptedtext' => $encryptedtext,
                 'plaintext_length' => $plaintext
             ]);
-            
+
         } catch (Exception $e) {
             return response()->json([
                 'error' => 'Encryption failed',
@@ -203,7 +203,7 @@ Route::get('/proxy-image', function (Request $request) {
     Route::get('/convertToBase64', [GeneralController::class, 'convertToBase64']);
     Route::post('/getTables', [GeneralController::class, 'getTables']);
     Route::post('/getTableData', [GeneralController::class, 'getTableData']);
-    
+
     Route::post('/generateSop', [OpenAIController::class, 'generateSop']);
     Route::get('/getPublicUniversities', [UniversityController::class, 'getPublicUniversities']);
 
@@ -293,7 +293,7 @@ Route::post('/jobApplyData', [JobController::class, 'jobApplyData']);
 
 // Protected routes of product and logout
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     Route::post('/resendAgentOTP', [LoginRegisterController::class, 'resendAgentOTP']);
     Route::post('/verifyOtp', [LoginRegisterController::class, 'verifyOtp']);
     Route::post('/userDetail', [LoginRegisterController::class, 'userDetail']);
@@ -741,6 +741,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateUniversities', [UniversityController::class, 'updateUniversities']);
     Route::post('/deleteUniversities', [UniversityController::class, 'deleteUniversities']);
     Route::post('/universityDetail', [UniversityController::class, 'universityDetail']);
+    Route::post('/applicationCountByUniversty', [UniversityController::class, 'applicationCountByUniversty']);
+    Route::post('/addmissionCountByUniversty', [UniversityController::class, 'addmissionCountByUniversty']);
+    Route::post('/brandWiseByUniversity', [UniversityController::class, 'brandWiseByUniversity']);
     Route::post('/updateUniversitiesByKey', [UniversityController::class, 'updateUniversitiesByKey']);
     Route::post('/addUpdateUniversityMeta', [UniversityMetaController::class, 'storeOrUpdateMetas']);
     Route::post('/getUniversityMeta', [UniversityMetaController::class, 'getUniversityMeta']);
@@ -766,8 +769,8 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::get('/getAnnouncementCategories', [AnnouncementCategoryController::class, 'getAnnouncementCategories']);
      Route::post('/updateAnnouncementCategory', [AnnouncementCategoryController::class, 'updateAnnouncementCategory']);
      Route::post('/deleteAnnouncementCategory', [AnnouncementCategoryController::class, 'deleteAnnouncementCategory']);
-     //   Announcement  
-     Route::post('/addAnnouncement', [AnnouncementController::class, 'addAnnouncement']); 
+     //   Announcement
+     Route::post('/addAnnouncement', [AnnouncementController::class, 'addAnnouncement']);
      Route::post('/getAnnouncement', [AnnouncementController::class, 'index']);
      Route::post('/updateAnnouncement', [AnnouncementController::class, 'updateAnnouncement']);
      Route::post('/deleteAnnouncement', [AnnouncementController::class, 'deleteAnnouncement']);
@@ -861,7 +864,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue');
      Route::post('email-marketing-approved-reject', [EmailTemplateController::class, 'email_marketing_approved_reject'])->name('email_marketing_approved_reject');
      Route::post('getEmailTemplateDetail', [EmailTemplateController::class, 'getEmailTemplateDetail'])->name('getEmailTemplateDetail');
-       
+
      //    Role
      Route::post('/getRoleDetail', [RoleController::class, 'getRoleDetail']);
      Route::post('/addRole', [RoleController::class, 'addRole']);
@@ -920,7 +923,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/getMIOList', [MoiAcceptedController::class, 'getMIOList']);
      Route::post('/updateMOIInstitutes', [MoiAcceptedController::class, 'updateMOIInstitutes']);
     //  Route::post('/deleteUniversityRule', [UniversityRuleController::class, 'deleteUniversityRule']);
- 
+
     // reports
     Route::post('/reports/visa-analysis', [ReportsController::class, 'visaAnalysis']);
     Route::get('/reports/deposit-analysis', [ReportsController::class, 'depositAnalysis']);

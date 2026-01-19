@@ -238,17 +238,17 @@ class UniversityController extends Controller
                         COALESCE(
                             CASE
                                 WHEN universities.country REGEXP '^[0-9]+$'
-                                    THEN c_id.name        
-                                ELSE c_name.name         
+                                    THEN c_id.name
+                                ELSE c_name.name
                             END,
-                            universities.country         
+                            universities.country
                         ) AS resolved_country_name,
 
                         COALESCE(
                             CASE
                                 WHEN universities.country REGEXP '^[0-9]+$'
-                                    THEN c_id.country_code      
-                                ELSE c_name.country_code        
+                                    THEN c_id.country_code
+                                ELSE c_name.country_code
                             END,
                             NULL
                         ) AS resolved_country_code
@@ -380,17 +380,17 @@ class UniversityController extends Controller
                         COALESCE(
                             CASE
                                 WHEN universities.country REGEXP '^[0-9]+$'
-                                    THEN c_id.name        
-                                ELSE c_name.name         
+                                    THEN c_id.name
+                                ELSE c_name.name
                             END,
-                            universities.country         
+                            universities.country
                         ) AS resolved_country_name,
 
                         COALESCE(
                             CASE
                                 WHEN universities.country REGEXP '^[0-9]+$'
-                                    THEN c_id.country_code      
-                                ELSE c_name.country_code        
+                                    THEN c_id.country_code
+                                ELSE c_name.country_code
                             END,
                             NULL
                         ) AS resolved_country_code
@@ -412,17 +412,17 @@ class UniversityController extends Controller
                         COALESCE(
                             CASE
                                 WHEN universities.country REGEXP '^[0-9]+$'
-                                    THEN c_id.name        
-                                ELSE c_name.name         
+                                    THEN c_id.name
+                                ELSE c_name.name
                             END,
-                            universities.country         
+                            universities.country
                         ) AS resolved_country_name,
 
                         COALESCE(
                             CASE
                                 WHEN universities.country REGEXP '^[0-9]+$'
-                                    THEN c_id.country_code      
-                                ELSE c_name.country_code        
+                                    THEN c_id.country_code
+                                ELSE c_name.country_code
                             END,
                             NULL
                         ) AS resolved_country_code
@@ -502,13 +502,13 @@ class UniversityController extends Controller
             if (isset($europeMap[$countryName])) {
                 $europeCount += $count;
             }
- 
+
         }
         // Single loop to compute totals for Europe & Middle East
         foreach ($homestatuses as $countryName => $data) {
             $count = $data['count'];
 
-           
+
 
             if (isset($middleEastMap[$countryName])) {
                 $middleEastCount += $count;
@@ -754,7 +754,7 @@ class UniversityController extends Controller
             'notification_type' => 'University Created',
         ]);
 
-        
+
 
         return response()->json([
             'status' => 'success',
@@ -889,7 +889,7 @@ class UniversityController extends Controller
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
-        
+
         $originalData = $university->toArray();
 
         // Exclude ID from update
@@ -1013,7 +1013,7 @@ class UniversityController extends Controller
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
- 
+
         $originalData = $university->toArray();
 
         // Update fields
@@ -1150,8 +1150,8 @@ class UniversityController extends Controller
             $university = University::findOrFail($id);
         }else{
             $university = Homeuniversity::findOrFail($id);
-        }   
-         
+        }
+
 
         // related applications
         $applications = []; // DealApplication::where('university_id', $id)->get();
@@ -1320,7 +1320,7 @@ class UniversityController extends Controller
         if ($validator->fails()) {
             return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
         }
-        
+
 
          // Find university
         if ($request->type == 1) {
@@ -1505,7 +1505,7 @@ class UniversityController extends Controller
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
-        
+
 
         if (! $university) {
             return response()->json([
@@ -1519,7 +1519,7 @@ class UniversityController extends Controller
         $university->save();
 
         $statusText = $request->status == 1 ? 'active' : 'inactive';
-       
+
 
         $logData = [
             'type' => 'info',
@@ -1572,7 +1572,7 @@ class UniversityController extends Controller
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
-        
+
 
         if (! $university) {
             return response()->json([
@@ -1586,7 +1586,7 @@ class UniversityController extends Controller
         $university->save();
 
         $statusText = $request->status == 1 ? 'active' : 'inactive';
-       
+
 
         $logData = [
             'type' => 'info',
@@ -1638,7 +1638,7 @@ class UniversityController extends Controller
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
-        
+
 
         if (! $university) {
             return response()->json([
@@ -1652,7 +1652,7 @@ class UniversityController extends Controller
         $university->save();
 
         $statusText = $request->status == 1 ? 'active' : 'inactive';
-       
+
 
         $logData = [
             'type' => 'info',
@@ -1754,4 +1754,114 @@ class UniversityController extends Controller
             'intake_year' => $intake_year,
         ]);
     }
+
+      public function applicationCountByUniversty(Request $request)
+    {
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'university_id' => 'required|exists:universities,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+
+        $data = \DB::table('application_stages as s')
+            ->leftJoin('deal_applications as a', 'a.stage_id', '=', 's.id')
+            ->select('s.id','s.name as label', \DB::raw('COUNT(a.id) as value'))
+            ->groupBy('s.id','s.name')
+            ->orderBy('s.id')
+            ->where('a.university_id',$request->university_id)
+            ->get();
+
+
+
+
+
+        // Success response
+        return response()->json([
+            'status' => 'success',
+            'application_count' =>  $data ,
+        ], 200);
+    }
+
+
+      public function addmissionCountByUniversty(Request $request)
+    {
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'university_id' => 'required|exists:universities,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+
+
+
+            $data = \DB::table('stages as s')
+        ->leftJoin('deals as d', 'd.stage_id', '=', 's.id')
+        ->leftJoin('deal_applications as a', 'd.id', '=', 'a.deal_id')
+        ->select('s.id','s.name', \DB::raw('COUNT(d.id) as total'))
+        ->groupBy('s.id','s.name')
+        ->orderBy('s.id')
+         ->where('a.university_id',$request->university_id)
+        ->get();
+
+
+
+
+
+        // Success response
+        return response()->json([
+            'status' => 'success',
+            'application_count' =>  $data ,
+        ], 200);
+    }
+
+    public function brandWiseByUniversity(Request $request)
+        {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'university_id' => 'required|exists:universities,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors(),
+                ], 400);
+            }
+
+            $data = \DB::table('users as u')
+                ->leftJoin('deals as d', 'd.brand_id', '=', 'u.id')
+                ->leftJoin('deal_applications as a', 'd.id', '=', 'a.deal_id')
+                ->select(
+                    'u.id',
+                    'u.name as brand',
+                    \DB::raw('COUNT(DISTINCT d.id) as admissions'),
+                    \DB::raw('COUNT(DISTINCT a.id) as applications')
+                )
+                ->where('u.type', 'company')
+                ->where('a.university_id', $request->university_id)
+                ->groupBy('u.id','u.name')
+                ->orderBy('u.name')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'brand_wise' => $data,
+            ], 200);
+        }
+
+
+
 }
