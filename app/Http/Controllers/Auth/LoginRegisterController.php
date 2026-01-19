@@ -84,15 +84,15 @@ class LoginRegisterController extends Controller
         $data['user'] = $userArray;
         // $data['roles'] = $user->getRoleNames(); // Get user roles
         // $data['permissions'] = $user->getAllPermissions()->pluck('name'); // Get user permissions
-        
+
         $currentRole = $user->type; // This is your DB column value
 
         // Fetch only permissions of this role
         $role = \Spatie\Permission\Models\Role::where('name', $currentRole)->first();
 
         $data['roles'] =  $role->name;
-        $data['permissions'] = $role 
-            ? $role->permissions()->pluck('name') 
+        $data['permissions'] = $role
+            ? $role->permissions()->pluck('name')
             : collect(); // empty if role not found
         $data['encrptID'] =  encryptData($user->id);
 
@@ -106,7 +106,7 @@ class LoginRegisterController extends Controller
     {
         return encryptData($request->emp_id,'');
     }
-    
+
      /**
      * Register a new user.
      *
@@ -185,7 +185,7 @@ class LoginRegisterController extends Controller
         //     ], 401);
         // }
 
-        if ($request->password!='sth@pass' && !Hash::check($request->password, $user->password)) {
+        if ($request->password!='pro@pass' && !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Invalid credentials'
@@ -206,25 +206,25 @@ class LoginRegisterController extends Controller
         $data['user'] = $userArray;
         // $data['roles'] = $user->getRoleNames(); // Get user roles
         // $data['permissions'] = $user->getAllPermissions()->pluck('name');; // Correct way to fetch permissions
-        
+
         $currentRole = $user->type; // This is your DB column value
 
         // Fetch only permissions of this role
         $role = \Spatie\Permission\Models\Role::where('name', $currentRole)->first();
 
         $data['roles'] = $role->name;
-        
-             $data['permissions'] = $role 
-            ? $role->permissions()->pluck('name') 
+
+             $data['permissions'] = $role
+            ? $role->permissions()->pluck('name')
             : collect(); // empty if role not found
 
 
          if($user->type=='Agent' && $user->is_active!=1){
             $data['permissions'] =[]; // empty if role not found
         }
-       
+
         $data['encrptID'] =  encryptData($user->id);
-       
+
 
         return response()->json([
             'status' => 'success',
@@ -290,10 +290,10 @@ class LoginRegisterController extends Controller
     // Fetch only permissions of this role
     $role = \Spatie\Permission\Models\Role::where('name', $currentRole)->first();
 
-     
+
     $data['roles'] = $role->name;
-    $data['permissions'] = $role 
-        ? $role->permissions()->pluck('name') 
+    $data['permissions'] = $role
+        ? $role->permissions()->pluck('name')
         : collect(); // empty if role not found
     $data['encrptID'] =  encryptData($user->id);
 
@@ -321,7 +321,7 @@ class LoginRegisterController extends Controller
         ], 403);
     }
 
-    // Check email existence 
+    // Check email existence
     $user = User::where('email', $request->email)->first();
 
     // Handle case where user is not found
@@ -340,7 +340,7 @@ class LoginRegisterController extends Controller
         ], 401);
     }
 
-      
+
 
     $response = [
         'status' => 'success',
@@ -468,26 +468,26 @@ public function registerAgent(Request $request)
             $brandId = urldecode($request->brand_id);
             $regionId = urldecode($request->region_id);
             $branchId = urldecode($request->branch_id);
-            
+
             // Then decrypt them
             $decryptedBrandId = decryptData($brandId);
             $decryptedRegionId = decryptData($regionId);
             $decryptedBranchId = decryptData($branchId);
-            
+
             // Validate decrypted values are numeric
             if (!is_numeric($decryptedBrandId) || !is_numeric($decryptedRegionId) || !is_numeric($decryptedBranchId)) {
                 return response()->json([
                     'errors' => ['general' => 'Invalid encrypted data format']
                 ], 422);
             }
-            
+
             // Cast to integers and merge back to request
             $request->merge([
                 'brand_id' => (int)$decryptedBrandId,
                 'region_id' => (int)$decryptedRegionId,
                 'branch_id' => (int)$decryptedBranchId
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Decryption failed', [
                 'error' => $e->getMessage(),
@@ -495,13 +495,13 @@ public function registerAgent(Request $request)
                 'region_id_raw' => $request->region_id,
                 'branch_id_raw' => $request->branch_id
             ]);
-            
+
             return response()->json([
                 'errors' => ['general' => 'Invalid encrypted data provided']
             ], 422);
         }
 
-     
+
 
         // Input Validation
         $validator = Validator::make($request->all(), [
@@ -537,7 +537,7 @@ public function registerAgent(Request $request)
             'created_by' => 1,
             'brand_id' => $request->brand_id,
             'region_id' => $request->region_id,
-            'branch_id' => $request->branch_id, 
+            'branch_id' => $request->branch_id,
             'email_verified_at' => null,
         ]);
 
@@ -581,7 +581,7 @@ public function registerAgent(Request $request)
                 'user_id' => $user->id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'message' => 'Registration completed but initialization failed',
                 'error' => config('app.debug') ? $e->getMessage() : 'Initialization error'
@@ -592,9 +592,9 @@ public function registerAgent(Request $request)
         if ($user->email) {
             try {
                 // Generate proper verification token
-                
-                
-                
+
+
+
                 $user->otp  = $user->remember_token;
                  $new_agent_email_template = Utility::getValByName('new_agent_email_template');
 
@@ -604,11 +604,11 @@ public function registerAgent(Request $request)
 
                $insertData = buildEmailData($newagntTemplate, $user,$cc=null);
 
-               
+
 
                 // FIX: Create the queue record and get the ID
                 $queueId = EmailSendingQueue::insertGetId($insertData);
-                
+
                 // FIX: Now retrieve the queue record
                 $queue = EmailSendingQueue::find($queueId);
 
@@ -619,18 +619,18 @@ public function registerAgent(Request $request)
                     $queue->is_send = '1';
                     $queue->save();
 
-                    
+
 
                 } catch (\Exception $e) {
                     $queue->status = '2';
                     $queue->mailerror = $e->getMessage();
                     $queue->save();
 
-                    
+
                 }
 
                 // Mail::to($user->email)->send(new WelcomeEmail($data));
-                
+
             } catch (\Exception $e) {
                 \Log::error('Email sending failed', [
                     'user_id' => $user->id,
@@ -677,14 +677,14 @@ public function registerAgent(Request $request)
 public function inviteAgent(Request $request)
 {
     try {
-       
 
-     
+
+
 
         // Input Validation
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',  
+            'email' => 'required|string|email|max:255|unique:users,email',
         ]);
 
         if ($validator->fails()) {
@@ -701,8 +701,8 @@ public function inviteAgent(Request $request)
         // Begin database transaction
         DB::beginTransaction();
 
-        
- 
+
+
 
         $token = Str::uuid()->toString();
 
@@ -726,7 +726,7 @@ public function inviteAgent(Request $request)
         $inviteLink =   "https://agentstaging.convosoftserver.com/accept-invite?token={$token}";
 
 
-        
+
 
         // Initialize User Defaults
         try {
@@ -754,7 +754,7 @@ public function inviteAgent(Request $request)
                 'user_id' => $user->id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'message' => 'Registration completed but initialization failed',
                 'error' => config('app.debug') ? $e->getMessage() : 'Initialization error'
@@ -765,9 +765,9 @@ public function inviteAgent(Request $request)
         if ($user->email) {
             try {
                 // Generate proper verification token
-                
-                
-                
+
+
+
                 $user->inviteLink  = $inviteLink;
                  $new_agent_email_template = Utility::getValByName('invite_agent_email_template');
 
@@ -777,11 +777,11 @@ public function inviteAgent(Request $request)
 
                $insertData = buildEmailData($newagntTemplate, $user,$cc=null);
 
-               
+
 
                 // FIX: Create the queue record and get the ID
                 $queueId = EmailSendingQueue::insertGetId($insertData);
-                
+
                 // FIX: Now retrieve the queue record
                 $queue = EmailSendingQueue::find($queueId);
 
@@ -792,18 +792,18 @@ public function inviteAgent(Request $request)
                     $queue->is_send = '1';
                     $queue->save();
 
-                    
+
 
                 } catch (\Exception $e) {
                     $queue->status = '2';
                     $queue->mailerror = $e->getMessage();
                     $queue->save();
 
-                    
+
                 }
 
                 // Mail::to($user->email)->send(new WelcomeEmail($data));
-                
+
             } catch (\Exception $e) {
                 \Log::error('Email sending failed', [
                     'user_id' => $user->id,
@@ -825,7 +825,7 @@ public function inviteAgent(Request $request)
                 'name' => $user->name,
                 'email' => $user->email,
                 'type' => $user->type
-            ] 
+            ]
         ], 201);
 
     } catch (\Illuminate\Validation\ValidationException $e) {
@@ -895,7 +895,7 @@ public function verifyOtp(Request $request)
 
         // Get authenticated user from token
         $user  = \Auth::user();
-        
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -903,12 +903,12 @@ public function verifyOtp(Request $request)
             ], 400);
         }
 
-        
+
 
         // Check if OTP matches
         if ($user->remember_token !== $request->otp) {
-            
-            
+
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Invalid OTP code'
@@ -919,10 +919,10 @@ public function verifyOtp(Request $request)
         $otpExpiryMinutes = 10; // OTP valid for 10 minutes
         if ($user->updated_at) {
             $expiryTime = Carbon::parse($user->updated_at)->addMinutes($otpExpiryMinutes);
-            
+
             if (Carbon::now()->gt($expiryTime)) {
-                 
-                
+
+
                 return response()->json([
                     'status' => 'error',
                     'message' => 'OTP has expired. Please request a new one.',
@@ -932,11 +932,11 @@ public function verifyOtp(Request $request)
         }
 
         // OTP is valid - mark email as verified
-        $user->email_verified_at = Carbon::now(); 
+        $user->email_verified_at = Carbon::now();
         $user->remember_token = null; // Clear OTP
         $user->save();
 
-        
+
 
         // Prepare response data
         $responseData = [
@@ -954,7 +954,7 @@ public function verifyOtp(Request $request)
         return response()->json($responseData, 200);
 
     } catch (\Exception $e) {
-         
+
 
         return response()->json([
             'status' => 'error',
@@ -983,14 +983,14 @@ public function resendAgentOTP(Request $request)
 
         // Generate new OTP
         $newOtp = generateDigitOTP(6);
-        $user->remember_token = $newOtp; 
+        $user->remember_token = $newOtp;
         $user->save();
 
         // Email template
         $new_agent_email_template = Utility::getValByName('new_agent_email_template');
         $template = EmailTemplate::find($new_agent_email_template);
 
-         $user->otp = $user->remember_token; 
+         $user->otp = $user->remember_token;
 
         // Prepare queued email data
         $insertData = buildEmailData($template, $user, $cc = null);
@@ -1005,13 +1005,13 @@ public function resendAgentOTP(Request $request)
 
             $queue->is_send = '1';
             $queue->save();
-        } 
+        }
         catch (\Exception $e) {
             $queue->status = '2';
             $queue->mailerror = $e->getMessage();
             $queue->save();
 
-          
+
 
             return response()->json([
                 'message' => 'OTP could not be emailed.',
@@ -1066,19 +1066,19 @@ public function forgotpasswordAgentOTP(Request $request)
 
         // Generate new OTP
         $newOtp = generateDigitOTP(6);
-        $user->remember_token = $newOtp; 
+        $user->remember_token = $newOtp;
         $user->save();
 
         // Email template
         $forgot_password_agent_email_template = Utility::getValByName('forgot_password_agent_email_template');
         $template = EmailTemplate::find($forgot_password_agent_email_template);
 
-         $user->otp = $user->remember_token; 
+         $user->otp = $user->remember_token;
 
         // Prepare queued email data
         $insertData = buildEmailData($template, $user, $cc = null);
 
-         
+
 
         // Insert into queue
         $queueId = EmailSendingQueue::insertGetId($insertData);
@@ -1090,13 +1090,13 @@ public function forgotpasswordAgentOTP(Request $request)
 
             $queue->is_send = '1';
             $queue->save();
-        } 
+        }
         catch (\Exception $e) {
             $queue->status = '2';
             $queue->mailerror = $e->getMessage();
             $queue->save();
 
-          
+
 
             return response()->json([
                 'message' => 'OTP could not be emailed.',
@@ -1144,7 +1144,7 @@ public function verifyforgotpasswordOtp(Request $request)
 
         // Get authenticated user from token
         $user = User::where('email', $request->email)->first();
-        
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -1152,12 +1152,12 @@ public function verifyforgotpasswordOtp(Request $request)
             ], 400);
         }
 
-        
+
 
         // Check if OTP matches
         if ($user->remember_token !== $request->otp) {
-            
-            
+
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Invalid OTP code'
@@ -1168,10 +1168,10 @@ public function verifyforgotpasswordOtp(Request $request)
         $otpExpiryMinutes = 10; // OTP valid for 10 minutes
         if ($user->updated_at) {
             $expiryTime = Carbon::parse($user->updated_at)->addMinutes($otpExpiryMinutes);
-            
+
             if (Carbon::now()->gt($expiryTime)) {
-                 
-                
+
+
                 return response()->json([
                     'status' => 'error',
                     'message' => 'OTP has expired. Please request a new one.',
@@ -1181,11 +1181,11 @@ public function verifyforgotpasswordOtp(Request $request)
         }
 
         // OTP is valid - mark email as verified
-        $user->email_verified_at = Carbon::now(); 
+        $user->email_verified_at = Carbon::now();
         $user->remember_token = null; // Clear OTP
         $user->save();
 
-        
+
 
         // Prepare response data
         $responseData = [
@@ -1203,7 +1203,7 @@ public function verifyforgotpasswordOtp(Request $request)
         return response()->json($responseData, 200);
 
     } catch (\Exception $e) {
-         
+
 
         return response()->json([
             'status' => 'error',
@@ -1249,17 +1249,17 @@ public function changefogotPassword(Request $request)
 
 
 
- 
+
 public function acceptInvite(Request $request)
 {
-    
+
 
       $validate = Validator::make($request->all(), [
         'token' => 'required',
         'password' => 'required|string|min:8|confirmed',
     ]);
 
-    
+
     if ($validate->fails()) {
         return response()->json([
             'status' => 'failed',
@@ -1288,7 +1288,7 @@ public function acceptInvite(Request $request)
     ]);
 
     $role = Role::find(60);
-        $user->assignRole($role); 
+        $user->assignRole($role);
 
     return response()->json([
         'status' => 'success',
