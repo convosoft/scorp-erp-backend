@@ -401,6 +401,7 @@ class UniversityController extends Controller
             ->leftJoin('countries AS c_name', function ($join) {
                 $join->on(DB::raw('LOWER(c_name.name)'), '=', DB::raw('LOWER(universities.country)'));
             })
+            ->where('uni_status', '0')
             ->groupBy('resolved_country_name', 'resolved_country_code')
             ->get();
 
@@ -434,6 +435,7 @@ class UniversityController extends Controller
                 $join->on(DB::raw('LOWER(c_name.name)'), '=', DB::raw('LOWER(universities.country)'));
             })
             ->where('home_status', 1)
+            ->where('uni_status', '0')
             ->groupBy('resolved_country_name', 'resolved_country_code')
             ->get();
 
@@ -546,7 +548,7 @@ class UniversityController extends Controller
             'status' => 'success',
             'message' => 'University list retrieved successfully.',
             'data' => [
-                'number_of_tiles' => 10,
+                'number_of_tiles' => 15,
                 'statuses' => $sortedStatuses,
                 'europe_total' => $europeCount,
                 'middle_east_total' => $middleEastCount,
