@@ -1151,7 +1151,7 @@ class UniversityController extends Controller
         if($request->type == 1){
             $university = University::findOrFail($id);
         }else{
-            $university = Homeuniversity::findOrFail($id);
+             $university = Homeuniversity::where('main_uni_id', $id)->firstOrFail();
         }
 
 
@@ -1397,7 +1397,7 @@ class UniversityController extends Controller
         $university->save();
 
         // Log activity
-        $statusText = $request->status == 1 ? 'Active' : 'Inactive';
+        $statusText = $request->status == 0 ? 'Active' : 'Inactive';
 
         $logData = [
             'type' => 'info',
