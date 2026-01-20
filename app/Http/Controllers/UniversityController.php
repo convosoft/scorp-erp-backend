@@ -81,9 +81,9 @@ class UniversityController extends Controller
         if ($request->filled('team_id')) {
             $query->where('universities.team_id', $request->team_id);
         }
-        if ($request->filled('is_refund')) {
-            $query->where('universities.is_refund', $request->is_refund);
-        }
+        // if ($request->filled('is_refund')) {
+        //     $query->where('universities.is_refund', $request->is_refund);
+        // }
 
         if ($request->filled('city')) {
             $query->where('campuses', 'like', '%'.$request->city.'%');
@@ -683,7 +683,7 @@ class UniversityController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -790,7 +790,7 @@ class UniversityController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -869,7 +869,7 @@ class UniversityController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -887,7 +887,7 @@ class UniversityController extends Controller
         if ($request->type == 1) {
             $university = University::find($request->id);
         } else {
-            $university = Homeuniversity::find($request->id);
+            $university = Homeuniversity::where('main_uni_id', $request->id)->first();;
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
@@ -996,7 +996,7 @@ class UniversityController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -1011,7 +1011,7 @@ class UniversityController extends Controller
         if ($request->type == 1) {
             $university = University::find($request->id);
         } else {
-            $university = Homeuniversity::find($request->id);
+            $university = Homeuniversity::where('main_uni_id', $request->id)->first();;
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
@@ -1023,8 +1023,8 @@ class UniversityController extends Controller
         $university->campuses = implode(',', $request->campuses);
         $university->agency = $request->agency;
         $university->website_link = $request->website_link;
-        $university->is_refund = $request->is_refund;
-        $university->refund_detail = $request->refund_detail;
+        // $university->is_refund = $request->is_refund;
+        // $university->refund_detail = $request->refund_detail;
         if ($request->product_coordinator_id != 'N/A') {
             $university->product_coordinator_id = $request->product_coordinator_id;
         }
@@ -1143,7 +1143,7 @@ class UniversityController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 400);
         }
 
         $id = $request->id;
@@ -1253,7 +1253,7 @@ class UniversityController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 400);
         }
 
         $id = $request->id;
@@ -1320,7 +1320,7 @@ class UniversityController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 400);
         }
 
 
@@ -1328,7 +1328,7 @@ class UniversityController extends Controller
         if ($request->type == 1) {
             $University = University::find($request->id);
         } else {
-            $University = Homeuniversity::find($request->id);
+            $University = Homeuniversity::where('main_uni_id', $request->id)->first();;
         }
 
          $typetext = $request->type == 1 ? 'international' : 'home';
