@@ -1184,6 +1184,58 @@ class UniversityController extends Controller
         ]);
     }
 
+
+    public function getUniversityCourseStatus(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:universities,id',
+            'type' => 'required|in:1,2', // Assuming 0 or 1 as status values
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 400);
+        }
+
+        $id = $request->id;
+
+        if ($request->type == 1) {
+                $university = University::select('status')->findOrFail($id);
+            } else {
+                $university = Homeuniversity::select('status')
+                    ->where('main_uni_id', $id)
+                    ->firstOrFail();
+            }
+
+
+        // related applications
+        $applications = []; // DealApplication::where('university_id', $id)->get();
+
+        // related admissions
+        $deals = []; // Deal::where('university_id', $id)->get();
+
+        $stages = Stage::pluck('name', 'id')->toArray();
+        $organizations = User::where('type', 'organization')->pluck('name', 'id')->toArray();
+
+        $course = Course::where('university_id', $id)->where('type', $request->type);
+
+        if (\Auth::user()->type == 'super admin') {
+            $courses = $course->get();
+        } else {
+            $courses = $course->where('created_by', \Auth::user()->id)->get();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'university' => $university,
+            'baseurl' =>  asset('/'),
+            'applications' => $applications,
+            'deals' => $deals,
+            'stages' => $stages,
+            'organizations' => $organizations,
+            'courses' => $courses,
+        ]);
+    }
+
     // public function getIntakeMonthByUniversity()
     // {
     //     $id = $_POST['id'];

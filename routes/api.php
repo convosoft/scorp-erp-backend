@@ -746,6 +746,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/brandWiseByUniversity', [UniversityController::class, 'brandWiseByUniversity']);
     Route::post('/updateUniversitiesByKey', [UniversityController::class, 'updateUniversitiesByKey']);
     Route::post('/SaveToggleCourse', [UniversityController::class, 'SaveToggleCourse']);
+    Route::post('/getUniversityCourseStatus', [UniversityController::class, 'getUniversityCourseStatus']);
     Route::post('/addUpdateUniversityMeta', [UniversityMetaController::class, 'storeOrUpdateMetas']);
     Route::post('/getUniversityMeta', [UniversityMetaController::class, 'getUniversityMeta']);
     Route::post('/updateUniversityStatus', [UniversityController::class, 'updateUniversityStatus']);
