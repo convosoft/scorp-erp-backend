@@ -80,7 +80,7 @@ class University extends Model
 
     public function GlobalPaymentType()
     {
-        return $this->belongsTo(ToolkitPaymentType::class, 'global_payment_type_id ');
+        return $this->belongsTo(ToolkitPaymentType::class, 'global_payment_type_id');
     }
     public function ToolkitTeam()
     {
