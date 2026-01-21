@@ -224,6 +224,7 @@ class UniversityController extends Controller
                 'rank:id,name',
                 'ToolkitLevel:id,name',
                 'PaymentType:id,name',
+                'GlobalPaymentType:id,name',
                 'InstallmentPayOut:id,name',
                 'ToolkitTeam:id,name',
             ])
