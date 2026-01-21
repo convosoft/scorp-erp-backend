@@ -1151,7 +1151,9 @@ class UniversityController extends Controller
         if($request->type == 1){
             $university = University::findOrFail($id);
         }else{
-             $university = Homeuniversity::where('main_uni_id', $id)->firstOrFail();
+             $university2 = Homeuniversity::where('main_uni_id', $id)->firstOrFail();
+
+              $university = Homeuniversity::findOrFail($university2->id);
         }
 
 
