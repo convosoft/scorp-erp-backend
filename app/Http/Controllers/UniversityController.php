@@ -215,6 +215,7 @@ class UniversityController extends Controller
             'rank_id',
             'level_id',
             'payment_type_id',
+            'global_payment_type_id',
             'pay_out_id',
             'team_id',
         ])->where('uni_status', '0')
