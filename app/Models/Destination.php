@@ -40,7 +40,7 @@ class Destination extends Model
 
     public function destinationMeta()
     {
-        return $this->hasMany(destinationMeta::class, 'destination_id')->where('type', 1);
+        return $this->hasMany(DestinationMeta::class, 'destination_id')->where('type', 1);
     }
 
     public function createdBy()
@@ -52,10 +52,10 @@ class Destination extends Model
         return $this->belongsTo(User::class, 'product_coordinator_id'); // Ensure 'product_coordinator_id' matches your DB column
     }
 
-    public function rank()
-    {
-        return $this->belongsTo(destinationRank::class, 'rank_id');
-    }
+    // public function rank()
+    // {
+    //     return $this->belongsTo(destinationRank::class, 'rank_id');
+    // }
     public function ApplicableFee()
     {
         return $this->belongsTo(ToolkitApplicableFee::class, 'fee_id');
@@ -86,10 +86,10 @@ class Destination extends Model
     {
         return $this->belongsTo(ToolkitTeam::class, 'team_id');
     }
-    public function homedestination()
-    {
-        return $this->hasOne(Homedestination::class, 'main_uni_id', 'id');
-    }
+    // public function homedestination()
+    // {
+    //     return $this->hasOne(Homedestination::class, 'main_uni_id', 'id');
+    // }
 
     public function getCountryNameAttribute()
     {
