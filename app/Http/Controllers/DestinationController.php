@@ -138,16 +138,10 @@ class DestinationController extends Controller
 
         $destination = new Destination;
         $destination->name = $request->name;
-        $destination->official_name = $request->official_name;
         $destination->continent = $request->continent;
         $destination->currency = $request->currency;
         $destination->language = $request->language;
-        $destination->flag = $request->flag;
-        $destination->english_proficiency_required = $request->english_proficiency_required ?? false;
-        $destination->popular_study_cities = $request->filled('popular_study_cities') ?
-            implode(',', $request->popular_study_cities) : null;
-        $destination->overall_trend = $request->overall_trend;
-        $destination->status = $request->status ?? 'active';
+        $destination->status =  'active';
         $destination->created_by = Auth::user()->id;
         $destination->save();
 
