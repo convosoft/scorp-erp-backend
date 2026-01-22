@@ -64,7 +64,7 @@ class DestinationRuleController extends Controller
                 'name' => 'required|string',
                 'position' => 'required|integer',
                 'type' => 'required|integer|in:1,2',
-                'rule_type' => 'required|string|in:restriction,requirement,pipeline'
+                'rule_type' => 'required|string'
             ]
         );
 
@@ -127,7 +127,7 @@ class DestinationRuleController extends Controller
                 'name' => 'required|string',
                 'position' => 'required|integer',
                 'type' => 'required|integer|in:1,2',
-                'rule_type' => 'required|string|in:restriction,requirement,pipeline'
+                'rule_type' => 'required|string'
             ]
         );
 
