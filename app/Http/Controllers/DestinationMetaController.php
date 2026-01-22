@@ -120,7 +120,8 @@ class DestinationMetaController extends Controller
         $destinationId = $request->destination_id;
         $type = $request->type;
         $user = Auth::user();
-        $metaData = $request->except('destination_id');
+        $metaData = $request->except(['destination_id', 'type']);
+
         $changes = [];
 
         foreach ($metaData as $key => $newValue) {
