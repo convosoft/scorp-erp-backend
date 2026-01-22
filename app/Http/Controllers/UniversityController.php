@@ -81,6 +81,12 @@ class UniversityController extends Controller
         if ($request->filled('team_id')) {
             $query->where('universities.team_id', $request->team_id);
         }
+
+
+        if ($request->filled('channel_id')) {
+            $query->where('universities.channel_id', $request->channel_id);
+        }
+
         // if ($request->filled('is_refund')) {
         //     $query->where('universities.is_refund', $request->is_refund);
         // }
