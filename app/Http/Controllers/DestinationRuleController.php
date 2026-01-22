@@ -123,7 +123,7 @@ class DestinationRuleController extends Controller
         $validator = \Validator::make(
             $request->all(),
             [
-                'id' => 'required|exists:Destination_rules,id',
+                'id' => 'required|exists:destination_rules,id',
                 'name' => 'required|string',
                 'position' => 'required|integer',
                 'type' => 'required|integer|in:1,2',
