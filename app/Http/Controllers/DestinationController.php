@@ -106,6 +106,8 @@ class DestinationController extends Controller
      */
     public function addDestination(Request $request)
     {
+
+        dd(Auth::user()->can('create destination'));
         if (!Auth::user()->can('create destination')) {
             return response()->json([
                 'status' => 'error',

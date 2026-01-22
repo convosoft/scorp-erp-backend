@@ -75,6 +75,7 @@ use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\UniversityMetaController;
 use App\Http\Controllers\UniversityRankController;
 use App\Http\Controllers\UniversityRuleController;
+use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Models\InterviewSchedule;
@@ -895,6 +896,15 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/updateUniversityRulePosition', [UniversityRuleController::class, 'updateUniversityRulePosition']);
 
 
+
+     //     Destination
+     Route::post('/addDestination', [DestinationController::class, 'addDestination']);
+     Route::post('/getUniversityRules', [UniversityRuleController::class, 'getUniversityRules']);
+     Route::post('/updateUniversityRule', [UniversityRuleController::class, 'updateUniversityRule']);
+     Route::post('/deleteUniversityRule', [UniversityRuleController::class, 'deleteUniversityRule']);
+     Route::post('/updateUniversityRulePosition', [UniversityRuleController::class, 'updateUniversityRulePosition']);
+
+
      //     adminission
      Route::post('/getAdmission', [DealController::class, 'getAdmission']);
      Route::post('/getAdmissionDetails', [DealController::class, 'getAdmissionDetails']);
@@ -948,6 +958,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getStages', [GeneralController::class, 'getStages']);
     Route::get('/getapplicationStagesPluck', [GeneralController::class, 'getapplicationStagesPluck']);
     Route::get('/getTags', [GeneralController::class, 'getTags']);
+    Route::get('/getAllcurrencies', [GeneralController::class, 'getAllcurrencies']);
     Route::get('/getTagsByBrandId', [GeneralController::class, 'getTagsByBrandId']);
     Route::get('/getJobCategories', [GeneralController::class, 'getJobCategories']);
     Route::post('/FilterSave', [GeneralController::class, 'FilterSave']);
