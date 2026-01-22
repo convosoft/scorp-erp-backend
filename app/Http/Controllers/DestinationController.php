@@ -357,6 +357,8 @@ class DestinationController extends Controller
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:destinations,id',
             'type' => 'required|integer|in:1,2', // If needed for different destination types
+            'latitude' => 'required',
+            'longitude' => 'required',
         ]);
 
         if ($validator->fails()) {
