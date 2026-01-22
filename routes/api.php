@@ -76,6 +76,7 @@ use App\Http\Controllers\UniversityMetaController;
 use App\Http\Controllers\DestinationMetaController;
 use App\Http\Controllers\UniversityRankController;
 use App\Http\Controllers\UniversityRuleController;
+use App\Http\Controllers\DestinationRuleController;
 use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
@@ -907,6 +908,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/addUpdateDestinationMeta', [DestinationMetaController::class, 'storeOrUpdateMetas']);
     Route::post('/getDestinationMeta', [DestinationMetaController::class, 'getDestinationMeta']);
+
+     //     Destination Rules
+     Route::post('/addDestinationRule', [DestinationRuleController::class, 'addDestinationRule']);
+     Route::post('/getDestinationRules', [DestinationRuleController::class, 'getDestinationRules']);
+     Route::post('/updateDestinationRule', [DestinationRuleController::class, 'updateDestinationRule']);
+     Route::post('/deleteDestinationRule', [DestinationRuleController::class, 'deleteDestinationRule']);
+     Route::post('/updateDestinationRulePosition', [DestinationRuleController::class, 'updateDestinationRulePosition']);
 
 
      //     adminission
