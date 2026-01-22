@@ -122,7 +122,6 @@ class DestinationController extends Controller
             'currency' => 'required|string|max:100',
             'language' => 'required|string|max:100',
             'flag' => 'nullable|string|max:10',
-            'time_zone' => 'nullable|string|max:100',
             'english_proficiency_required' => 'nullable|boolean',
             'popular_study_cities' => 'nullable|array',
             'popular_study_cities.*' => 'string|max:100',
@@ -144,7 +143,6 @@ class DestinationController extends Controller
         $destination->currency = $request->currency;
         $destination->language = $request->language;
         $destination->flag = $request->flag;
-        $destination->time_zone = $request->time_zone;
         $destination->english_proficiency_required = $request->english_proficiency_required ?? false;
         $destination->popular_study_cities = $request->filled('popular_study_cities') ?
             implode(',', $request->popular_study_cities) : null;
