@@ -17,6 +17,6 @@ class DestinationMeta extends Model
 
     public function destination()
     {
-        return $this->belongsTo(destination::class);
+        return $this->belongsTo(Destination::class);
     }
 }
