@@ -73,6 +73,7 @@ use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\UniversityMetaController;
+use App\Http\Controllers\DestinationMetaController;
 use App\Http\Controllers\UniversityRankController;
 use App\Http\Controllers\UniversityRuleController;
 use App\Http\Controllers\DestinationController;
@@ -902,6 +903,10 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/getDestinations', [DestinationController::class, 'getDestinations']);
      Route::post('/updateDestinationByKey', [DestinationController::class, 'updateDestinationByKey']);
      Route::post('/deleteDestination', [DestinationController::class, 'deleteDestination']);
+
+
+    Route::post('/addUpdateDestinationMeta', [DestinationMetaController::class, 'storeOrUpdateMetas']);
+    Route::post('/getDestinationMeta', [DestinationMetaController::class, 'getDestinationMeta']);
 
 
      //     adminission
