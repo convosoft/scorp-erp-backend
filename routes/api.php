@@ -899,9 +899,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
      //     Destination
      Route::post('/addDestination', [DestinationController::class, 'addDestination']);
-     Route::post('/getDestinations', [UniversityRuleController::class, 'getDestinations']);
-     Route::post('/updateDestinationByKey', [UniversityRuleController::class, 'updateDestinationByKey']);
-     Route::post('/deleteDestination', [UniversityRuleController::class, 'deleteDestination']);
+     Route::post('/getDestinations', [DestinationController::class, 'getDestinations']);
+     Route::post('/updateDestinationByKey', [DestinationController::class, 'updateDestinationByKey']);
+     Route::post('/deleteDestination', [DestinationController::class, 'deleteDestination']);
 
 
      //     adminission
