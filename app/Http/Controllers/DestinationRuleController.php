@@ -11,7 +11,7 @@ class DestinationRuleController extends Controller
 {
     public function getDestinationRules(Request $request)
     {
-        if (!\Auth::user()->can('manage Destination')) {
+        if (!\Auth::user()->can('manage destination')) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Permission denied.')
@@ -50,7 +50,7 @@ class DestinationRuleController extends Controller
 
     public function addDestinationRule(Request $request)
     {
-        if (!\Auth::user()->can('create Destination')) {
+        if (!\Auth::user()->can('create destination')) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Permission denied.')
@@ -113,7 +113,7 @@ class DestinationRuleController extends Controller
 
     public function updateDestinationRule(Request $request)
     {
-        if (!\Auth::user()->can('edit Destination')) {
+        if (!\Auth::user()->can('edit destination')) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Permission denied.')
@@ -189,7 +189,7 @@ class DestinationRuleController extends Controller
     }
     public function updateDestinationRulePosition(Request $request)
     {
-        if (!\Auth::user()->can('edit Destination')) {
+        if (!\Auth::user()->can('edit destination')) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Permission denied.')
@@ -267,7 +267,7 @@ class DestinationRuleController extends Controller
 
     public function deleteDestinationRule(Request $request)
     {
-        if (!\Auth::user()->can('delete Destination')) {
+        if (!\Auth::user()->can('delete destination')) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Permission denied.')
