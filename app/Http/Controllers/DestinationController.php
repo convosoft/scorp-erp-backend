@@ -44,6 +44,9 @@ class DestinationController extends Controller
         if ($request->filled('continent')) {
             $query->where('continent', $request->continent);
         }
+        if ($request->filled('destinationId')) {
+            $query->where('id', $request->destinationId);
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
