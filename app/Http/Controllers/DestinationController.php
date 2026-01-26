@@ -514,7 +514,7 @@ class DestinationController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'destination_id' => 'required|exists:destinations,id',
-            'status' => 'required|in:active,paused,high_risk',
+            'status' => 'required|in:1,2,0',
         ]);
 
         if ($validator->fails()) {
@@ -540,7 +540,7 @@ class DestinationController extends Controller
             ], 404);
         }
 
-        $destination->status = $request->status;
+        $destination->status = "$request->status";
         $destination->save();
 
         $logData = [
