@@ -827,6 +827,9 @@ class UniversityController extends Controller
         $university->resource_drive_link = $request->resource_drive_link;
         $university->application_method_drive_link = $request->application_method_drive_link;
         $university->institute_category_id = $request->category_id;
+        $university->destination_id = $request->destination_id;
+        $university->latitude = $request->latitude;
+        $university->longitude = $request->longitude;
         $university->save();
 
         // Log changed fields only
