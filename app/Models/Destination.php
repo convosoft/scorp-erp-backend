@@ -10,7 +10,7 @@ class Destination extends Model
     use HasFactory;
     protected $appends = ['country_code', 'meta_data' ];
     protected $hidden = ['destinationMeta'];
-    protected $with = ['createdBy:id,name',];
+    protected $with = ['createdBy:id,name','universities'];
 
 
     public function course()
