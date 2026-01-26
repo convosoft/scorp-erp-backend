@@ -88,7 +88,7 @@ class Destination extends Model
     }
     public function destinationuniversities()
         {
-            return $this->hasMany(University::class, 'destination_id', 'id');
+            return $this->hasMany(University::class, 'destination_id', 'id') ->whereNotNull('longitude') ->whereNotNull('latitude');
         }
 
     // public function homedestination()
