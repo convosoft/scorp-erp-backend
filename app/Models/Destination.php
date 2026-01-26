@@ -10,7 +10,7 @@ class Destination extends Model
     use HasFactory;
     protected $appends = ['country_code', 'meta_data' ];
     protected $hidden = ['destinationMeta'];
-    protected $with = ['createdBy:id,name','universities'];
+    protected $with = ['createdBy:id,name','destinationuniversities'];
 
 
     public function course()
@@ -86,10 +86,11 @@ class Destination extends Model
     {
         return $this->belongsTo(ToolkitTeam::class, 'team_id');
     }
-    public function universities()
-    {
-        return $this->belongsTo(University::class, 'destination_id');
-    }
+    public function destinationuniversities()
+        {
+            return $this->hasMany(University::class, 'destination_id', 'id');
+        }
+
     // public function homedestination()
     // {
     //     return $this->hasOne(Homedestination::class, 'main_uni_id', 'id');
