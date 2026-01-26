@@ -907,6 +907,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/deleteDestination', [DestinationController::class, 'deleteDestination']);
      Route::post('/destinationDetail', [DestinationController::class, 'destinationDetail']);
      Route::post('/updateDestinationStatus', [DestinationController::class, 'updateDestinationStatus']);
+     Route::post('/pluckDestinations', [DestinationController::class, 'pluckDestinations']);
 
 
     Route::post('/addUpdateDestinationMeta', [DestinationMetaController::class, 'storeOrUpdateMetas']);

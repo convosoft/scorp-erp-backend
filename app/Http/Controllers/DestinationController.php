@@ -593,4 +593,32 @@ class DestinationController extends Controller
             ]
         ]);
     }
+
+    public function pluckDestinations(Request $request)
+        {
+            $validator = Validator::make($request->all(), [
+                'country_id' => 'nullable|exists:countries,id',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors(),
+                ], 400);
+            }
+
+            $query = Destination::query();
+
+            if ($request->filled('country_id')) {
+                $query->where('country_id', $request->country_id);
+            }
+
+            $destinations = $query->pluck('name', 'id')->toArray();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $destinations,
+            ], 200);
+        }
+
 }
