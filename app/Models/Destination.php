@@ -88,7 +88,7 @@ class Destination extends Model
     }
     public function universities()
     {
-        return $this->belongsTo(Destination::class, 'destination_id');
+        return $this->belongsTo(University::class, 'destination_id');
     }
     // public function homedestination()
     // {
