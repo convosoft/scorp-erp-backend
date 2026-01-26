@@ -1455,7 +1455,7 @@ class UniversityController extends Controller
         }
 
         // Update status
-        $university->uni_status = $request->status;
+        $university->uni_status = "$request->status";
         $university->save();
 
         // Log activity

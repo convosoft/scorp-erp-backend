@@ -106,7 +106,7 @@ class UserController extends Controller
         $excludedTypes = ['company', 'team', 'client'];
 
         // Base user query
-         
+
 
         $query = User::select('users.id', 'users.name');
 
@@ -152,7 +152,7 @@ class UserController extends Controller
             }
         }
 
-       
+
 
         // Final user list
         $users = $query->pluck('name', 'id')->toArray();
@@ -481,7 +481,7 @@ class UserController extends Controller
             'count_summary' =>$statusCounts
         ], 200);
     }
-    
+
     public function getAgents(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -517,7 +517,7 @@ class UserController extends Controller
                 'status' => 'error',
                 'message' => 'Unauthorized access'
             ], 403);
-        } 
+        }
 
         $employeesQuery = User::with(['branch', 'brand'])->select('users.*');
 
@@ -669,12 +669,12 @@ class UserController extends Controller
             'perPage' => $employees->perPage(),
             'count_summary' =>$statusCounts
         ], 200);
-    }   
+    }
     public function getAgentTeam(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'page' => 'nullable|integer|min:1',
-            'perPage' => 'nullable|integer|min:1', 
+            'perPage' => 'nullable|integer|min:1',
             'brand' => 'nullable|integer|exists:users,id',
             'region_id' => 'nullable|integer|exists:regions,id',
             'branch_id' => 'nullable|integer|exists:branches,id',
@@ -705,7 +705,7 @@ class UserController extends Controller
                 'status' => 'error',
                 'message' => 'Unauthorized access'
             ], 403);
-        } 
+        }
 
         $employeesQuery = User::with(['branch', 'brand:id,name'])->select('users.*');
 
@@ -759,7 +759,7 @@ class UserController extends Controller
             });
         }
 
-        
+
 
         $employeesQuery->where('agent_id', $user->agent_id);
 
@@ -2116,18 +2116,18 @@ public function getDashboardholiday(Request $request)
     {
         // Validate request
 
-         $brandId = urldecode($request->id); 
-            
+         $brandId = urldecode($request->id);
+
             // Then decrypt them
-            $decryptedBrandId = decryptData($brandId); 
-            
+            $decryptedBrandId = decryptData($brandId);
+
             // Validate decrypted values are numeric
             if (!is_numeric($decryptedBrandId)  ) {
                 return response()->json([
                     'errors' => ['general' => 'Invalid encrypted data format']
                 ], 422);
             }
-            
+
             // Cast to integers and merge back to request
             $request->merge([
                 'id' => (int)$decryptedBrandId
@@ -2449,7 +2449,7 @@ public function getDashboardholiday(Request $request)
     }
     public function agentFileDocument(Request $request)
     {
-        
+
           if (!\Auth::user()->type == 'Agent') {
             return response()->json([
                 'status' => 'error',
@@ -3042,7 +3042,7 @@ public function getDashboardholiday(Request $request)
             'address' => 'required|string',
             'passport_number' => 'required|string|unique:users,passport_number',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
+            //'password' => 'required|string|min:8',
             'role' => 'required|exists:roles,id',
             'branch_id' => 'required|exists:branches,id',
             'region_id' => 'required|exists:regions,id',
@@ -3073,7 +3073,7 @@ public function getDashboardholiday(Request $request)
 
         \DB::beginTransaction();
         try {
-            $password = Hash::make($request->password);
+            $password = Hash::make('12345678');
             $role = Role::find($request->role);
             // Create User
             $user = new User();
@@ -4022,7 +4022,7 @@ public function getDashboardholiday(Request $request)
         $user->is_active = $request->is_active;
         $user->blocked_reason = $request->comment ?? null;
         $role = Role::find(60);
-        $user->assignRole($role); 
+        $user->assignRole($role);
         $user->save();
 
          // inject manager objects for email template tags
@@ -4042,16 +4042,16 @@ public function getDashboardholiday(Request $request)
         $user->profile_status = $statusText;
         $user->comment = $user->blocked_reason;
 
-       
-       
- 
+
+
+
 
 
         // email template
         $templateId = Utility::getValByName('account_status_agent_email_template');
         $emailTemplate = EmailTemplate::find($templateId);
 
-        
+
         $insertData = $this->buildEmailData($emailTemplate, $user,implode(',', $ccList));
 
         if (!empty($insertData)) {
@@ -4059,7 +4059,7 @@ public function getDashboardholiday(Request $request)
 
              // FIX: Create the queue record and get the ID
                 $queueId = EmailSendingQueue::insertGetId($insertData);
-                
+
                 // FIX: Now retrieve the queue record
                 $queue = EmailSendingQueue::find($queueId);
 
@@ -4070,14 +4070,14 @@ public function getDashboardholiday(Request $request)
                     $queue->is_send = '1';
                     $queue->save();
 
-                    
+
 
                 } catch (\Exception $e) {
                     $queue->status = '2';
                     $queue->mailerror = $e->getMessage();
                     $queue->save();
 
-                    
+
                 }
         }
 
@@ -4097,7 +4097,7 @@ public function getDashboardholiday(Request $request)
         $logData['module_type'] = 'agentprofile';
         addLogActivity($logData);
 
-        
+
 
 
         return response()->json([
@@ -4333,21 +4333,21 @@ public function getDashboardholiday(Request $request)
 
     public function completeProfile(Request $request)
 {
-    
+
 
     // Validation for NEW business profile fields
     $validator = \Validator::make($request->all(), [
         'emp_id' => 'required|exists:users,id',
 
         // Name fields
-        'fullname' => 'required|string|max:255', 
+        'fullname' => 'required|string|max:255',
 
         // Business info
         'business_name' => 'required|string|max:500',
         'business_address' => 'nullable|string|max:500',
 
         // National ID
-        'passport_number' => 'required|string|max:20', 
+        'passport_number' => 'required|string|max:20',
 
         // Business location
         'country' => 'required|string',
@@ -4451,7 +4451,7 @@ public function getDashboardholiday(Request $request)
         $user = auth()->user();
 
         $user->terms_agreed = $request->terms_agreed;
-        $user->terms_agreed_at = $request->terms_agreed_at 
+        $user->terms_agreed_at = $request->terms_agreed_at
             ? Carbon::parse($request->terms_agreed_at)
             : now();
 

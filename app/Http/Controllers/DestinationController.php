@@ -57,40 +57,19 @@ class DestinationController extends Controller
             $query->where('overall_trend', $request->overall_trend);
         }
 
-        if ($request->filled('flag')) {
-            $query->where('flag', $request->flag);
-        }
 
         // Retrieve paginated data
         $destinations = $query->orderBy('name', 'ASC')
             ->paginate($perPage, ['*'], 'page', $page);
 
-        // Get destination statistics (like in dashboard screenshot)
-        $destinationStats = Destination::selectRaw('count(id) as total_destinations, continent')
-            ->where('status', 'active')
-            ->groupBy('continent')
-            ->get()
-            ->keyBy('continent');
 
-        // Prepare response data similar to dashboard tiles
-        $continents = ['Canada', 'UK', 'Europe', 'America', 'Australia'];
-        $statuses = [];
 
-        foreach ($continents as $continent) {
-            $stats = $destinationStats->get($continent);
-            $statuses[$continent] = [
-                'count' => $stats ? $stats->total_destinations : 0,
-                'label' => $continent
-            ];
-        }
 
         // Final response
         return response()->json([
             'status' => 'success',
             'message' => 'Destination list retrieved successfully.',
             'data' => [
-                'number_of_tiles' => count($continents),
-                'statuses' => $statuses,
                 'destinations' => $destinations->items(),
                 'current_page' => $destinations->currentPage(),
                 'last_page' => $destinations->lastPage(),
