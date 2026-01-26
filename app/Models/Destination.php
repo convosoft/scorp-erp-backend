@@ -86,6 +86,10 @@ class Destination extends Model
     {
         return $this->belongsTo(ToolkitTeam::class, 'team_id');
     }
+    public function universities()
+    {
+        return $this->belongsTo(Destination::class, 'destination_id');
+    }
     // public function homedestination()
     // {
     //     return $this->hasOne(Homedestination::class, 'main_uni_id', 'id');
