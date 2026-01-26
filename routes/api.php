@@ -926,6 +926,14 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/moveApplicationsave', [DealController::class, 'moveApplicationsave']);
 
 
+     //   Announcement Category
+     Route::post('/addELTRequirement', [ELTRequirementsController::class, 'addELTRequirement']);
+     Route::get('/getELTRequirementsPluck', [ELTRequirementsController::class, 'getELTRequirementsPluck']);
+     Route::get('/getELTRequirements', [ELTRequirementsController::class, 'getELTRequirements']);
+     Route::post('/updateELTRequirement', [ELTRequirementsController::class, 'updateELTRequirement']);
+     Route::post('/deleteELTRequirement', [ELTRequirementsController::class, 'deleteELTRequirement']);
+
+
 
 
      //     application
