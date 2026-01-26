@@ -80,6 +80,7 @@ use App\Http\Controllers\DestinationRuleController;
 use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
+use App\Http\Controllers\ELTRequirementsController;
 use App\Models\InterviewSchedule;
 use App\Models\JobCategory;
 use App\Models\TaskFile;
