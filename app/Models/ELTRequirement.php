@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ELTRequirement extends Model
 {
     use HasFactory;
+    protected $table = 'elt_requirements';
 
     protected $fillable = [
         'name',
