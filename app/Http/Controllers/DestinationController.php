@@ -120,7 +120,7 @@ class DestinationController extends Controller
         $destination->continent = $request->continent;
         $destination->currency = $request->currency;
         $destination->language = $request->language;
-        $destination->status =  'active';
+        $destination->status =  '1';
         $destination->created_by = Auth::user()->id;
         $destination->save();
 
