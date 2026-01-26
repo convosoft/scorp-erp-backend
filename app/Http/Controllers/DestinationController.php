@@ -37,8 +37,8 @@ class DestinationController extends Controller
         $query = Destination::query();
 
         // Filters based on dashboard screenshot
-        if ($request->filled('destination_name')) {
-            $query->where('name', 'like', '%' . $request->destination_name . '%');
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->name . '%');
         }
 
         if ($request->filled('continent')) {
