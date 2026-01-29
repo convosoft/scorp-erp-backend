@@ -677,7 +677,7 @@ class UniversityController extends Controller
             'months' => 'required|array|min:1',
             'months.*' => 'required|string',
             'territory' => 'required|array|min:1',
-            'territory.*' => 'required|string',
+            'territory.*' => 'required',
             'company_id' => 'nullable|exists:users,id',
             // 'rank_id' => 'required|exists:university_ranks,id',
             'phone' => 'nullable|max:20',
