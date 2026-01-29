@@ -672,7 +672,7 @@ class UniversityController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:200',
             'country' => 'required|array|min:1',
-            'country.*' => 'required|string|max:200',
+            'country.*' => 'required|max:200',
             'city' => 'nullable|max:200',
             'months' => 'required|array|min:1',
             'months.*' => 'required|string',
