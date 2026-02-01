@@ -198,6 +198,7 @@ class UniversityController extends Controller
                 'last_page' => $universities->lastPage(),
                 'total_records' => $universities->total(),
                 'per_page' => $universities->perPage(),
+                'show_destination_button' => 1,
             ],
         ]);
     }
@@ -1034,10 +1035,17 @@ class UniversityController extends Controller
         $university->campuses = implode(',', $request->campuses);
         $university->agency = $request->agency;
         $university->website_link = $request->website_link;
+        $university->team_bonus = $request->team_bonus;
         // $university->is_refund = $request->is_refund;
         // $university->refund_detail = $request->refund_detail;
         if ($request->product_coordinator_id != 'N/A') {
             $university->product_coordinator_id = $request->product_coordinator_id;
+        }
+
+         // Find university
+        if ($request->type == 1) {
+        } else {
+            $university->resource_drive_link = $request->resource_drive_link;
         }
 
         $university->save();
