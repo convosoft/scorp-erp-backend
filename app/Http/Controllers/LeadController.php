@@ -43,6 +43,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use Session;
 use Spatie\Permission\Models\Role;
 use SplFileObject;
+use Carbon\Carbon;
 
 class LeadController extends Controller
 {
@@ -58,7 +59,7 @@ class LeadController extends Controller
             'brand' => 'nullable|integer|exists:users,id',
             'region_id' => 'nullable|integer',
             'branch_id' => 'nullable|integer',
-            'stage_id' => 'nullable|array',
+            'stage_id' => 'nullable|integer|exists:lead_stages,id',
             'users' => 'nullable|array',
             'lead_assigned_user' => 'sometimes|nullable',
             'created_by' => 'sometimes|nullable',
@@ -93,13 +94,20 @@ class LeadController extends Controller
             'leads.created_by',
             'leads.user_id',
             'leads.stage_id',
+            'leads.created_at',
             'leads.tag_ids'
         )
-            ->with('assignto')
-            ->with('brand')
+            ->with('assignto:id,name')
+            ->with('brand:id,name')
             ->with('stage')
-            ->with('branch')
-            ->leftJoin('lead_stages', 'leads.stage_id', '=', 'lead_stages.id');
+            ->with('branch:id,name')
+            ->leftJoin('lead_stages', 'leads.stage_id', '=', 'lead_stages.id')
+             // Join only CURRENT stage history of the lead
+            ->leftJoin('stage_histories as sh', function ($join) {
+                $join->on('sh.type_id', '=', 'leads.id')
+                    ->where('sh.type', '=', 'lead')
+                    ->whereColumn('sh.stage_id', 'leads.stage_id');
+            });
 
         // Apply Filters
         if ($request->filled('Assigned')) {
@@ -145,6 +153,30 @@ class LeadController extends Controller
             $leadsQuery->whereDate('leads.created_at', '>=', $request->created_at_from);
         }
 
+        if ($request->filled('days_at_stage')) {
+
+            $days = $request->days_at_stage;
+
+            if ($days === '30+') {
+
+                // Greater than 30 days
+                $leadsQuery->whereDate(
+                    'sh.created_at',
+                    '<=',
+                    Carbon::now()->subDays(30)
+                );
+
+            } else {
+
+                // Exactly 3, 5, 15, 30 days (range-based)
+                $from = Carbon::now()->subDays((int) $days);
+                $to   = Carbon::now()->subDays(((int) $days) - 1);
+
+                $leadsQuery->whereBetween('sh.created_at', [$from, $to]);
+            }
+        }
+
+
         // User Permissions Filtering
         $userType = $usr->type;
         if ($userType === 'company') {
@@ -154,7 +186,7 @@ class LeadController extends Controller
         } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
             $leadsQuery->where('leads.branch_id', $usr->branch_id);
         } elseif ($userType === 'Agent') {
-            $leadsQuery->where('leads.user_id', $usr->id);
+            $leadsQuery->where('leads.agent_id', $usr->agent_id);
         }
 
         // Apply Search Filters
@@ -247,7 +279,7 @@ class LeadController extends Controller
                         'phone' => $lead->phone,
                         'email' => $lead->email,
                         'city' => $lead->city,
-                        'leadAge' => \Carbon\Carbon::parse($lead->created_at)->diffForHumans(),
+                        'leadAge' =>$lead->created_at->diffForHumans(),
                     ]),
                 ];
             }
@@ -287,13 +319,15 @@ class LeadController extends Controller
     {
         $user = \Auth::user();
 
-        // Check Permissions
-        if (! $user->can('create lead') && $user->type !== 'super admin') {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Permission Denied.'),
-            ], 403);
-        }
+        // dd($user->can('create lead'));
+
+        // // Check Permissions
+        // if (!$user->can('create lead')) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => __('Permission Denied.'),
+        //     ], 200);
+        // }
 
         // Validate Input
         $validator = \Validator::make($request->all(), [
@@ -303,17 +337,17 @@ class LeadController extends Controller
             'region_id' => 'required|exists:regions,id',
             'lead_branch' => 'required|exists:branches,id',
             'lead_assigned_user' => 'required|exists:users,id',
-            'lead_phone' => 'required',
+            'lead_phone' => 'nullable',
             'lead_email' => 'required',
-            'lead_country' => 'required',
-            'lead_city' => 'required',
-            'lead_state' => 'required',
-            'lead_postal_code' => 'required',
-            'lead_street' => 'required',
-            'lead_last_education' => 'required',
-            'lead_cgpa_percentage' => 'required',
-            'lead_passing_year' => 'required',
-            'lead_language_test' => 'required',
+            'lead_country' => 'nullable',
+            'lead_city' => 'nullable',
+            'lead_state' => 'nullable',
+            'lead_postal_code' => 'nullable',
+            'lead_street' => 'nullable',
+            // 'lead_last_education' => 'required',
+            // 'lead_cgpa_percentage' => 'required',
+            // 'lead_passing_year' => 'required',
+            // 'lead_language_test' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -336,7 +370,7 @@ class LeadController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => __('Please Create Stage for This Pipeline.'),
-            ], 400);
+            ], 422);
         }
 
         // Check for Duplicate Lead
@@ -351,7 +385,7 @@ class LeadController extends Controller
                 'status' => 'error',
                 'message' => __('Lead already exists.'),
                 'lead_id' => $leadExist->id,
-            ], 409);
+            ], 422);
         }
 
         // Create New Lead
@@ -381,12 +415,13 @@ class LeadController extends Controller
         $lead->tag_ids = ! empty($request->tag_ids) ? implode(',', $request->tag_ids) : '';
         $lead->pipeline_id = $pipeline->id;
         $lead->created_by = Session::get('auth_type_id') ?? $user->id;
+        $lead->agent_id =  $user->agent_id;
         $lead->date = now()->format('Y-m-d');
-        $lead->drive_link = $request->drive_link ?? '';
-        $lead->language_test = $request->lead_language_test ?? '';
-        $lead->passing_year = $request->lead_passing_year ?? '';
-        $lead->cgpa_percentage = $request->lead_cgpa_percentage ?? '';
-        $lead->last_education = $request->lead_last_education ?? '';
+        $lead->drive_link = $request->drive_link ?? null;
+        $lead->language_test = $request->lead_language_test ?? null;
+        $lead->passing_year = $request->lead_passing_year ?? null;
+        $lead->cgpa_percentage = $request->lead_cgpa_percentage ?? null;
+        $lead->last_education = $request->lead_last_education ?? null;
 
         $lead->save();
 
@@ -449,18 +484,43 @@ class LeadController extends Controller
             'message' => __('Lead successfully created!'),
         ], 201);
     }
+    public function LeadStageHistory(Request $request)
+    {
+        // Validate Input
+        $validator = \Validator::make($request->all(), [
+            'type' => 'required|string',
+            'id'   => 'required|exists:leads,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $stage_histories = StageHistory::where('type', $request->type)
+            ->where('type_id', $request->id)
+            ->pluck('stage_id')
+            ->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $stage_histories,
+        ], 200);
+    }
 
     public function updateLead(Request $request)
     {
         $user = \Auth::user();
 
-        // Check Permissions
-        if (! $user->can('edit lead') && $user->type !== 'super admin') {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Permission Denied.'),
-            ], 403);
-        }
+        // // Check Permissions
+        // if (! $user->can('edit lead') && $user->type !== 'super admin') {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => __('Permission Denied.'),
+        //     ], 200);
+        // }
 
         // Validate Input
         $validator = \Validator::make($request->all(), [
@@ -471,13 +531,13 @@ class LeadController extends Controller
             'region_id' => 'required|exists:regions,id',
             'lead_branch' => 'required|exists:branches,id',
             'lead_assigned_user' => 'required|exists:users,id',
-            'lead_phone' => 'required',
+            'lead_phone' => 'nullable',
             'lead_email' => 'required|email',
-            'lead_country' => 'required',
-            'lead_city' => 'required',
-            'lead_state' => 'required',
-            'lead_postal_code' => 'required',
-            'lead_street' => 'required',
+            'lead_country' => 'nullable',
+            'lead_city' => 'nullable',
+            'lead_state' => 'nullable',
+            'lead_postal_code' => 'nullable',
+            'lead_street' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -571,7 +631,7 @@ class LeadController extends Controller
 
                 if (! $resp['is_success']) {
                     return response()->json([
-                        'status' => 'success',
+                        'status' => 'info',
                         'lead_id' => $lead->id,
                         'message' => __('Lead successfully updated!'),
                     ]);
@@ -580,7 +640,7 @@ class LeadController extends Controller
         }
 
         return response()->json([
-            'status' => 'success',
+            'status' => 'info',
             'lead_id' => $lead->id,
             'message' => __('Lead successfully updated!'),
         ], 200);
@@ -857,6 +917,7 @@ class LeadController extends Controller
                     ->where('brand_id', $request->brand_id)
                     ->where('region_id', $request->region_id)
                     ->where('branch_id', $request->lead_branch)
+                    ->where('created_by', $usr->id)
                     ->first();
 
                 if ($lead_exist) {
@@ -881,6 +942,9 @@ class LeadController extends Controller
 
             $lead->stage_id = $stage->id;
             $lead->created_by = $usr->id;
+            if($usr->type == 'Agent'){
+                $lead->agent_id = $usr->agent_id;
+            }
             $lead->date = date('Y-m-d');
 
             if (! empty($test['name']) || ! empty($test['email']) || ! empty($test['phone']) || ! empty($test['subject']) || ! empty($test['notes'])) {
@@ -1020,6 +1084,9 @@ class LeadController extends Controller
 
             $lead->stage_id = $stage->id;
             $lead->created_by = \Auth::user()->id;
+             if($usr->type == 'Agent'){
+                $lead->agent_id = $usr->agent_id;
+            }
             $lead->date = date('Y-m-d');
             if (! empty($test['name']) || ! empty($test['email']) || ! empty($test['phone']) || ! empty($test['subject']) || ! empty($test['notes'])) {
                 $lead->save();
@@ -1641,6 +1708,7 @@ class LeadController extends Controller
         $deal->intake_month = $request->intake_month;
         $deal->intake_year = $request->intake_year;
         $deal->brand_id = $lead->brand_id;
+        $deal->agent_id = $lead->agent_id;
         $deal->organization_id = is_string($lead->organization_id) ? 0 : $lead->organization_id;
         $deal->organization_link = $lead->organization_link;
         $deal->tag_ids = $lead->tag_ids;
@@ -1790,7 +1858,7 @@ class LeadController extends Controller
         addLogActivity($data);
 
         $data = [
-            'type' => 'info',
+            'type' => 'sucssess',
             'note' => json_encode([
                 'title' => 'Deal Created',
                 'message' => 'Deal created successfully.',
@@ -3146,4 +3214,86 @@ class LeadController extends Controller
             'data' => $kanban,
         ]);
     }
+
+        public function getHistoryStageDays(Request $request)
+        {
+
+
+
+                $validator = Validator::make($request->all(), [
+
+                    'type_id' => 'required|integer|min:1',
+                    'type' => 'required|string',
+                ]);
+
+                if ($validator->fails()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'errors' => $validator->errors(),
+                    ], 422);
+                }
+
+
+            $leadId = $request->input('type_id');
+            $type = $request->input('type');
+
+            if ($type !== 'lead' && $type !== 'deal') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid type provided. Must be either "lead" or "deal".',
+                ], 400);
+            }
+
+              if ($type === 'lead') {
+                $stages = LeadStage::orderBy('id')->get();
+            } else if ($type === 'deal') {
+
+                $stages = Stage::orderBy('id')->get();
+            }
+
+
+
+
+            // 2. Get stage history for the lead
+            $histories = StageHistory::where('type', $type)
+                ->where('type_id', $leadId)
+                ->orderBy('created_at')
+                ->get()
+                ->values(); // reset index
+
+            $result = [];
+
+            foreach ($stages as $stage) {
+
+                // Find stage in history
+                $index = $histories->search(fn ($h) => $h->stage_id == $stage->id);
+
+                // Stage skipped
+                if ($index === false) {
+                    $result[] = [
+                        'stage_id'   => $stage->id,
+                        'stage_name' => $stage->name,
+                        'days'       => 0,
+                    ];
+                    continue;
+                }
+
+                $current = $histories[$index];
+                $next = $histories[$index + 1] ?? null;
+
+                // Calculate days
+                $days = $next
+                    ? Carbon::parse($current->created_at)->diffInDays(Carbon::parse($next->created_at))
+                    : 0; // last stage → keep 0 (or use now())
+
+                $result[$stage->id] = [
+                    'stage_id'   => $stage->id,
+                    'stage_name' => $stage->name,
+                    'days'       => $days,
+                ];
+            }
+
+            return $result;
+        }
+
 }

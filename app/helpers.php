@@ -251,7 +251,7 @@ if (!function_exists('addToEmailQueue')) {
 
         // Resolve manager details
         $branch_manager_detail  = optional($user->branch)->manager;
-        $region_manager_detail  = optional($user->region)->manager; 
+        $region_manager_detail  = optional($user->region)->manager;
         $project_manager_detail = User::where('id', $user->brand->project_manager_id)->first();
 
         // Build CC list
@@ -310,7 +310,7 @@ if (!function_exists('addToEmailQueue')) {
 }
 /**
  * Generate a secure numeric OTP (One-Time Password)
- * 
+ *
  * @param int $len Length of OTP (default: 6)
  * @return string Numeric OTP
  */
@@ -320,15 +320,15 @@ function generateDigitOTP($len = 6)
     if (!is_int($len) || $len < 4 || $len > 10) {
         $len = 6; // Default to 6 if invalid
     }
-    
+
     // Method 1: Using random_int (Most secure - PHP 7+)
     $otp = '';
     for ($i = 0; $i < $len; $i++) {
         $otp .= random_int(0, 9);
     }
-    
+
     //$otp = 123456;
-    
+
     return $otp;
 }
 
@@ -340,7 +340,7 @@ function generateDigitOTP($len = 6)
 
         $subject = replaceTags($template->subject, $user);
         $content = replaceTags($template->template, $user);
-       
+
         return [
             'to'           => $user->email,
             'cc'           => $cc,
@@ -388,7 +388,7 @@ function generateDigitOTP($len = 6)
                 case 'DOB':
                     $value = $user->date_of_birth;
                     break;
-                
+
                 case 'branch_manager_name':
                     $value = optional(optional($user->branch)->manager)->name ?? '';
                     break;
@@ -446,7 +446,7 @@ if (!function_exists('addLogActivity')) {
         }else{
             $new_log->created_by = \Auth::user()?->id ?? 0;
             }
-        
+
         $new_log->save();
 
 

@@ -100,13 +100,13 @@ class TaskController extends Controller
         if (isset($_POST['university_id']) && !empty($_POST['university_id'])) {
             $filters['university_id'] = $_POST['university_id'];
         }
-        
+
         return $filters;
     }
     public function GetScorpTasks()
     {
         $brandId = 3751; // Assuming 3751 is the brand ID to filter
-    
+
         if (\Auth::user()->can('view task') || \Auth::user()->can('manage task') || \Auth::user()->type == 'super admin' || \Auth::user()->type == 'company') {
             $tasks = DealTask::select(
                     'deal_applications.university_id',
@@ -126,24 +126,24 @@ class TaskController extends Controller
                 })
                 ->where('deal_tasks.brand_id', $brandId)
                 ->where('deal_tasks.created_by', \Auth::user()->id)
-                
+
             ->leftJoin('universities', 'universities.id', '=', 'deal_applications.university_id');
-            
+
             // Filter by origin country if provided
             if (isset($_POST['country']) && !empty($_POST['country'])) {
                 $country = $_POST['country'];
-            
+
                 // Fetch country details
                 $country_code = Country::where('country_code', $country)->first();
-            
+
                 if ($country_code) {
                     $tasks->where('uni_status', '0')
                                ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name]);
                 }
             }
-    
+
             $filters = $this->TasksFilter();
-    
+
             foreach ($filters as $column => $value) {
                 if ($column === 'subjects') {
                     if (is_array($value) && count($value) > 0) {
@@ -188,11 +188,11 @@ class TaskController extends Controller
                     $tasks->whereDate('deal_tasks.created_at', '<=', $value);
                 }
             }
-    
+
             if (!empty($_POST['task_type'])) {
                 $tasks->where('deal_tasks.tasks_type', $_POST['task_type']);
             }
-    
+
             if (!empty($_POST['tasks_type_status'])) {
                 $status = $_POST['tasks_type_status'];
                 if ($status == '1') {
@@ -207,10 +207,10 @@ class TaskController extends Controller
                 $tasks->where('deal_tasks.status', 0)
                       ->where('deal_tasks.tasks_type_status', "0");
             }
-    
+
             return $tasks->pluck('deal_tasks.id')->toArray();
         }
-    
+
         return [];
     }
     public function userTasksGet(Request $request)
@@ -219,10 +219,10 @@ class TaskController extends Controller
         $perPage = $request->input('perPage', env("RESULTS_ON_PAGE", 50));
         $page = $request->input('page', 1);
         $start = ($page - 1) * $perPage;
-    
-        if (\Auth::user()->can('view task') || \Auth::user()->can('manage task') || 
+
+        if (\Auth::user()->can('view task') || \Auth::user()->can('manage task') ||
             \Auth::user()->type == 'super admin' || \Auth::user()->type == 'company') {
-            
+
             // Base query for tasks
             $tasksQuery = DealTask::select(
                 'deal_applications.university_id',
@@ -241,21 +241,21 @@ class TaskController extends Controller
                      ->where('deal_tasks.related_type', '=', 'application');
             })
             ->leftJoin('universities', 'universities.id', '=', 'deal_applications.university_id');
-            
+
             // Filter by origin country if provided
             if ($request->has('country') && !empty($request->country)) {
                 $country = $request->country;
-            
+
                 // Fetch country details
                 $country_code = Country::where('country_code', $country)->first();
-            
+
                 if ($country_code) {
                     $tasksQuery->where('uni_status', '0')
                                ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name]);
                 }
             }
-            
-    
+
+
             // Apply user type filters
             $FiltersBrands = array_keys(FiltersBrands());
             if (\Auth::user()->type != 'HR') {
@@ -268,8 +268,8 @@ class TaskController extends Controller
                     $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
                 } elseif (\Auth::user()->type == 'Region Manager' || (\Auth::user()->can('level 3') && !empty(\Auth::user()->region_id))) {
                     $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
-                } elseif (\Auth::user()->type == 'Branch Manager' || \Auth::user()->type == 'Admissions Officer' || 
-                         \Auth::user()->type == 'Career Consultant' || \Auth::user()->type == 'Admissions Manager' || 
+                } elseif (\Auth::user()->type == 'Branch Manager' || \Auth::user()->type == 'Admissions Officer' ||
+                         \Auth::user()->type == 'Career Consultant' || \Auth::user()->type == 'Admissions Manager' ||
                          \Auth::user()->type == 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
                     $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
                 } elseif (\Auth::user()->type === 'Agent') {
@@ -281,11 +281,11 @@ class TaskController extends Controller
                     $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
                 }
             }
-    
+
             // Apply all filters
             $filters = $this->TasksFilter();
             foreach ($filters as $column => $value) {
-                
+
                 if ($column === 'subjects') {
                     if (is_array($value) && count($value) > 0) {
                         $chunks = array_chunk($value, 500);
@@ -329,12 +329,12 @@ class TaskController extends Controller
                     $tasksQuery->whereDate('deal_tasks.created_at', '<=', $value);
                 }
             }
-    
+
             // Additional filters
             if ($request->filled('task_type')) {
                 $tasksQuery->where('deal_tasks.tasks_type', $request->task_type);
             }
-    
+
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
                 if ($status == '1') {
@@ -349,27 +349,27 @@ class TaskController extends Controller
                 $tasksQuery->where('deal_tasks.status', 0)
                           ->where('deal_tasks.tasks_type_status', "0");
             }
-    
+
             if ($request->filled('assigned_by_me') && $request->assigned_by_me == true) {
                 $tasksQuery->where('deal_tasks.created_by', \Auth::id());
             }
-    
+
             // Get Scorp tasks and merge with main tasks
             $scorpTasks = $this->GetScorpTasks();
             $mainTasks = $tasksQuery->pluck('deal_tasks.id')->toArray();
             $mergedResults = array_unique(array_merge($mainTasks, $scorpTasks));
-    
+
             // Create temporary table for the final query
             $tempTable = 'temp_task_ids_' . uniqid();
             \DB::statement("CREATE TEMPORARY TABLE {$tempTable} (id INT PRIMARY KEY)");
-    
+
             // Insert IDs in batches
             foreach (array_chunk($mergedResults, 1000) as $chunk) {
                 \DB::table($tempTable)->insert(
                     array_map(function($id) { return ['id' => $id]; }, $chunk)
                 );
             }
-    
+
             // Build final query with all joins and selects
             // Build final query with all joins and selects
             $finalQuery = DealTask::select(
@@ -394,7 +394,7 @@ class TaskController extends Controller
                     $join->on('deal_applications.id', '=', 'deal_tasks.related_to')
                          ->where('deal_tasks.related_type', '=', 'application');
                 });
-    
+
             // Search functionality
             if (isset($_GET['ajaxCall']) && $_GET['ajaxCall'] == 'true' && isset($_GET['search']) && !empty($_GET['search'])) {
                 $search = $_GET['search'];
@@ -405,13 +405,13 @@ class TaskController extends Controller
                       ->orWhere('deal_tasks.due_date', 'like', "%{$search}%");
                 });
             }
-    
-            
-    
+
+
+
             // Apply sorting
             $status = $_GET['tasks_type'] ?? null;
             $user = \Auth::user();
-            
+
             if ($status === 'Quality' || $status === 'Compliance') {
                 $direction = $user->type === 'Product Coordinator' ? 'ASC' : 'DESC';
                 $finalQuery->orderBy('deal_tasks.due_date', $direction);
@@ -419,7 +419,7 @@ class TaskController extends Controller
                 $direction = $user->branch_id == 262 ? 'ASC' : 'DESC';
                 $finalQuery->orderBy('deal_tasks.created_at', $direction);
             }
-    
+
             $filters = $this->TasksFilter();
             foreach ($filters as $column => $value) {
                 if ($column === 'subjects') {
@@ -432,10 +432,10 @@ class TaskController extends Controller
                         });
                     }
                 } elseif ($column === 'assigned_to') {
-                    $filteredValues = array_filter($value, function ($val) {
-                        return !empty($val);
-                    });
-                    $finalQuery->whereIn('deal_tasks.assigned_to', $filteredValues);
+                    // $filteredValues = array_filter($value, function ($val) {
+                    //     return !empty($val);
+                    // });
+                    $finalQuery->where('deal_tasks.assigned_to', $value);
                 } elseif ($column === 'brand_id') {
                     $finalQuery->where('deal_tasks.brand_id', $value);
                 } elseif ($column === 'region_id') {
@@ -470,12 +470,12 @@ class TaskController extends Controller
                     $finalQuery->whereDate('deal_tasks.created_at', '<=', $value);
                 }
             }
-    
+
             // Additional filters
             if (!empty($_GET['tasks_type'])) {
                 $finalQuery->where('deal_tasks.tasks_type', $_GET['tasks_type']);
             }
-    
+
             if (!empty($_GET['tasks_type_status'])) {
                 $status = $_GET['tasks_type_status'];
                 if ($status == '1') {
@@ -490,7 +490,7 @@ class TaskController extends Controller
                 $finalQuery->where('deal_tasks.status', 0)
                           ->where('deal_tasks.tasks_type_status', "0");
             }
-    
+
             // Apply sorting
             if (!empty($_GET['tasks_type_status'])) {
                 $status = $_GET['tasks_type_status'];
@@ -506,13 +506,13 @@ class TaskController extends Controller
                 $finalQuery->where('deal_tasks.status', 0)
                           ->where('deal_tasks.tasks_type_status', "0");
             }
-    
+
             // Paginate results
             $paginatedTasks = $finalQuery->paginate($perPage);
-    
+
             // Clean up
             \DB::statement("DROP TEMPORARY TABLE IF EXISTS {$tempTable}");
-    
+
             return response()->json([
                 'status' => 'success',
                 'data' => $paginatedTasks->items(),
@@ -528,7 +528,7 @@ class TaskController extends Controller
                     'message' => __('Permission Denied.')
             ], 403);
         }
-    
+
         return redirect()->back()->with('error', __('Permission Denied.'));
     }
 
@@ -628,7 +628,7 @@ class TaskController extends Controller
             addLogActivity($logData);
         }
 
-        
+
 
         // Notification data (optional)
         $html = '<p class="mb-0"><span class="fw-bold">
@@ -990,24 +990,24 @@ class TaskController extends Controller
                 return (array) $item;
             })
             ->toArray();
-            
+
         $applied_meta = array_filter($applied_meta, function ($item) {
             return is_array($item) && isset($item['meta_key']) && isset($item['meta_value']);
         });
-    
+
         // Generate the HTML in the controller
         $applied_meta_html = '';
         if (!empty($applied_meta)) {
             foreach ($applied_meta as $item) {
                 $applied_meta_html .= '<tr>';
                 $applied_meta_html .= '<td style="width: 400px; font-size: 14px;border-bottom: 1px solid gray;">' . htmlspecialchars(formatKey($item['meta_key'])) . '</td>';
-                
+
                 // Decode JSON if applicable
                 $meta_value = $item['meta_value'];
                 if (is_string($meta_value) && is_json($meta_value)) {
                     $meta_value = json_decode($meta_value, true);
                 }
-                
+
                 // Check if meta_value is iterable (array or object)
                 if (is_iterable($meta_value)) {
                     $applied_meta_html .= '<td class="description-td" style="border-bottom: 1px solid gray;padding-left:52px; width: 550px; text-align: justify; font-size: 14px;">';
@@ -1023,7 +1023,7 @@ class TaskController extends Controller
                         $applied_meta_html .= '<td class="description-td" style="border-bottom: 1px solid gray;padding-left:52px; width: 550px; text-align: justify; font-size: 14px;">' . htmlspecialchars($meta_value) . '</td>';
                     }
                 }
-        
+
                 $applied_meta_html .= '</tr>';
             }
         }
@@ -1031,7 +1031,7 @@ class TaskController extends Controller
         $deal_details_get = null;
         $FirstApp = null;
         $CourseName = null;
-        
+
         if ($task->related_type == "application") {
             $FirstApp = DealApplication::find($task->related_to);
 
@@ -1325,7 +1325,7 @@ class TaskController extends Controller
         ], 201);
     }
 
-    
+
     public function taskDiscussionDelete(Request $request)
     {
 
@@ -1687,8 +1687,8 @@ class TaskController extends Controller
                 $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
             } elseif (\Auth::user()->type === 'Region Manager' || (\Auth::user()->can('level 3') && !empty(\Auth::user()->region_id))) {
                 $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
-            } elseif (\Auth::user()->type === 'Branch Manager' || \Auth::user()->type === 'Admissions Officer' || 
-                    \Auth::user()->type === 'Careers Consultant' || \Auth::user()->type === 'Admissions Manager' || 
+            } elseif (\Auth::user()->type === 'Branch Manager' || \Auth::user()->type === 'Admissions Officer' ||
+                    \Auth::user()->type === 'Careers Consultant' || \Auth::user()->type === 'Admissions Manager' ||
                     \Auth::user()->type === 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
                 $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
             } elseif (\Auth::user()->type === 'Agent') {

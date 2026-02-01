@@ -20,7 +20,7 @@ class User extends Authenticatable
 
 
 
-    // protected $appends = ['profile']; 
+    // protected $appends = ['profile'];
 
     protected $fillable = [
         'name',
@@ -30,7 +30,7 @@ class User extends Authenticatable
         'plan',
         'plan_expire_date',
         'requested_plan',
-        'type', 
+        'type',
         'lang',
         'mode',
         'created_by',
@@ -84,6 +84,12 @@ class User extends Authenticatable
         'admin_action_attachments',
         'tag_ids',
         "department_id",
+        "terms_agreed",
+        "terms_agreed_at",
+        "invited_by",
+        "invite_token",
+        "invite_expires_at",
+        "agent_id",
     ];
 
     protected $hidden = [
@@ -104,7 +110,7 @@ class User extends Authenticatable
     }
 
     $ids = array_filter(array_map('intval', explode(',', $this->tag_ids)));
-    
+
     if (empty($ids)) {
         return '';
     }
@@ -124,7 +130,7 @@ class User extends Authenticatable
     // public function manager()
     // {
     //     return $this->hasOne('App\Models\User', 'id', 'project_manager_id');
-    // }   
+    // }
      public function designation()
     {
         return $this->hasOne('App\Models\Designation', 'id', 'designation_id');
@@ -434,12 +440,12 @@ class User extends Authenticatable
 
       public static  function getEmployeeMeta($user_id,$key = 'all')
     {
-        
+
         $metadata = EmployeeMeta::where('user_id', $user_id);
         if($key != 'all'){
             $metadata = $metadata->where('meta_key', $key);
-        }   
-        
+        }
+
         $metadata = $metadata->get();
 
         if ($metadata->isEmpty()) {

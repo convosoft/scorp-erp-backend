@@ -73,10 +73,14 @@ use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\UniversityMetaController;
+use App\Http\Controllers\DestinationMetaController;
 use App\Http\Controllers\UniversityRankController;
 use App\Http\Controllers\UniversityRuleController;
+use App\Http\Controllers\DestinationRuleController;
+use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
+use App\Http\Controllers\ELTRequirementsController;
 use App\Models\InterviewSchedule;
 use App\Models\JobCategory;
 use App\Models\TaskFile;
@@ -132,29 +136,26 @@ Route::get('/proxy-image', function (Request $request) {
 });
     Route::get('/getencrypted', function (Request $request) {
         $plaintext = $request->query('plaintext');
-        
         // More comprehensive validation
         if (!$plaintext ) {
             return response()->json([
                 'error' => 'Valid plaintext parameter is required'
             ], 400);
         }
-        
         // Make sure encryptData function is available
         if (!function_exists('encryptData')) {
             return response()->json([
                 'error' => 'Encryption service unavailable'
             ], 500);
         }
-        
+
         try {
             $encrypted = encryptData($plaintext);
-            
+
             return response()->json([
                 'encrypted' => $encrypted,
                 'plaintext_length' => $plaintext
             ]);
-            
         } catch (Exception $e) {
             return response()->json([
                 'error' => 'Encryption failed',
@@ -165,29 +166,26 @@ Route::get('/proxy-image', function (Request $request) {
 
     Route::get('/getdecrypted', function (Request $request) {
         $encryptedtext = $request->query('encryptedtext');
-        
         // More comprehensive validation
         if (!$encryptedtext ) {
             return response()->json([
                 'error' => 'Valid encryptedtext parameter is required'
             ], 400);
         }
-        
         // Make sure encryptData function is available
         if (!function_exists('decryptData')) {
             return response()->json([
                 'error' => 'decryption service unavailable'
             ], 500);
         }
-        
+
         try {
             $plaintext = decryptData($encryptedtext);
-            
+
             return response()->json([
                 'encryptedtext' => $encryptedtext,
                 'plaintext_length' => $plaintext
             ]);
-            
         } catch (Exception $e) {
             return response()->json([
                 'error' => 'Encryption failed',
@@ -203,7 +201,6 @@ Route::get('/proxy-image', function (Request $request) {
     Route::get('/convertToBase64', [GeneralController::class, 'convertToBase64']);
     Route::post('/getTables', [GeneralController::class, 'getTables']);
     Route::post('/getTableData', [GeneralController::class, 'getTableData']);
-    
     Route::post('/generateSop', [OpenAIController::class, 'generateSop']);
     Route::get('/getPublicUniversities', [UniversityController::class, 'getPublicUniversities']);
 
@@ -283,6 +280,7 @@ Route::controller(LoginRegisterController::class)->group(function () {
     Route::post('/forgotpasswordAgentOTP', 'forgotpasswordAgentOTP');
     Route::post('/verifyforgotpasswordOtp', 'verifyforgotpasswordOtp');
     Route::post('/changefogotPassword', 'changefogotPassword');
+    Route::post('/acceptInvite', 'acceptInvite');
 });
 
 //Route::get('/appMeta', [ProductController::class, 'appMeta']);
@@ -292,7 +290,6 @@ Route::post('/jobApplyData', [JobController::class, 'jobApplyData']);
 
 // Protected routes of product and logout
 Route::middleware('auth:sanctum')->group(function () {
-    
     Route::post('/resendAgentOTP', [LoginRegisterController::class, 'resendAgentOTP']);
     Route::post('/verifyOtp', [LoginRegisterController::class, 'verifyOtp']);
     Route::post('/userDetail', [LoginRegisterController::class, 'userDetail']);
@@ -302,11 +299,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/getProfileData', [UserController::class, 'getProfileData']);
     Route::post('/updateUserStatus', [UserController::class, 'updateUserStatus']);
+    Route::post('/user/agree-terms', [UserController::class, 'agreeTerms']);
     Route::post('/logout', [LoginRegisterController::class, 'logout']);
     Route::get('/agentRequestGet', [AgentController::class, 'agentRequestGet']);
     Route::post('/agentRequestPost', [AgentController::class, 'agentRequestPost']);
-    
-    Route::post('/user/agree-terms', [UserController::class, 'agreeTerms']);
     Route::post('/userTasksGet', [TaskController::class, 'userTasksGet']);
     Route::post('/createtask', [TaskController::class, 'createtask']);
     Route::post('/taskUpdate', [TaskController::class, 'taskUpdate']);
@@ -354,6 +350,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/GetLeadNotes', [LeadController::class, 'GetLeadNotes']);
     Route::post('/DeleteLeadNotes', [LeadController::class, 'DeleteLeadNotes']);
     Route::post('/EmailMarketing', [LeadController::class, 'EmailMarketing']);
+    Route::post('/LeadStageHistory', [LeadController::class, 'LeadStageHistory']);
+    Route::post('/dealStageHistory', [DealController::class, 'dealStageHistory']);
+    Route::post('/getHistoryStageDays', [LeadController::class, 'getHistoryStageDays']);
 
 
 
@@ -512,6 +511,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getDashboardEmployeesCount', [UserController::class, 'getDashboardEmployeesCount']);
     Route::post('/getEmployees', [UserController::class, 'getEmployees']);
     Route::post('/getAgents', [UserController::class, 'getAgents']);
+    Route::post('/getAgentTeam', [UserController::class, 'getAgentTeam']);
+    Route::post('/inviteAgent', [LoginRegisterController::class, 'inviteAgent']);
     Route::get('/employees', [UserController::class, 'employees']);
     Route::get('/Pluck_All_Users', [UserController::class, 'Pluck_All_Users']);
     Route::post('/Pluck_All_Users_by_filter', [UserController::class, 'Pluck_All_Users_by_filter']);
@@ -736,16 +737,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateUniversities', [UniversityController::class, 'updateUniversities']);
     Route::post('/deleteUniversities', [UniversityController::class, 'deleteUniversities']);
     Route::post('/universityDetail', [UniversityController::class, 'universityDetail']);
-    
-    
-       Route::post('/applicationCountByUniversty', [UniversityController::class, 'applicationCountByUniversty']);
+    Route::post('/applicationCountByUniversty', [UniversityController::class, 'applicationCountByUniversty']);
     Route::post('/addmissionCountByUniversty', [UniversityController::class, 'addmissionCountByUniversty']);
     Route::post('/brandWiseByUniversity', [UniversityController::class, 'brandWiseByUniversity']);
-    
-
-    
-    
     Route::post('/updateUniversitiesByKey', [UniversityController::class, 'updateUniversitiesByKey']);
+    Route::post('/SaveToggleCourse', [UniversityController::class, 'SaveToggleCourse']);
+    Route::post('/getUniversityCourseStatus', [UniversityController::class, 'getUniversityCourseStatus']);
     Route::post('/addUpdateUniversityMeta', [UniversityMetaController::class, 'storeOrUpdateMetas']);
     Route::post('/getUniversityMeta', [UniversityMetaController::class, 'getUniversityMeta']);
     Route::post('/updateUniversityStatus', [UniversityController::class, 'updateUniversityStatus']);
@@ -757,9 +754,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
     Route::post('/getIntakeMonthByUniversity', [UniversityController::class, 'getIntakeMonthByUniversity']);
     Route::post('/get_course_campus', [UniversityController::class, 'get_course_campus']);
-     Route::post('/SaveToggleCourse', [UniversityController::class, 'SaveToggleCourse']);
-
-    Route::post('/getUniversityCourseStatus', [UniversityController::class, 'getUniversityCourseStatus']);
 
      //   Institute Category
      Route::post('/addInstituteCategory', [InstituteCategoryController::class, 'addInstituteCategory']);
@@ -773,8 +767,8 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::get('/getAnnouncementCategories', [AnnouncementCategoryController::class, 'getAnnouncementCategories']);
      Route::post('/updateAnnouncementCategory', [AnnouncementCategoryController::class, 'updateAnnouncementCategory']);
      Route::post('/deleteAnnouncementCategory', [AnnouncementCategoryController::class, 'deleteAnnouncementCategory']);
-     //   Announcement  
-     Route::post('/addAnnouncement', [AnnouncementController::class, 'addAnnouncement']); 
+     //   Announcement
+     Route::post('/addAnnouncement', [AnnouncementController::class, 'addAnnouncement']);
      Route::post('/getAnnouncement', [AnnouncementController::class, 'index']);
      Route::post('/updateAnnouncement', [AnnouncementController::class, 'updateAnnouncement']);
      Route::post('/deleteAnnouncement', [AnnouncementController::class, 'deleteAnnouncement']);
@@ -868,7 +862,6 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue');
      Route::post('email-marketing-approved-reject', [EmailTemplateController::class, 'email_marketing_approved_reject'])->name('email_marketing_approved_reject');
      Route::post('getEmailTemplateDetail', [EmailTemplateController::class, 'getEmailTemplateDetail'])->name('getEmailTemplateDetail');
-       
      //    Role
      Route::post('/getRoleDetail', [RoleController::class, 'getRoleDetail']);
      Route::post('/addRole', [RoleController::class, 'addRole']);
@@ -897,11 +890,41 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/updateUniversityRulePosition', [UniversityRuleController::class, 'updateUniversityRulePosition']);
 
 
+
+     //     Destination
+     Route::post('/addDestination', [DestinationController::class, 'addDestination']);
+     Route::post('/getDestinations', [DestinationController::class, 'getDestinations']);
+     Route::post('/updateDestinationByKey', [DestinationController::class, 'updateDestinationByKey']);
+     Route::post('/deleteDestination', [DestinationController::class, 'deleteDestination']);
+     Route::post('/destinationDetail', [DestinationController::class, 'destinationDetail']);
+     Route::post('/updateDestinationStatus', [DestinationController::class, 'updateDestinationStatus']);
+     Route::post('/pluckDestinations', [DestinationController::class, 'pluckDestinations']);
+
+
+    Route::post('/addUpdateDestinationMeta', [DestinationMetaController::class, 'storeOrUpdateMetas']);
+    Route::post('/getDestinationMeta', [DestinationMetaController::class, 'getDestinationMeta']);
+
+     //     Destination Rules
+     Route::post('/addDestinationRule', [DestinationRuleController::class, 'addDestinationRule']);
+     Route::post('/getDestinationRules', [DestinationRuleController::class, 'getDestinationRules']);
+     Route::post('/updateDestinationRule', [DestinationRuleController::class, 'updateDestinationRule']);
+     Route::post('/deleteDestinationRule', [DestinationRuleController::class, 'deleteDestinationRule']);
+     Route::post('/updateDestinationRulePosition', [DestinationRuleController::class, 'updateDestinationRulePosition']);
+
+
      //     adminission
      Route::post('/getAdmission', [DealController::class, 'getAdmission']);
      Route::post('/getAdmissionDetails', [DealController::class, 'getAdmissionDetails']);
      Route::post('/getMoveApplicationPluck', [DealController::class, 'getMoveApplicationPluck']);
      Route::post('/moveApplicationsave', [DealController::class, 'moveApplicationsave']);
+
+
+     //   Announcement Category
+     Route::post('/addELTRequirement', [ELTRequirementsController::class, 'addELTRequirement']);
+     Route::get('/getELTRequirementsPluck', [ELTRequirementsController::class, 'getELTRequirementsPluck']);
+     Route::get('/getELTRequirements', [ELTRequirementsController::class, 'getELTRequirements']);
+     Route::post('/updateELTRequirement', [ELTRequirementsController::class, 'updateELTRequirement']);
+     Route::post('/deleteELTRequirement', [ELTRequirementsController::class, 'deleteELTRequirement']);
 
 
 
@@ -913,6 +936,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/storeApplication', [ApplicationsController::class, 'storeApplication']);
      Route::post('/deleteApplication', [ApplicationsController::class, 'deleteApplication']);
      Route::post('/updateApplicationStage', [ApplicationsController::class, 'updateApplicationStage']);
+     Route::post('/DeleteApplicationNotes', [ApplicationsController::class, 'DeleteApplicationNotes']);
 
      Route::post('/application_request_save_deposite', [ApplicationsController::class, 'application_request_save_deposite']);
 
@@ -926,7 +950,6 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/getMIOList', [MoiAcceptedController::class, 'getMIOList']);
      Route::post('/updateMOIInstitutes', [MoiAcceptedController::class, 'updateMOIInstitutes']);
     //  Route::post('/deleteUniversityRule', [UniversityRuleController::class, 'deleteUniversityRule']);
- 
     // reports
     Route::post('/reports/visa-analysis', [ReportsController::class, 'visaAnalysis']);
     Route::get('/reports/deposit-analysis', [ReportsController::class, 'depositAnalysis']);
@@ -939,6 +962,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getDefaultFiltersData', [GeneralController::class, 'getDefaultFiltersData']);
     Route::get('/getAllProjectDirectors', [GeneralController::class, 'getAllProjectDirectors']);
     Route::post('/getRegionBrands', [GeneralController::class, 'getRegionBrands']);
+    Route::post('/agentTeamPluck', [GeneralController::class, 'agentTeamPluck']);
     Route::post('/getMultiRegionBrands', [GeneralController::class, 'getMultiRegionBrands']);
     Route::post('/getFilterData', [GeneralController::class, 'getFilterData']);
     Route::post('/getFilterBranchUsers', [GeneralController::class, 'getFilterBranchUsers']);
@@ -946,7 +970,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getSources', [GeneralController::class, 'getSources']);
     Route::get('/getBranches', [GeneralController::class, 'getBranches']);
     Route::get('/getStages', [GeneralController::class, 'getStages']);
+    Route::get('/getapplicationStagesPluck', [GeneralController::class, 'getapplicationStagesPluck']);
     Route::get('/getTags', [GeneralController::class, 'getTags']);
+    Route::get('/getAllcurrencies', [GeneralController::class, 'getAllcurrencies']);
     Route::get('/getTagsByBrandId', [GeneralController::class, 'getTagsByBrandId']);
     Route::get('/getJobCategories', [GeneralController::class, 'getJobCategories']);
     Route::post('/FilterSave', [GeneralController::class, 'FilterSave']);

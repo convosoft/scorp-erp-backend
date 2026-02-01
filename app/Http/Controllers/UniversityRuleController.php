@@ -88,11 +88,11 @@ class UniversityRuleController extends Controller
             $university = University::find($request->university_id);
         }else{
             $university = Homeuniversity::find($request->university_id);
-        }  
-        
+        }
+
           $typetext = $request->type == 1 ? 'international' : 'home';
 
-        // Log activity 
+        // Log activity
         addLogActivity([
             'type' => 'success',
             'note' => json_encode([
@@ -278,7 +278,6 @@ class UniversityRuleController extends Controller
             $request->all(),
             [
                 'id' => 'required|exists:university_rules,id',
-                'type' => 'nullable|integer|in:1,2',
                 ]
         );
 
@@ -299,19 +298,19 @@ class UniversityRuleController extends Controller
         }
 
         $ruleName = $rule->name;
-        $rule_type = $rule->rule_type; 
+        $rule_type = $rule->rule_type;
         $ruleId = $rule->id;
 
         $university = University::find($rule->university_id);
         if($request->type == 2){
             $university = Homeuniversity::find($rule->university_id);
-        }   
+        }
 
         $rule->delete();
 
         // Log activity
-       
-        
+
+
 
         // Log activity
           $typetext = $request->type == 1 ? 'international' : 'home';

@@ -80,7 +80,7 @@ class Homeuniversity extends Model
     {
         return $this->belongsTo(ToolkitTeam::class, 'team_id');
     }
-   
+
 
     public function getCountryNameAttribute()
     {

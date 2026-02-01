@@ -135,26 +135,15 @@ class DealController extends Controller
         if (in_array($user->type, ['super admin', 'Admin Team']) || $user->can('level 1')) {
             // No filters applied
         } elseif ($user->type == 'company') {
-            $query->whereHas('lead', function ($q) use ($user) {
-                $q->where('brand_id', $user->id);
-            });
+            $query->where('brand_id', $user->id);
         } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
-            $query->whereHas('lead', function ($q) use ($user) {
-                $q->whereIn('brand_id', array_keys(FiltersBrands()));
-            });
+            $query->whereIn('brand_id', array_keys(FiltersBrands()));
         } elseif ($user->type == 'Region Manager' || ($user->can('level 3') && $user->region_id)) {
-            $query->whereHas('lead', function ($q) use ($user) {
-                $q->where('region_id', $user->region_id);
-            });
+            $query->where('region_id', $user->region_id);
         } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) || ($user->can('level 4') && $user->branch_id)) {
-            $query->whereHas('lead', function ($q) use ($user) {
-                $q->where('branch_id', $user->branch_id);
-            });
+            $query->where('branch_id', $user->branch_id);
         } elseif ($user->type == 'Agent') {
-            $query->whereHas('lead', function ($q) use ($user) {
-                $q->where('assigned_to', $user->id)
-                    ->orWhere('created_by', $user->id);
-            });
+            $query->where('agent_id', $user->agent_id);
         } else {
             $query->whereHas('lead', function ($q) use ($user) {
                 $q->where('assigned_to', $user->id);
@@ -240,9 +229,36 @@ class DealController extends Controller
 
         $deal = Deal::with('clients')->where('id', $request->deal_id)->first();
 
+         // Calculate Lead Stage Progress
+            $stages  = Stage::orderBy('id')->get()->pluck('name', 'id')->toArray();
+
+
+            // Fetch Related Data
+            $tasks = DealTask::where([
+                'related_to' => $deal->id,
+                'related_type' => 'deal',
+            ])->orderBy('status')->get();
+
+            // $branches = Branch::pluck('name', 'id');
+            // $users = allUsers();
+            $logActivities = getLogActivity($deal->id, 'deal');
+
+            // Lead Stage History
+            $stageHistories = StageHistory::where('type', 'deal')
+                ->where('type_id', $deal->id)
+                ->pluck('stage_id')
+                ->toArray();
+
+            $applications = DealApplication::where('deal_id', $deal->id)->get();
+
         return response()->json([
             'status' => 'success',
-            'data' => $deal
+            'data' => $deal,
+            'stageHistories' => $stageHistories,
+            'logActivities' => $logActivities,
+            'tasks' => $tasks,
+            'stages' => $stages,
+            'applications' => $applications,
         ],200);
 
         if (!$deal->is_active) {
@@ -494,5 +510,31 @@ class DealController extends Controller
         // Update the deal's stage_id
         $deal->stage_id = $dealStageId;
         $deal->save();
+    }
+
+        public function dealStageHistory(Request $request)
+    {
+        // Validate Input
+        $validator = \Validator::make($request->all(), [
+            'type' => 'required|string',
+            'id'   => 'required|exists:deals,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $stage_histories = StageHistory::where('type', $request->type)
+            ->where('type_id', $request->id)
+            ->pluck('stage_id')
+            ->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $stage_histories,
+        ], 200);
     }
 }
