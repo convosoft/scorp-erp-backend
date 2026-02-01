@@ -225,8 +225,10 @@ class UniversityController extends Controller
             'global_payment_type_id',
             'pay_out_id',
             'team_id',
+            'home_status',
         ])->where('uni_status', '0')
         ->where('international_status', '1')
+        ->orWhere('home_status', '1')
             ->with([
                 'createdBy:id,name',
                 'rank:id,name',
