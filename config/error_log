@@ -1,0 +1,12 @@
+[15-Oct-2024 23:31:37 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/convosoftserver/public_html/api.convosoftserver.com/config/database.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/convosoftserver/public_html/api.convosoftserver.com/config/database.php on line 18
+[24-Dec-2024 12:48:01 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/convosoftserver/public_html/api.convosoftserver.com/config/app.php:19
+Stack trace:
+#0 {main}
+  thrown in /home/convosoftserver/public_html/api.convosoftserver.com/config/app.php on line 19
+[24-Dec-2024 12:48:01 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/convosoftserver/public_html/api.convosoftserver.com/config/app.php:19
+Stack trace:
+#0 {main}
+  thrown in /home/convosoftserver/public_html/api.convosoftserver.com/config/app.php on line 19
