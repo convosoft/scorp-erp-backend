@@ -272,6 +272,40 @@ class UniversityController extends Controller
             ->get();
 
         // Build statuses array keyed by country name
+
+              $homeuniversityStatsByCountries = University::query()
+            ->selectRaw("
+                        COUNT(universities.id) AS total_universities,
+
+                        COALESCE(
+                            CASE
+                                WHEN universities.country REGEXP '^[0-9]+$'
+                                    THEN c_id.name
+                                ELSE c_name.name
+                            END,
+                            universities.country
+                        ) AS resolved_country_name,
+
+                        COALESCE(
+                            CASE
+                                WHEN universities.country REGEXP '^[0-9]+$'
+                                    THEN c_id.country_code
+                                ELSE c_name.country_code
+                            END,
+                            NULL
+                        ) AS resolved_country_code
+                    ")
+            ->leftJoin('countries AS c_id', function ($join) {
+                $join->on('c_id.id', '=', DB::raw('CAST(universities.country AS UNSIGNED)'));
+            })
+            ->leftJoin('countries AS c_name', function ($join) {
+                $join->on(DB::raw('LOWER(c_name.name)'), '=', DB::raw('LOWER(universities.country)'));
+            })
+            ->where('home_status', 1)
+            ->where('uni_status', '0')
+            ->groupBy('resolved_country_name', 'resolved_country_code')
+            ->get();
+
         $statuses = [];
         foreach ($universityStatsByCountries as $u) {
 
@@ -279,6 +313,21 @@ class UniversityController extends Controller
 
             $countryName = $u->resolved_country_name;  // accessor returns full country name
             $statuses[$countryName] = [
+                'country_code' => $u->resolved_country_code, // estore original cod test
+                'count' => $u->total_universities,
+            ];
+
+        }
+
+
+
+   $homestatuses = [];
+        foreach ($homeuniversityStatsByCountries as $u) {
+
+            // dd($u,$u->resolved_country_name,$u->total_universities);
+
+            $countryName = $u->resolved_country_name;  // accessor returns full country name
+            $homestatuses[$countryName] = [
                 'country_code' => $u->resolved_country_code, // estore original cod test
                 'count' => $u->total_universities,
             ];
@@ -313,6 +362,31 @@ class UniversityController extends Controller
         $europeMap = array_flip($europeEMEA);
         $middleEastMap = array_flip($middleEastEMEA);
 
+
+
+
+         $middle_east_country = Utility::getValByName('middle_east_country');
+
+        $middleEastEMEA = array_filter(
+            array_map('trim', explode(',', $middle_east_country))
+        );
+
+        $middleEastMap = array_flip($middleEastEMEA);
+
+        $middleEastCount = 0;
+
+
+        foreach ($homestatuses as $countryName => $data) {
+                    $count = $data['count'];
+
+
+
+                    if (isset($middleEastMap[$countryName])) {
+                        $middleEastCount += $count;
+                    }
+                }
+
+
         $europeCount = 0;
         $middleEastCount = 0;
 
@@ -338,6 +412,12 @@ class UniversityController extends Controller
             'count' => $middleEastCount,
         ];
 
+          $statuses['UK Home'] = [
+            'country_code' => 'GB', // estore original cod test
+            'count' => $middleEastCount,
+        ];
+
+
         // Reorder statuses
         $sortedStatuses = [];
         foreach ($customOrder as $country) {
@@ -348,6 +428,7 @@ class UniversityController extends Controller
 
         $sortedStatuses['Middle East'] = $statuses['Middle East'];
         $sortedStatuses['Europe'] = $statuses['Europe'];
+         $sortedStatuses['UK Home'] = $statuses['UK Home'];
 
         // Supporting dropdowns
         $payOuts = ToolkitInstallmentPayOut::pluck('name', 'id')->toArray();
@@ -370,7 +451,7 @@ class UniversityController extends Controller
                 'ToolkitPaymentTypes' => $ToolkitPaymentTypes,
                 'toolkitLevels' => $toolkitLevels,
                 'ToolkitTeam' => $ToolkitTeam,
-                'general_country' => $general_country.',Europe',
+                'general_country' => $general_country.',Europe,UK Home',
                 'middle_east_country' => $middle_east_country,
                 'europe_country' => $europe_country,
                 'Country' => $Country,
