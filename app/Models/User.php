@@ -84,12 +84,6 @@ class User extends Authenticatable
         'admin_action_attachments',
         'tag_ids',
         "department_id",
-        "terms_agreed",
-        "terms_agreed_at",
-        "invited_by",
-        "invite_token",
-        "invite_expires_at",
-        "agent_id",
     ];
 
     protected $hidden = [

@@ -675,144 +675,14 @@ private function executeLeadQuery()
             ->groupBy('subject', 'sender_id');
 
         // Use DB::raw to wrap the subquery
-        $email_sending_queues_query = DB::table(DB::raw("({$subquery->toSql()}) as sq"))
+        $email_sending_queues_query = \DB::table(\DB::raw("({$subquery->toSql()}) as sq"))
             ->mergeBindings($subquery)
-            ->whereExists(function ($q) use ($brand_ids) {
-                $q->select(DB::raw(1))
-                    ->from('email_sending_queues as esq')
-                    ->whereColumn('sq.subject', 'esq.subject')
-                    ->whereColumn('sq.sender_id', 'esq.sender_id')
-                    ->where('esq.priority', 3);
-
-                if (!empty($_GET['Assigned'])) {
-                    $q->whereNotNull('esq.sender_id');
-                }
-                if (!empty($_GET['Unassigned'])) {
-                    $q->whereNull('esq.sender_id');
-                }
-
-                // Apply user type-based filtering
-                $userType = \Auth::user()->type;
-                if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
-                    // No additional filtering needed
-                } elseif ($userType === 'company') {
-                    $q->where('esq.brand_id', \Auth::user()->id);
-                } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
-                    $q->whereIn('esq.brand_id', $brand_ids);
-                } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
-                    $q->where('esq.region_id', \Auth::user()->region_id);
-                } elseif (($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
-                    $q->where('esq.branch_id', \Auth::user()->branch_id);
-                } else {
-                    $q->where('esq.sender_id', \Auth::user()->id);
-                }
-
-                // Apply dynamic filters
-                $filters = $this->leadsFilter();
-                foreach ($filters as $column => $value) {
-                    switch ($column) {
-                        case 'name':
-                            $q->whereIn('esq.id', $value);
-                            break;
-                        case 'brand_id':
-                            $q->where('esq.brand_id', $value);
-                            break;
-                        case 'region_id':
-                            $q->where('esq.region_id', $value);
-                            break;
-                        case 'branch_id':
-                            $q->where('esq.branch_id', $value);
-                            break;
-                        case 'stage_id':
-                            $q->whereIn('stage_id', $value);
-                            break;
-                        case 'lead_assigned_user':
-                            if ($value == null) {
-                                $q->whereNull('esq.sender_id');
-                            } else {
-                                $q->where('esq.sender_id', $value);
-                            }
-                            break;
-                        case 'users':
-                            $q->whereIn('esq.sender_id', $value);
-                            break;
-                        case 'status':
-                            // FIXED: Check if status column exists, if not, use is_send or another column
-                            // Option 1: If status column doesn't exist, remove this filter
-                            // Option 2: Use is_send column instead
-                            if (Schema::hasColumn('email_sending_queues', 'status')) {
-                                if ($value == 'nonprocessed') {
-                                    $q->where('esq.status', '1');
-                                    $q->where('esq.is_send', '0');
-                                } else if ($value == 'failed') {
-                                    $q->where('esq.status', '1');
-                                    $q->where('esq.is_send', '2');
-                                } else {
-                                    $q->where('esq.status', $value);
-                                }
-                            }
-                            break;
-                        case 'nonprocessed':
-                            // FIXED: Use is_send column instead of status
-                            $q->where('esq.is_send', '0');
-                            break;
-                        case 'failed':
-                            // FIXED: Use is_send column instead of status
-                            $q->where('esq.is_send', '2');
-                            break;
-                        case 'created_at_from':
-                            $q->whereDate('esq.created_at', '>=', $value);
-                            break;
-                        case 'created_at_to':
-                            $q->whereDate('esq.created_at', '<=', $value);
-                            break;
-                        case 'search':
-                            $q
-                                ->where(function($qq) use ($value) {
-                                    $qq->where('esq.subject', 'like', "%{$value}%")
-                                        ->orWhere('esq.content', 'like', "%{$value}%")
-                                        ->orWhere('esq.to', 'like', "%{$value}%");
-                                });
-                            break;
-                        case 'tag':
-                            $q->whereRaw('FIND_IN_SET(?, esq.tag_ids)', [$value]);
-                            break;
-                        // Add email engagement filters
-                        case 'delivery_status':
-                            if ($value === 'delivered') {
-                                $q->whereNotNull('esq.delivered_at');
-                            } elseif ($value === 'not_delivered') {
-                                $q->whereNull('esq.delivered_at')->where('esq.is_send', '1');
-                            }
-                            break;
-                        case 'open_status':
-                            if ($value === 'opened') {
-                                $q->whereNotNull('esq.opened_at');
-                            } elseif ($value === 'not_opened') {
-                                $q->whereNull('esq.opened_at')->whereNotNull('esq.delivered_at');
-                            }
-                            break;
-                        case 'bounce_status':
-                            if ($value === 'bounced') {
-                                $q->whereNotNull('esq.bounced_at');
-                            } elseif ($value === 'not_bounced') {
-                                $q->whereNull('esq.bounced_at')->where('esq.is_send', '1');
-                            }
-                            break;
-                        case 'processing_status':
-                            if ($value === 'processed') {
-                                $q->whereNotNull('esq.processed_at');
-                            } elseif ($value === 'not_processed') {
-                                $q->whereNull('esq.processed_at');
-                            }
-                            break;
-                    }
-                }
+            ->join('email_sending_queues as esq', function($join) {
+                $join->on('sq.subject', '=', 'esq.subject')
+                     ->on('sq.sender_id', '=', 'esq.sender_id') ;
             })
             ->select(
-                'sq.id',
-                'sq.subject',
-                'sq.sender_id',
+                'esq.*',
                 'sq.total_emails',
                 'sq.sent_emails',
                 'sq.processed_emails',
@@ -826,12 +696,133 @@ private function executeLeadQuery()
                 'sq.click_rate',
                 'sq.bounce_rate',
                 'sq.click_to_open_rate'
-            )
-            ->orderByDesc('sq.total_emails');
+            );
+
+        if (!empty($_GET['Assigned'])) {
+            $email_sending_queues_query->whereNotNull('esq.sender_id');
+        }
+        if (!empty($_GET['Unassigned'])) {
+            $email_sending_queues_query->whereNull('esq.sender_id');
+        }
+
+        // Apply user type-based filtering
+        $userType = \Auth::user()->type;
+        if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+            // No additional filtering needed
+        } elseif ($userType === 'company') {
+            $email_sending_queues_query->where('esq.brand_id', \Auth::user()->id);
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+            $email_sending_queues_query->whereIn('esq.brand_id', $brand_ids);
+        } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
+            $email_sending_queues_query->where('esq.region_id', \Auth::user()->region_id);
+        } elseif (($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
+            $email_sending_queues_query->where('esq.branch_id', \Auth::user()->branch_id);
+        } else {
+            $email_sending_queues_query->where('esq.sender_id', \Auth::user()->id);
+        }
+
+         $email_sending_queues_query->where('esq.priority', '3');
+
+        // Apply dynamic filters
+        foreach ($filters as $column => $value) {
+            switch ($column) {
+                case 'name':
+                    $email_sending_queues_query->whereIn('esq.id', $value);
+                    break;
+                case 'brand_id':
+                    $email_sending_queues_query->where('esq.brand_id', $value);
+                    break;
+                case 'region_id':
+                    $email_sending_queues_query->where('esq.region_id', $value);
+                    break;
+                case 'branch_id':
+                    $email_sending_queues_query->where('esq.branch_id', $value);
+                    break;
+                case 'stage_id':
+                    $email_sending_queues_query->whereIn('stage_id', $value);
+                    break;
+                case 'lead_assigned_user':
+                    if ($value == null) {
+                        $email_sending_queues_query->whereNull('esq.sender_id');
+                    } else {
+                        $email_sending_queues_query->where('esq.sender_id', $value);
+                    }
+                    break;
+                case 'users':
+                    $email_sending_queues_query->whereIn('esq.sender_id', $value);
+                    break;
+                case 'status':
+
+                    if ($value == 'nonprocessed') {
+                        $email_sending_queues_query->where('esq.status', '1');
+                        $email_sending_queues_query->where('esq.is_send', '0');
+                    } else if ($value == 'failed') {
+                        $email_sending_queues_query->where('esq.status', '1');
+                        $email_sending_queues_query->where('esq.is_send', '2');
+                    } else {
+                        $email_sending_queues_query->where('esq.status', $value);
+                    } 
+                    break;
+                case 'nonprocessed':
+                    $email_sending_queues_query->where('esq.status', '1');
+                    $email_sending_queues_query->where('esq.is_send', '0');
+                    break;
+                case 'failed':
+                    $email_sending_queues_query->where('esq.status', '1');
+                    $email_sending_queues_query->where('esq.is_send', '2');
+                    break;
+                case 'created_at_from':
+                    $email_sending_queues_query->whereDate('esq.created_at', '>=', $value);
+                    break;
+                case 'created_at_to':
+                    $email_sending_queues_query->whereDate('esq.created_at', '<=', $value);
+                    break;
+                case 'search':
+                    $email_sending_queues_query
+                        ->where(function($q) use ($value) {
+                            $q->where('esq.subject', 'like', "%{$value}%")
+                              ->orWhere('esq.content', 'like', "%{$value}%")
+                              ->orWhere('esq.to', 'like', "%{$value}%");
+                        });
+                    break;
+                case 'tag':
+                    $email_sending_queues_query->whereRaw('FIND_IN_SET(?, esq.tag_ids)', [$value]);
+                    break;
+                // Add email engagement filters
+                case 'delivery_status':
+                    if ($value === 'delivered') {
+                        $email_sending_queues_query->whereNotNull('esq.delivered_at');
+                    } elseif ($value === 'not_delivered') {
+                        $email_sending_queues_query->whereNull('esq.delivered_at')->where('esq.is_send', '1');
+                    }
+                    break;
+                case 'open_status':
+                    if ($value === 'opened') {
+                        $email_sending_queues_query->whereNotNull('esq.opened_at');
+                    } elseif ($value === 'not_opened') {
+                        $email_sending_queues_query->whereNull('esq.opened_at')->whereNotNull('esq.delivered_at');
+                    }
+                    break;
+                case 'bounce_status':
+                    if ($value === 'bounced') {
+                        $email_sending_queues_query->whereNotNull('esq.bounced_at');
+                    } elseif ($value === 'not_bounced') {
+                        $email_sending_queues_query->whereNull('esq.bounced_at')->where('esq.is_send', '1');
+                    }
+                    break;
+                case 'processing_status':
+                    if ($value === 'processed') {
+                        $email_sending_queues_query->whereNotNull('esq.processed_at');
+                    } elseif ($value === 'not_processed') {
+                        $email_sending_queues_query->whereNull('esq.processed_at');
+                    }
+                    break;
+            }
+        }
 
         // Count total records and retrieve paginated email_sending_queues
         $total_records = $email_sending_queues_query->paginate($num_results_on_page)->total();
-        $email_sending_queues = $email_sending_queues_query->orderBy('sq.id', 'desc')
+        $email_sending_queues = $email_sending_queues_query->orderBy('esq.created_at', 'desc')
             ->skip($start)
             ->limit($num_results_on_page)
             ->get();

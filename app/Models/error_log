@@ -1,0 +1,1 @@
+[10-Nov-2025 08:56:56 UTC] PHP Fatal error:  Namespace declaration statement has to be the very first statement or after any declare call in the script in /home/convosoftserver/public_html/backend.convosoftserver.com/app/Models/ApplicationNote.php on line 4

@@ -40,7 +40,7 @@ class Homeuniversity extends Model
 
     public function universityMeta()
     {
-        return $this->hasMany(UniversityMeta::class, 'university_id')->where('type', 2);
+        return $this->hasMany(UniversityMeta::class, 'university_id','main_uni_id')->where('type', 2);
     }
 
     public function createdBy()

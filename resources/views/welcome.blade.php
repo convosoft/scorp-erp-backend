@@ -1,1 +1,1 @@
-test up auto update working
+test up

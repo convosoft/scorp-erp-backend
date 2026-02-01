@@ -327,6 +327,8 @@ function generateDigitOTP($len = 6)
         $otp .= random_int(0, 9);
     }
     
+    //$otp = 123456;
+    
     return $otp;
 }
 

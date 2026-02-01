@@ -180,7 +180,7 @@ class ApplicationsController extends Controller
 
         $application = DealApplication::with([
             'city:id,name',
-            'preinstitute:id,name',
+            'institute:id,name',
             'country:country_code,name'
         ])->where('id', $id)->first();
 
@@ -261,7 +261,7 @@ class ApplicationsController extends Controller
         ]);
     }
 
-    public function storeApplication_old(Request $request)
+    public function storeApplication(Request $request)
     {
         if (!\Auth::user()->can('create application')) {
             return response()->json([
@@ -386,165 +386,6 @@ class ApplicationsController extends Controller
             'app_id' => $new_app->id,
             'message' => __('Application successfully created!')
         ]);
-    }
-
-
-    public function storeApplication(Request $request)
-    {
-        if (\Auth::user()->can('create application')) {
-        $user_id = ClientDeal::where('deal_id', $request->id)->value('client_id');
-        if (!$user_id || !User::find($user_id)) {
-            return  response()->json([
-                'status' => 'error',
-                'message' => 'Client not found for this deal.'
-            ]);
-        }
-        $user = User::find($user_id); // Single object, not plural
-        $university = University::select('name')->where('id', (int)$request->university)->first(); // Fixed missing semicolon
-        // Validation rules
-        $validator = \Validator::make($request->all(), [
-            'university' => [
-                'required',
-                function ($attribute, $value, $fail) use ($user_id, $user, $university) {
-                    if (DealApplication::where('contact_id', $user_id)
-                        ->where('university_id', $value)
-                        ->exists()) {
-                        $fail(($user?->name ?? '') . ' - ' .
-                              ($user?->passport_number ?? '') . ' - ' .
-                              ($university?->name ?? '') . ' - This Client and University combination already exists.'
-                            );
-                    }
-                },
-            ],
-            'status' => 'required',
-            'intake_month' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            $messages = $validator->getMessageBag();
-            return response()->json([
-                'status' => 'error',
-                'message' => $messages->first()
-            ]);
-        }
-
-
-
-            //check application exist or not
-            $passport_number = $request->passport_number;
-            $university_name = University::select('name')->where(['id' => (int)$request->university])->first()->name;
-            $university_name = str_replace(' ', '-', $university_name);
-
-            $deal = Deal::findOrFail($request->id);
-            $userName = optional(
-                User::find(
-                    optional(
-                        ClientDeal::where('deal_id', $request->id)->first()
-                    )->client_id
-                )
-            )->name;
-            //    
-            if (!empty($request->course)) {
-                $course = Course::find($request->course);
-                if (!empty($course)) {
-                    $course_id = $course->id;
-                    $courseName = $course->name . ' - ' . $course->campus . ' - ' . $course->intake_month . ' - ' . $course->intakeYear . ' (' . $course->duration . ')';
-                }
-            } else {
-                $course_id = null;
-                $courseName = $request->course2;
-            } 
-
-            $new_app = DealApplication::create([
-                'student_origin_country' => $request->student_origin_country ?? null,
-                'student_origin_city' => $request->student_origin_city ?? null,
-                'student_previous_university' => $request->student_previous_university ?? null,
-                'application_key' => $userName . '-' . $passport_number . '-' . $university_name,
-                'deal_id' => $request->id,
-                'university_id' => (int)$request->university,
-                'course' => $courseName,
-                'stage_id' => $request->status,
-                'external_app_id' => $request->application_key,
-                'intake' => $request->intake_month,
-                'name' => $deal->name . '-' . $courseName . '-' . $university_name . '-' . $request->application_key,
-                'created_by' => Session::get('auth_type_id') != null ? Session::get('auth_type_id') : \Auth::user()->id,
-            ]);
-            $new_app->tag_ids     = !empty($request->tag_ids) ? implode(',', $request->tag_ids) : '';
-            $new_app->brand_id = $deal->brand_id;
-            $new_app->agent_id = $deal->agent_id;
-            $new_app->campus = $request->campus;
-            $new_app->intakeYear = $request->intakeYear;
-            $new_app->course_id = $course_id;
-            $new_app->contact_id = $user_id;
-            $new_app->save();
-
-            // Latest Stage Update Of Admission 
-            $DealApplication = DealApplication::where('deal_id', $request->id)->orderBy('stage_id', 'desc')->first();
-            if(!empty($DealApplication)){
-                if($DealApplication->stage_id == '0'){
-                    $deal->stage_id = 0;
-                }elseif($DealApplication->stage_id == '1' || $DealApplication->stage_id == '2')
-                {
-                    $deal->stage_id = 1;
-                }elseif($DealApplication->stage_id == '3' || $DealApplication->stage_id == '4'){
-                    
-                    $deal->stage_id = 2;
-                }elseif($DealApplication->stage_id == '5' || $DealApplication->stage_id == '6'){
-                    
-                    $deal->stage_id = 3;
-                }elseif($DealApplication->stage_id == '7' || $DealApplication->stage_id == '8'){
-                    
-                    $deal->stage_id = 4;
-                }elseif($DealApplication->stage_id == '9' || $DealApplication->stage_id == '10'){
-                    
-                    $deal->stage_id = 5;
-                }elseif($DealApplication->stage_id == '11'){
-                    
-                    $deal->stage_id = 6;
-                }elseif($DealApplication->stage_id == '12'){
-                    
-                    $deal->stage_id = 7;
-                }
-               
-                $deal->save();
-            }else{
-                $deal->stage_id = 0;
-                $deal->save();
-            }
-
-            //Add Stage History
-            $data_for_stage_history = [
-                'stage_id' => $request->status,
-                'type_id' => $new_app->id,
-                'type' => 'application'
-            ];
-            addLeadHistory($data_for_stage_history);
-
-
-            //Log
-            $data = [
-                'type' => 'info',
-                'note' => response()->json([
-                    'title' => 'Stage Updated',
-                    'message' => 'Application stage updated successfully.'
-                ]),
-                'module_id' => $new_app->id,
-                'module_type' => 'application',
-                'notification_type' => 'Stage Updated'
-            ];
-            addLogActivity($data);
-
-            return response()->json([
-                'status' => 'success',
-                'app_id' => $new_app->id,
-                'message' => __('Application successfully created!')
-            ]);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Permission Denied.')
-            ]);
-        }
     }
 
 
@@ -1388,28 +1229,7 @@ class ApplicationsController extends Controller
             'message' => 'Application updated successfully!'
         ]);
     }
-    public function DeleteApplicationNotes(Request $request)
-    {
-        $rules = [
-            'id' => 'required|integer|min:1',
-        ];
-        $validator = \Validator::make($request->all(), $rules);
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $validator->errors()->first(),
-            ], 422);
-        }
-        $discussions = ApplicationNote::find($request->id);
-        if (! empty($discussions)) {
-            $discussions->delete();
-        }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => __('Application Note deleted!'),
-        ], 201);
-    }
     public function applicationNotesStore(Request $request)
     {
         $validator = \Validator::make($request->all(), [
@@ -1494,26 +1314,16 @@ class ApplicationsController extends Controller
             ], 403);
         }
 
-        // ✅ Fetch and format notes
+        // ✅ Fetch notes
         $notes = ApplicationNote::where('application_id', $request->application_id)
             ->orderBy('created_at', 'DESC')
-            ->get()
-            ->map(function ($note) {
-                return [
-                    'id'        => $note->id,
-                    'text'      => htmlspecialchars_decode($note->description),
-                    'author'    => $note?->author?->name,
-                    'time'      => $note->created_at->diffForHumans(),
-                    'pinned'    => false, // default as required
-                    'timestamp' => $note->created_at->toISOString(),
-                ];
-            });
+            ->get();
 
         // ✅ Return structured response
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Application notes fetched successfully.',
-            'data'    => $notes,
+            'data' => $notes,
         ]);
     }
 

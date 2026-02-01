@@ -11,6 +11,7 @@ class UniversityMeta extends Model
     protected $fillable = [
         'university_id',
         'created_by',
+        'type',
         'meta_key',
         'meta_value',
     ];

@@ -16,7 +16,6 @@ class Agency extends Model
         'email',
         'website',
         'linkedin',
-        'user_id',
         'facebook',
         'twitter',
         'billing_street',

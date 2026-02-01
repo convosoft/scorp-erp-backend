@@ -277,7 +277,8 @@ class UniversityRuleController extends Controller
         $validator = \Validator::make(
             $request->all(),
             [
-                'id' => 'required|exists:university_rules,id'
+                'id' => 'required|exists:university_rules,id',
+                'type' => 'nullable|integer|in:1,2',
                 ]
         );
 

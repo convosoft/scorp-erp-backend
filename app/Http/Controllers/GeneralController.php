@@ -195,38 +195,6 @@ class GeneralController extends Controller
 
 
 
-    public function agentTeamPluck(Request $request)
-    {
-        // $validator = Validator::make($request->all(), [
-        //     'id' => 'required|integer|exists:users,id',
-        // ]);
-
-
-         $authuser = \Auth::user(); // Authenticated user
-
-        if ( $authuser->type !='Agent') {
-            return response()->json([
-                'status' => 'error',
-                'errors' => 'Only Agent can access this.',
-            ], 422);
-        }
-
-
-
-        $user = User::where('agent_id', $authuser->agent_id)->where('is_active', 1)->pluck('name', 'id');
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'failure',
-                'message' => 'User not found.',
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'user' => $user, // returns its own id
-        ]);
-    }
 
 
 
@@ -281,8 +249,8 @@ class GeneralController extends Controller
                 ->get()
                 ->mapWithKeys(function ($branch) {
                     $key = $branch->id; // Use the branch's ID as the key
-                    $value = $branch->name
-                            . ($branch->brand ? '-' . $branch->brand->name : '')
+                    $value = $branch->name 
+                            . ($branch->brand ? '-' . $branch->brand->name : '') 
                             . ($branch->region ? '-' . $branch->region->name : ''); // Safely concatenate brand and region names
                     return [$key => $value];
                 })
@@ -551,8 +519,6 @@ class GeneralController extends Controller
             'data' => $stages,
         ], 200);
     }
-
-
     public function getRolesPluck()
     {
         $excludedTypes = ['company', 'team', 'client'];
@@ -560,15 +526,6 @@ class GeneralController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $roles,
-        ], 200);
-    }
-
-    public function getapplicationStagesPluck()
-    {
-         $stages = ApplicationStage::orderBy('id')->pluck('name', 'id')->toArray();
-        return response()->json([
-            'status' => 'success',
-            'data' => $stages,
         ], 200);
     }
 
@@ -740,165 +697,6 @@ class GeneralController extends Controller
 
     }
 
-    public function getAllcurrencies()
-    {
-        $currencyOptions = [
-                'USD' => ' $ USD - US Dollar',
-                'EUR' => ' € EUR - Euro',
-                'GBP' => ' £ GBP - British Pound',
-                'JPY' => ' ¥ JPY - Japanese Yen',
-                'CAD' => ' C$ CAD - Canadian Dollar',
-                'AUD' => ' A$ AUD - Australian Dollar',
-                'CHF' => ' CHF CHF - Swiss Franc',
-                'CNY' => ' ¥ CNY - Chinese Yuan',
-                'INR' => ' ₹ INR - Indian Rupee',
-                'RUB' => ' ₽ RUB - Russian Ruble',
-                'BRL' => ' R$ BRL - Brazilian Real',
-                'MXN' => ' $ MXN - Mexican Peso',
-                'KRW' => ' ₩ KRW - South Korean Won',
-                'TRY' => ' ₺ TRY - Turkish Lira',
-                'ZAR' => ' R ZAR - South African Rand',
-                'SEK' => ' kr SEK - Swedish Krona',
-                'NOK' => ' kr NOK - Norwegian Krone',
-                'DKK' => ' kr DKK - Danish Krone',
-                'PLN' => ' zł PLN - Polish Złoty',
-                'HUF' => ' Ft HUF - Hungarian Forint',
-                'CZK' => ' Kč CZK - Czech Koruna',
-                'ILS' => ' ₪ ILS - Israeli New Shekel',
-                'AED' => ' د.إ AED - UAE Dirham',
-                'SAR' => ' ﷼ SAR - Saudi Riyal',
-                'THB' => ' ฿ THB - Thai Baht',
-                'MYR' => ' RM MYR - Malaysian Ringgit',
-                'SGD' => ' S$ SGD - Singapore Dollar',
-                'HKD' => ' HK$ HKD - Hong Kong Dollar',
-                'NZD' => ' NZ$ NZD - New Zealand Dollar',
-                'PHP' => ' ₱ PHP - Philippine Peso',
-                'IDR' => ' Rp IDR - Indonesian Rupiah',
-                'VND' => ' ₫ VND - Vietnamese Dong',
-                'BDT' => ' ৳ BDT - Bangladeshi Taka',
-                'PKR' => ' ₨ PKR - Pakistani Rupee',
-                'EGP' => ' £ EGP - Egyptian Pound',
-                'NGN' => ' ₦ NGN - Nigerian Naira',
-                'KES' => ' KSh KES - Kenyan Shilling',
-                'GHS' => ' GH₵ GHS - Ghanaian Cedi',
-                'ETB' => ' Br ETB - Ethiopian Birr',
-                'COP' => ' $ COP - Colombian Peso',
-                'ARS' => ' $ ARS - Argentine Peso',
-                'CLP' => ' $ CLP - Chilean Peso',
-                'PEN' => ' S/ PEN - Peruvian Sol',
-                'UYU' => ' $ UYU - Uruguayan Peso',
-                'BOB' => ' Bs BOB - Bolivian Boliviano',
-                'PYG' => ' ₲ PYG - Paraguayan Guarani',
-                'CRC' => ' ₡ CRC - Costa Rican Colón',
-                'DOP' => ' RD$ DOP - Dominican Peso',
-                'GTQ' => ' Q GTQ - Guatemalan Quetzal',
-                'HNL' => ' L HNL - Honduran Lempira',
-                'NIO' => ' C$ NIO - Nicaraguan Córdoba',
-                'PAB' => ' B/. PAB - Panamanian Balboa',
-                'SVC' => ' $ SVC - Salvadoran Colón',
-                'TTD' => ' $ TTD - Trinidad and Tobago Dollar',
-                'JMD' => ' $ JMD - Jamaican Dollar',
-                'BSD' => ' $ BSD - Bahamian Dollar',
-                'BBD' => ' $ BBD - Barbados Dollar',
-                'BZD' => ' $ BZD - Belize Dollar',
-                'XCD' => ' $ XCD - East Caribbean Dollar',
-                'AWG' => ' ƒ AWG - Aruban Florin',
-                'ANG' => ' ƒ ANG - Netherlands Antillean Guilder',
-                'KYD' => ' $ KYD - Cayman Islands Dollar',
-                'BMD' => ' $ BMD - Bermudian Dollar',
-                'FJD' => ' $ FJD - Fijian Dollar',
-                'WST' => ' T WST - Samoan Tala',
-                'TOP' => ' T$ TOP - Tongan Paʻanga',
-                'SBD' => ' $ SBD - Solomon Islands Dollar',
-                'VUV' => ' Vt VUV - Vanuatu Vatu',
-                'XPF' => ' ₣ XPF - CFP Franc',
-                'KHR' => ' ៛ KHR - Cambodian Riel',
-                'LAK' => ' ₭ LAK - Lao Kip',
-                'MMK' => ' Ks MMK - Myanmar Kyat',
-                'MNT' => ' ₮ MNT - Mongolian Tugrik',
-                'BND' => ' $ BND - Brunei Dollar',
-                'LKR' => ' Rs LKR - Sri Lankan Rupee',
-                'MVR' => ' Rf MVR - Maldivian Rufiyaa',
-                'NPR' => ' Rs NPR - Nepalese Rupee',
-                'AFN' => ' ؋ AFN - Afghan Afghani',
-                'IRR' => ' ﷼ IRR - Iranian Rial',
-                'IQD' => ' ع.د IQD - Iraqi Dinar',
-                'JOD' => ' د.ا JOD - Jordanian Dinar',
-                'KWD' => ' د.ك KWD - Kuwaiti Dinar',
-                'LBP' => ' ل.ل LBP - Lebanese Pound',
-                'OMR' => ' ر.ع. OMR - Omani Rial',
-                'QAR' => ' ر.ق QAR - Qatari Riyal',
-                'SYP' => ' £ SYP - Syrian Pound',
-                'YER' => ' ﷼ YER - Yemeni Rial',
-                'BHD' => ' .د.ب BHD - Bahraini Dinar',
-                'KZT' => ' ₸ KZT - Kazakhstani Tenge',
-                'UZS' => ' UZS - Uzbekistani Som',
-                'AZN' => ' ₼ AZN - Azerbaijani Manat',
-                'GEL' => ' ₾ GEL - Georgian Lari',
-                'AMD' => ' ֏ AMD - Armenian Dram',
-                'BYN' => ' Br BYN - Belarusian Ruble',
-                'MDL' => ' L MDL - Moldovan Leu',
-                'RON' => ' lei RON - Romanian Leu',
-                'BGN' => ' лв BGN - Bulgarian Lev',
-                'ALL' => ' L ALL - Albanian Lek',
-                'MKD' => ' ден MKD - Macedonian Denar',
-                'RSD' => ' дин. RSD - Serbian Dinar',
-                'HRK' => ' kn HRK - Croatian Kuna',
-                'BAM' => ' KM BAM - Bosnia-Herzegovina Convertible Mark',
-                'ISK' => ' kr ISK - Icelandic Króna',
-                'UAH' => ' ₴ UAH - Ukrainian Hryvnia',
-                'GIP' => ' £ GIP - Gibraltar Pound',
-                'MOP' => ' MOP$ MOP - Macanese Pataca',
-                'TWD' => ' NT$ TWD - New Taiwan Dollar',
-                'PGK' => ' K PGK - Papua New Guinean Kina',
-                'MWK' => ' MK MWK - Malawian Kwacha',
-                'ZMW' => ' ZK ZMW - Zambian Kwacha',
-                'ZWL' => ' $ ZWL - Zimbabwean Dollar',
-                'NAD' => ' $ NAD - Namibian Dollar',
-                'BWP' => ' P BWP - Botswana Pula',
-                'LSL' => ' L LSL - Lesotho Loti',
-                'SZL' => ' E SZL - Swazi Lilangeni',
-                'MUR' => ' ₨ MUR - Mauritian Rupee',
-                'SCR' => ' ₨ SCR - Seychellois Rupee',
-                'MGA' => ' Ar MGA - Malagasy Ariary',
-                'CDF' => ' FC CDF - Congolese Franc',
-                'RWF' => ' FRw RWF - Rwandan Franc',
-                'BIF' => ' FBu BIF - Burundian Franc',
-                'DJF' => ' Fdj DJF - Djiboutian Franc',
-                'ERN' => ' Nfk ERN - Eritrean Nakfa',
-                'SOS' => ' Sh SOS - Somali Shilling',
-                'TZS' => ' Sh TZS - Tanzanian Shilling',
-                'UGX' => ' Sh UGX - Ugandan Shilling',
-                'MZN' => ' MT MZN - Mozambican Metical',
-                'STN' => ' Db STN - São Tomé and Príncipe Dobra',
-                'CVE' => ' $ CVE - Cape Verdean Escudo',
-                'KMF' => ' CF KMF - Comorian Franc',
-                'GMD' => ' D GMD - Gambian Dalasi',
-                'SLL' => ' Le SLL - Sierra Leonean Leone',
-                'LRD' => ' $ LRD - Liberian Dollar',
-                'GNF' => ' FG GNF - Guinean Franc',
-                'MRU' => ' UM MRU - Mauritanian Ouguiya',
-                'XOF' => ' CFA XOF - West African CFA Franc',
-                'XAF' => ' FCFA XAF - Central African CFA Franc',
-                'CUP' => ' $ CUP - Cuban Peso',
-                'CUC' => ' $ CUC - Cuban Convertible Peso',
-                'VED' => ' Bs VED - Venezuelan Bolívar Digital',
-                'UYW' => ' UYW - Uruguayan Nominal Wage Index Unit',
-                'CHE' => ' CHE - WIR Euro',
-                'CHW' => ' CHW - WIR Franc',
-                'COU' => ' COU - Colombian Real Value Unit',
-                'BOV' => ' BOV - Bolivian Mvdol',
-                'CLF' => ' CLF - Chilean Unit of Account (UF)',
-                'MXV' => ' MXV - Mexican Investment Unit',
-            ];
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $currencyOptions,
-        ], 200);
-
-    }
-
     public function CountryByCode()
     {
         $Country = Country::orderBy('name', 'ASC')->pluck('name', 'country_code')->toArray();
@@ -928,7 +726,7 @@ class GeneralController extends Controller
 
     // Fetch log activity records
     if( $request->type=='user'){
-            $logs = LogActivity::with('createdBy:id,name')->where('created_by', $request->id)
+            $logs = LogActivity::with('createdBy:id,name')->where('created_by', $request->id) 
                 ->orderBy('created_at', 'desc')
                 ->limit(500)
                 ->get();
@@ -939,7 +737,7 @@ class GeneralController extends Controller
                 ->limit(500)
                 ->get();
     }
-
+    
 
     return response()->json([
         'status' => true,
@@ -1049,12 +847,12 @@ public function getLogActivity(Request $request)
 
 public function getDistinctModuleTypes(Request $request)
 {
-
+   
 
     // Base query
     $query = LogActivity::query();
 
-
+    
 
     // Get distinct module types
     $distinctModuleTypes = $query
@@ -1162,7 +960,7 @@ public function GetBranchByType()
                 } elseif ($userType === 'Branch Manager' && !empty(\Auth::user()->branch_id)) {
                     $leadsQuery->where('branch_id', \Auth::user()->branch_id);
                 } elseif ($userType === 'Agent') {
-                    $leadsQuery->where('agent_id', \Auth::user()->agent_id);
+                    $leadsQuery->where('user_id', \Auth::user()->id);
                 }
 
                 // Ensure data exists in the query result
@@ -1224,19 +1022,10 @@ public function GetBranchByType()
         $sources = Source::pluck('name', 'id');
 
         // Get approved agencies
-        if (Auth::user()->type === 'Agent') {
+        $agencies = User::join('agencies', 'agencies.user_id', '=', 'users.id')
+            ->where('approved_status', '2')
+            ->pluck('agencies.organization_name', 'agencies.id');
 
-            $agencies = User::join('agencies', 'agencies.user_id', '=', 'users.id')
-                ->where('users.id', Auth::id())
-                ->where('users.is_active', 1)
-                ->selectRaw('COALESCE(agencies.organization_name, users.name) as display_name, agencies.id')
-                ->pluck('display_name', 'agencies.id');
-
-        } else {
-            $agencies = User::join('agencies', 'agencies.user_id', '=', 'users.id')
-                ->where('users.is_active', '1')
-                ->pluck('agencies.organization_name', 'agencies.id');
-        }
         $tags = [];
 
             if (Auth::check()) {
@@ -1277,7 +1066,7 @@ public function GetBranchByType()
         return response()->json([
             'status' => 'success',
             'data' => $cities
-
+            
         ]);
     }
 
@@ -1325,7 +1114,7 @@ public function GetBranchByType()
         }
 
         $imageUrl = $request->input('image_url');
-
+        
         try {
             // Fetch the image with timeout and proper headers
             $response = Http::timeout(30)
@@ -1333,10 +1122,10 @@ public function GetBranchByType()
                     'Accept' => 'image/*'
                 ])
                 ->get($imageUrl);
-
+            
             if ($response->successful()) {
                 $mimeType = $this->detectMimeType($response->body());
-
+                
                 return response()->json([
                     'status' => 'success',
                     'data' => [
@@ -1346,12 +1135,12 @@ public function GetBranchByType()
                     ]
                 ]);
             }
-
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to fetch image. Server responded with status: ' . $response->status()
             ], 400);
-
+            
         } catch (\Exception $e) {
             Log::error("Image conversion error: " . $e->getMessage());
             return response()->json([
@@ -1360,7 +1149,7 @@ public function GetBranchByType()
             ], 500);
         }
     }
-
+    
     /**
      * Detect MIME type from binary data
      */
@@ -1400,9 +1189,9 @@ public function GetBranchByType()
     public function totalSummary(Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'user_id' => 'required|exists:users,id',
-                'type' => 'required|string|in:week,month',
+            $validator = Validator::make($request->all(), [ 
+                'user_id' => 'required|exists:users,id', 
+                'type' => 'required|string|in:week,month', 
             ]);
 
             if ($validator->fails()) {
@@ -1414,7 +1203,7 @@ public function GetBranchByType()
 
             $employeeId = $request->input('user_id');
             $type = $request->input('type', 'week');
-
+            
             // Calculate date range based on type
             if ($type === 'week') {
                 $startDate = now()->startOfWeek()->toDateString();
@@ -1445,14 +1234,14 @@ public function GetBranchByType()
             $absent = (int) ($statusCounts->Absent ?? 0);
             $leave = (int) ($statusCounts->Leave ?? 0);
             $earlyClockOut = (int) ($statusCounts->Early_Clock_Out ?? 0);
-
+            
             // Present = OnTime + Late (both are present but differentiated by punctuality)
             $present = $onTime + $late;
-
+            
             $holiday = 3; // static or compute dynamically
             $total_days = $present + $absent + $leave + $holiday;
             $working_days = $present + $absent + $leave;
-
+            
             // Calculate working hours
             $workingHoursQuery = DB::table('attendance_employees')
                 ->where('employee_id', $employeeId)
@@ -1464,16 +1253,16 @@ public function GetBranchByType()
 
             $total_working_seconds = 0;
             $records = $workingHoursQuery->get();
-
+            
             foreach ($records as $record) {
                 $clockIn = Carbon::parse($record->date . ' ' . $record->clock_in);
                 $clockOut = Carbon::parse($record->date . ' ' . $record->clock_out);
-
+                
                 // Handle overnight shifts
                 if ($clockOut->lessThan($clockIn)) {
                     $clockOut->addDay();
                 }
-
+                
                 $total_working_seconds += $clockOut->diffInSeconds($clockIn);
             }
 
@@ -1498,7 +1287,7 @@ public function GetBranchByType()
             ];
 
             return $attendance_summary;
-
+            
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
@@ -1506,9 +1295,9 @@ public function GetBranchByType()
 
     public function getAttendanceReport(Request $request)
     {
-
-        $validator = Validator::make($request->all(), [
-                    'user_id' => 'required|exists:users,id',
+    
+        $validator = Validator::make($request->all(), [ 
+                    'user_id' => 'required|exists:users,id',   
                 ]);
 
                 if ($validator->fails()) {
@@ -1608,10 +1397,10 @@ public function GetBranchByType()
     }
 
 
-
+ 
     public function saveSystemSettings(Request $request)
     {
-
+         
 
         $user = Auth::user();
 
@@ -1624,7 +1413,7 @@ public function GetBranchByType()
 
         $post = $request->except(['_token']);
 
-
+        
 
         $settings = Utility::settings();
 
@@ -1647,8 +1436,8 @@ public function GetBranchByType()
                  }
 
                 DB::insert(
-                    'insert into settings (`value`, `name`,`created_by`,`created_at`,`updated_at`)
-                     values (?, ?, ?, ?, ?)
+                    'insert into settings (`value`, `name`,`created_by`,`created_at`,`updated_at`) 
+                     values (?, ?, ?, ?, ?) 
                      ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
                     [
                         $data,
@@ -1658,7 +1447,7 @@ public function GetBranchByType()
                         now(),
                     ]
                 );
-
+           
         }
 
         // 🔹 Log only if changes exist
@@ -1751,7 +1540,7 @@ public function GetBranchByType()
     }
 
 
-
+ 
 public function getTableData_old(Request $request)
 {
     // ✅ Validation
