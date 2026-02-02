@@ -538,8 +538,8 @@ class UniversityController extends Controller
             })
             ->where('home_status', 1)
             ->where('uni_status', '0')
-            ->where('resolved_country_name', 'united kingdom')
             ->groupBy('resolved_country_name', 'resolved_country_code')
+            ->havingRaw('LOWER(resolved_country_name) = ?', ['united kingdom'])
             ->get();
 
         // Build statuses array keyed by country name
