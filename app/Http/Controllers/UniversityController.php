@@ -110,6 +110,16 @@ class UniversityController extends Controller
                 }
 
                 $query->where('home_status', '=', 1);
+            } else if ($request->country === 'UK int') {
+                $country = Country::find(216);
+
+                if (! empty($country)) {
+                    $query->whereRaw("$caseCountry LIKE ?", ['%'.$country->name.'%']);
+                } else {
+                    $query->whereRaw("$caseCountry LIKE ?", ['%United Kingdom%']);
+                }
+
+                $query->where('international_status', '=', 1);
             } else {
                 $country = Country::find($request->country);
 
@@ -226,6 +236,7 @@ class UniversityController extends Controller
             'pay_out_id',
             'team_id',
             'home_status',
+            'international_status',
         ])->where('uni_status', '0')
        // ->where('international_status', '1')
             ->with([
