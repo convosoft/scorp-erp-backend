@@ -504,6 +504,7 @@ class UniversityController extends Controller
                 $join->on(DB::raw('LOWER(c_name.name)'), '=', DB::raw('LOWER(universities.country)'));
             })
             ->where('uni_status', '0')
+            ->where('international_status', 1)
             ->groupBy('resolved_country_name', 'resolved_country_code')
             ->get();
 
