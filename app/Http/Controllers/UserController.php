@@ -300,10 +300,10 @@ class UserController extends Controller
             'name' => 'nullable|string',
             'type' => 'nullable|string',
             'is_active' => 'nullable',
-            'tag_ids' => 'nullable|string',
-            'designation_id' => 'nullable|string',
-            'department_id' => 'nullable|string',
-            'phone' => 'nullable|string',
+            'tag_ids' => 'nullable',
+            'designation_id' => 'nullable',
+            'department_id' => 'nullable',
+            'phone' => 'nullable',
             'search' => 'nullable|string',
             'download_csv' => 'nullable|boolean', // Add this parameter
         ]);
