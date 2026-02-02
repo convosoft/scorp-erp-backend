@@ -907,7 +907,7 @@ class UniversityController extends Controller
         $university->intake_months = implode(',', $request->months);
         $university->territory = implode(',', $request->territory);
         $university->company_id = $request->company_id;
-        $university->resource_drive_link = $request->resource_drive_link;
+       // $university->resource_drive_link = $request->resource_drive_link;
         $university->application_method_drive_link = $request->application_method_drive_link;
         $university->institute_category_id = $request->category_id;
         $university->destination_id = $request->destination_id;
@@ -1124,11 +1124,8 @@ class UniversityController extends Controller
             $university->product_coordinator_id = $request->product_coordinator_id;
         }
 
-         // Find university
-        if ($request->type == 1) {
-        } else {
-            $university->resource_drive_link = $request->resource_drive_link;
-        }
+        $university->resource_drive_link = $request->resource_drive_link;
+
 
         $university->save();
 
