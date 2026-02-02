@@ -110,7 +110,7 @@ class UniversityController extends Controller
                 }
 
                 $query->where('home_status', '=', 1);
-            } else if ($request->country === 'UK int') {
+            } else if ($request->country === 'UK(Int)') {
                 $country = Country::find(216);
 
                 if (! empty($country)) {
