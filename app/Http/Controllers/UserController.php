@@ -109,7 +109,7 @@ class UserController extends Controller
 
         $query = User::select('users.id', 'users.name');
 
-         // dd($filters);
+        // dd($filters);
 
         // Apply excluded types ONLY when the filter does NOT include "type"
         if (!isset($filters['type'])) {
@@ -120,13 +120,12 @@ class UserController extends Controller
         if ($authUser->type === 'super admin') {
 
             // super admin sees all (except excluded types)
-           // $query->whereNotIn('type', $excludedTypes);
+            // $query->whereNotIn('type', $excludedTypes);
 
         } elseif ($authUser->type === 'company') {
 
             // Company sees only users under its brand
             $query->where('brand_id', $authUser->id);
-
         } else {
 
             // Team or other sees only same brand users
@@ -326,7 +325,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        $excludedTypes = ['company', 'team', 'client','Agent'];
+        $excludedTypes = ['company', 'team', 'client', 'Agent'];
 
         $employeesQuery = User::with(['branch', 'brand'])->select('users.*');
 
@@ -352,10 +351,9 @@ class UserController extends Controller
         if ($request->filled('department_id')) {
             $employeesQuery->where('department_id', $request->department_id);
         }
-        if ($request->filled('tag_ids'))
-        {
+        if ($request->filled('tag_ids')) {
             $tagIds = explode(',', $request->input('tag_ids')); // [6,4]
-            $employeesQuery->where(function($query) use ($tagIds) {
+            $employeesQuery->where(function ($query) use ($tagIds) {
                 foreach ($tagIds as $tagId) {
                     $query->orWhereRaw("FIND_IN_SET(?, tag_ids)", [$tagId]);
                 }
@@ -382,36 +380,36 @@ class UserController extends Controller
 
         // Apply user-specific restrictions
         if ($user->can('level 1') || $user->type === 'super admin') {
-            $employeesQuery->whereNotIn('type', ['company', 'team', 'client','Agent']);
+            $employeesQuery->whereNotIn('type', ['company', 'team', 'client', 'Agent']);
         } elseif ($user->type === 'company') {
-            $employeesQuery->where('brand_id', $user->id)->whereNotIn('type', ['company', 'team', 'client','Agent']);
+            $employeesQuery->where('brand_id', $user->id)->whereNotIn('type', ['company', 'team', 'client', 'Agent']);
         } elseif ($user->can('level 2')) {
             $brandIds = array_keys(FiltersBrands());
-            $employeesQuery->whereIn('brand_id', $brandIds)->whereNotIn('type', ['company', 'team', 'client','Agent']);
+            $employeesQuery->whereIn('brand_id', $brandIds)->whereNotIn('type', ['company', 'team', 'client', 'Agent']);
         } elseif ($user->can('level 3') && $user->region_id) {
-            $employeesQuery->where('region_id', $user->region_id)->whereNotIn('type', ['company', 'team', 'client','Agent','Project Director','Project Manager']);
+            $employeesQuery->where('region_id', $user->region_id)->whereNotIn('type', ['company', 'team', 'client', 'Agent', 'Project Director', 'Project Manager']);
         } elseif ($user->can('level 4') && $user->branch_id) {
-            $employeesQuery->where('branch_id', $user->branch_id)->whereNotIn('type', ['company', 'team', 'client','Agent','Project Director','Project Manager','Region Manager']);
+            $employeesQuery->where('branch_id', $user->branch_id)->whereNotIn('type', ['company', 'team', 'client', 'Agent', 'Project Director', 'Project Manager', 'Region Manager']);
         } else {
-            $employeesQuery->where('id', $user->id)->whereNotIn('type', ['company', 'team', 'client','Agent']);
+            $employeesQuery->where('id', $user->id)->whereNotIn('type', ['company', 'team', 'client', 'Agent']);
         }
 
-          // Clone query before pagination for counts
-           $countsQuery = clone $employeesQuery;
+        // Clone query before pagination for counts
+        $countsQuery = clone $employeesQuery;
         // at last apply status filter ssssss
         if ($request->filled('is_active')) {
             $employeesQuery->where('is_active', $request->is_active);
         }
 
 
-            // Reset the original select
-            $countsQuery->getQuery()->columns = [];
+        // Reset the original select
+        $countsQuery->getQuery()->columns = [];
 
-            $statusCounts = $countsQuery->select(
-                DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
-                DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `suspended`"),
-                DB::raw("SUM(CASE WHEN is_active = 3 THEN 1 ELSE 0 END) as `terminated`")
-            )->first();
+        $statusCounts = $countsQuery->select(
+            DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
+            DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `suspended`"),
+            DB::raw("SUM(CASE WHEN is_active = 3 THEN 1 ELSE 0 END) as `terminated`")
+        )->first();
         //  dd($request->input('download_csv'));
         // Check if CSV download is requested
         if ($request->input('download_csv')) {
@@ -476,7 +474,7 @@ class UserController extends Controller
             'last_page' => $employees->lastPage(),
             'total_records' => $employees->total(),
             'perPage' => $employees->perPage(),
-            'count_summary' =>$statusCounts
+            'count_summary' => $statusCounts
         ], 200);
     }
     public function getAgents(Request $request)
@@ -540,10 +538,9 @@ class UserController extends Controller
         if ($request->filled('department_id')) {
             $employeesQuery->where('department_id', $request->department_id);
         }
-        if ($request->filled('tag_ids'))
-        {
+        if ($request->filled('tag_ids')) {
             $tagIds = explode(',', $request->input('tag_ids')); // [6,4]
-            $employeesQuery->where(function($query) use ($tagIds) {
+            $employeesQuery->where(function ($query) use ($tagIds) {
                 foreach ($tagIds as $tagId) {
                     $query->orWhereRaw("FIND_IN_SET(?, tag_ids)", [$tagId]);
                 }
@@ -584,22 +581,22 @@ class UserController extends Controller
             $employeesQuery->where('id', $user->id)->where('type', 'Agent');
         }
 
-          // Clone query before pagination for counts
-           $countsQuery = clone $employeesQuery;
+        // Clone query before pagination for counts
+        $countsQuery = clone $employeesQuery;
         // at last apply status filter ssssss
         if ($request->filled('is_active')) {
             $employeesQuery->where('is_active', $request->is_active);
         }
 
 
-            // Reset the original select
-            $countsQuery->getQuery()->columns = [];
+        // Reset the original select
+        $countsQuery->getQuery()->columns = [];
 
-            $statusCounts = $countsQuery->select(
-                DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
-                DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `suspended`"),
-                DB::raw("SUM(CASE WHEN is_active = 3 THEN 1 ELSE 0 END) as `terminated`")
-            )->first();
+        $statusCounts = $countsQuery->select(
+            DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
+            DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `suspended`"),
+            DB::raw("SUM(CASE WHEN is_active = 3 THEN 1 ELSE 0 END) as `terminated`")
+        )->first();
         //  dd($request->input('download_csv'));
         // Check if CSV download is requested
         if ($request->input('download_csv')) {
@@ -664,7 +661,7 @@ class UserController extends Controller
             'last_page' => $employees->lastPage(),
             'total_records' => $employees->total(),
             'perPage' => $employees->perPage(),
-            'count_summary' =>$statusCounts
+            'count_summary' => $statusCounts
         ], 200);
     }
     public function getAgentTeam(Request $request)
@@ -728,10 +725,9 @@ class UserController extends Controller
         if ($request->filled('department_id')) {
             $employeesQuery->where('department_id', $request->department_id);
         }
-        if ($request->filled('tag_ids'))
-        {
+        if ($request->filled('tag_ids')) {
             $tagIds = explode(',', $request->input('tag_ids')); // [6,4]
-            $employeesQuery->where(function($query) use ($tagIds) {
+            $employeesQuery->where(function ($query) use ($tagIds) {
                 foreach ($tagIds as $tagId) {
                     $query->orWhereRaw("FIND_IN_SET(?, tag_ids)", [$tagId]);
                 }
@@ -760,22 +756,22 @@ class UserController extends Controller
 
         $employeesQuery->where('agent_id', $user->agent_id);
 
-          // Clone query before pagination for counts
-           $countsQuery = clone $employeesQuery;
+        // Clone query before pagination for counts
+        $countsQuery = clone $employeesQuery;
         // at last apply status filter ssssss
         if ($request->filled('is_active')) {
             $employeesQuery->where('is_active', $request->is_active);
         }
 
 
-            // Reset the original select
-            $countsQuery->getQuery()->columns = [];
+        // Reset the original select
+        $countsQuery->getQuery()->columns = [];
 
-            $statusCounts = $countsQuery->select(
-                DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
-                DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `suspended`"),
-                DB::raw("SUM(CASE WHEN is_active = 3 THEN 1 ELSE 0 END) as `terminated`")
-            )->first();
+        $statusCounts = $countsQuery->select(
+            DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
+            DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `suspended`"),
+            DB::raw("SUM(CASE WHEN is_active = 3 THEN 1 ELSE 0 END) as `terminated`")
+        )->first();
         //  dd($request->input('download_csv'));
         // Check if CSV download is requested
         if ($request->input('download_csv')) {
@@ -840,399 +836,399 @@ class UserController extends Controller
             'last_page' => $employees->lastPage(),
             'total_records' => $employees->total(),
             'perPage' => $employees->perPage(),
-            'count_summary' =>$statusCounts
+            'count_summary' => $statusCounts
         ], 200);
     }
-public function getDashboardEmployeesCount(Request $request)
-{
-    $user = \Auth::user();
+    public function getDashboardEmployeesCount(Request $request)
+    {
+        $user = \Auth::user();
 
-    $excludedTypes = ['company', 'team', 'client', 'Agent'];
+        $excludedTypes = ['company', 'team', 'client', 'Agent'];
 
-    $employeesQuery = User::with(['branch', 'brand'])->select('users.*')
-        ->whereNotIn('type', $excludedTypes) ;
+        $employeesQuery = User::with(['branch', 'brand'])->select('users.*')
+            ->whereNotIn('type', $excludedTypes);
 
-    // Apply user-specific restrictions
-    if ($user->can('level 1') || $user->type === 'super admin') {
-        // full access
-    } elseif ($user->type === 'company') {
-        $employeesQuery->where('brand_id', $user->id);
-    } elseif ($user->can('level 2')) {
-        $brandIds = array_keys(FiltersBrands());
-        $employeesQuery->whereIn('brand_id', $brandIds);
-    } elseif ($user->can('level 3') && $user->region_id) {
-        $employeesQuery->where('region_id', $user->region_id);
-    } elseif ($user->can('level 4') && $user->branch_id) {
-        $employeesQuery->where('branch_id', $user->branch_id);
-    } else {
-        $employeesQuery->where('id', $user->id);
+        // Apply user-specific restrictions
+        if ($user->can('level 1') || $user->type === 'super admin') {
+            // full access
+        } elseif ($user->type === 'company') {
+            $employeesQuery->where('brand_id', $user->id);
+        } elseif ($user->can('level 2')) {
+            $brandIds = array_keys(FiltersBrands());
+            $employeesQuery->whereIn('brand_id', $brandIds);
+        } elseif ($user->can('level 3') && $user->region_id) {
+            $employeesQuery->where('region_id', $user->region_id);
+        } elseif ($user->can('level 4') && $user->branch_id) {
+            $employeesQuery->where('branch_id', $user->branch_id);
+        } else {
+            $employeesQuery->where('id', $user->id);
+        }
+
+        // Clone for counts
+        $countsQuery = clone $employeesQuery;
+
+        // Reset select
+        $countsQuery->getQuery()->columns = [];
+
+        // Base counts
+        $statusCounts = $countsQuery->select(
+            DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
+            DB::raw("COUNT(id) as `total`")
+        )->first();
+
+        // --- Role Based Counts ---
+        $roleCounts = $employeesQuery
+            ->select('type', DB::raw('COUNT(*) as total'))
+            ->groupBy('type')
+            ->pluck('total', 'type'); // returns [ "Admin" => 10, "Manager" => 5, ...]
+
+        return response()->json([
+            'status' => 'success',
+            'total'  => $statusCounts->total,
+            'active' => $statusCounts->active,
+            'roles'  => $roleCounts
+        ], 200);
     }
 
-    // Clone for counts
-    $countsQuery = clone $employeesQuery;
 
-    // Reset select
-    $countsQuery->getQuery()->columns = [];
+    public function getDashboardLastLogin(Request $request)
+    {
+        $user = \Auth::user();
 
-    // Base counts
-    $statusCounts = $countsQuery->select(
-        DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
-        DB::raw("COUNT(id) as `total`")
-    )->first();
+        $excludedTypes = ['company', 'team', 'client', 'Agent'];
 
-    // --- Role Based Counts ---
-    $roleCounts = $employeesQuery
-        ->select('type', DB::raw('COUNT(*) as total'))
-        ->groupBy('type')
-        ->pluck('total', 'type'); // returns [ "Admin" => 10, "Manager" => 5, ...]
+        // Pagination settings
+        $perPage = 25; // fixed per your requirement
+        $page = $request->input('page', 1);
 
-    return response()->json([
-        'status' => 'success',
-        'total'  => $statusCounts->total,
-        'active' => $statusCounts->active,
-        'roles'  => $roleCounts
-    ], 200);
-}
+        $employeesQuery = User::select('users.name', 'users.avatar', 'users.last_login_at')
+            ->whereNotIn('users.type', $excludedTypes);
 
+        // Apply user-specific restrictions
+        if ($user->can('level 1') || $user->type === 'super admin') {
+            // full access
+        } elseif ($user->type === 'company') {
+            $employeesQuery->where('users.brand_id', $user->id);
+        } elseif ($user->can('level 2')) {
+            $brandIds = array_keys(FiltersBrands());
+            $employeesQuery->whereIn('users.brand_id', $brandIds);
+        } elseif ($user->can('level 3') && $user->region_id) {
+            $employeesQuery->where('users.region_id', $user->region_id);
+        } elseif ($user->can('level 4') && $user->branch_id) {
+            $employeesQuery->where('users.branch_id', $user->branch_id);
+        } else {
+            $employeesQuery->where('users.id', $user->id);
+        }
 
-public function getDashboardLastLogin(Request $request)
-{
-    $user = \Auth::user();
+        // Filter for todayâ€™s login
+        $today = now()->toDateString();
+        $employeesQuery->whereDate('users.last_login_at', $today);
 
-    $excludedTypes = ['company', 'team', 'client', 'Agent'];
+        // âœ… Paginate properly
+        $employees = $employeesQuery->orderBy('users.last_login_at', 'DESC')
+            ->paginate($perPage, ['*'], 'page', $page);
 
-    // Pagination settings
-    $perPage = 25; // fixed per your requirement
-    $page = $request->input('page', 1);
-
-    $employeesQuery = User::select('users.name', 'users.avatar', 'users.last_login_at')
-        ->whereNotIn('users.type', $excludedTypes);
-
-    // Apply user-specific restrictions
-    if ($user->can('level 1') || $user->type === 'super admin') {
-        // full access
-    } elseif ($user->type === 'company') {
-        $employeesQuery->where('users.brand_id', $user->id);
-    } elseif ($user->can('level 2')) {
-        $brandIds = array_keys(FiltersBrands());
-        $employeesQuery->whereIn('users.brand_id', $brandIds);
-    } elseif ($user->can('level 3') && $user->region_id) {
-        $employeesQuery->where('users.region_id', $user->region_id);
-    } elseif ($user->can('level 4') && $user->branch_id) {
-        $employeesQuery->where('users.branch_id', $user->branch_id);
-    } else {
-        $employeesQuery->where('users.id', $user->id);
+        return response()->json([
+            'status'         => 'success',
+            'data'           => $employees->items(),
+            'current_page'   => $employees->currentPage(),
+            'last_page'      => $employees->lastPage(),
+            'total_records'  => $employees->total(),
+            'per_page'       => $employees->perPage(),
+        ], 200);
     }
 
-    // Filter for todayâ€™s login
-    $today = now()->toDateString();
-    $employeesQuery->whereDate('users.last_login_at', $today);
+    public function getDashboardBrandLastLogin(Request $request)
+    {
+        $user = \Auth::user();
 
-    // âœ… Paginate properly
-    $employees = $employeesQuery->orderBy('users.last_login_at', 'DESC')
-        ->paginate($perPage, ['*'], 'page', $page);
+        $excludedTypes = ['company', 'team', 'client', 'Agent'];
 
-    return response()->json([
-        'status'         => 'success',
-        'data'           => $employees->items(),
-        'current_page'   => $employees->currentPage(),
-        'last_page'      => $employees->lastPage(),
-        'total_records'  => $employees->total(),
-        'per_page'       => $employees->perPage(),
-    ], 200);
-}
+        // ðŸ“… Date ranges
+        $today        = now()->toDateString();
+        $startOfWeek  = now()->startOfWeek()->toDateString();
+        $endOfWeek    = now()->endOfWeek()->toDateString();
+        $startOfMonth = now()->startOfMonth()->toDateString();
+        $endOfMonth   = now()->endOfMonth()->toDateString();
+        $startOfYear  = now()->startOfYear()->toDateString();
+        $endOfYear    = now()->endOfYear()->toDateString();
 
-public function getDashboardBrandLastLogin(Request $request)
-{
-    $user = \Auth::user();
+        // Base query for employees
+        $employeesBaseQuery = User::query()
+            ->whereNotIn('users.type', $excludedTypes);
 
-    $excludedTypes = ['company', 'team', 'client', 'Agent'];
+        // Apply user-specific restrictions
+        if ($user->can('level 1') || $user->type === 'super admin') {
+            // full access
+        } elseif ($user->type === 'company') {
+            $employeesBaseQuery->where('users.brand_id', $user->id);
+        } elseif ($user->can('level 2')) {
+            $brandIds = array_keys(FiltersBrands());
+            $employeesBaseQuery->whereIn('users.brand_id', $brandIds);
+        } elseif ($user->can('level 3') && $user->region_id) {
+            $employeesBaseQuery->where('users.region_id', $user->region_id);
+        } elseif ($user->can('level 4') && $user->branch_id) {
+            $employeesBaseQuery->where('users.branch_id', $user->branch_id);
+        } else {
+            $employeesBaseQuery->where('users.id', $user->id);
+        }
 
-    // ðŸ“… Date ranges
-    $today        = now()->toDateString();
-    $startOfWeek  = now()->startOfWeek()->toDateString();
-    $endOfWeek    = now()->endOfWeek()->toDateString();
-    $startOfMonth = now()->startOfMonth()->toDateString();
-    $endOfMonth   = now()->endOfMonth()->toDateString();
-    $startOfYear  = now()->startOfYear()->toDateString();
-    $endOfYear    = now()->endOfYear()->toDateString();
+        // âœ… Single query with conditional aggregation
+        $brandData = $employeesBaseQuery
+            ->select(
+                'companies.name as company',
+                DB::raw("SUM(CASE WHEN DATE(users.last_login_at) = '$today' THEN 1 ELSE 0 END) as daily"),
+                DB::raw("SUM(CASE WHEN DATE(users.last_login_at) BETWEEN '$startOfWeek' AND '$endOfWeek' THEN 1 ELSE 0 END) as weekly"),
+                DB::raw("SUM(CASE WHEN DATE(users.last_login_at) BETWEEN '$startOfMonth' AND '$endOfMonth' THEN 1 ELSE 0 END) as monthly"),
+                DB::raw("SUM(CASE WHEN DATE(users.last_login_at) BETWEEN '$startOfYear' AND '$endOfYear' THEN 1 ELSE 0 END) as yearly")
+            )
+            ->join('users as companies', 'users.brand_id', '=', 'companies.id')
+            ->where('companies.type', 'company')
+            ->groupBy('companies.id', 'companies.name')
+            ->get();
 
-    // Base query for employees
-    $employeesBaseQuery = User::query()
-        ->whereNotIn('users.type', $excludedTypes);
-
-    // Apply user-specific restrictions
-    if ($user->can('level 1') || $user->type === 'super admin') {
-        // full access
-    } elseif ($user->type === 'company') {
-        $employeesBaseQuery->where('users.brand_id', $user->id);
-    } elseif ($user->can('level 2')) {
-        $brandIds = array_keys(FiltersBrands());
-        $employeesBaseQuery->whereIn('users.brand_id', $brandIds);
-    } elseif ($user->can('level 3') && $user->region_id) {
-        $employeesBaseQuery->where('users.region_id', $user->region_id);
-    } elseif ($user->can('level 4') && $user->branch_id) {
-        $employeesBaseQuery->where('users.branch_id', $user->branch_id);
-    } else {
-        $employeesBaseQuery->where('users.id', $user->id);
+        return response()->json([
+            'status'        => 'success',
+            'total_records' => $brandData->sum('yearly'),
+            'data'          => $brandData,
+        ], 200);
     }
 
-    // âœ… Single query with conditional aggregation
-    $brandData = $employeesBaseQuery
-        ->select(
-            'companies.name as company',
-            DB::raw("SUM(CASE WHEN DATE(users.last_login_at) = '$today' THEN 1 ELSE 0 END) as daily"),
-            DB::raw("SUM(CASE WHEN DATE(users.last_login_at) BETWEEN '$startOfWeek' AND '$endOfWeek' THEN 1 ELSE 0 END) as weekly"),
-            DB::raw("SUM(CASE WHEN DATE(users.last_login_at) BETWEEN '$startOfMonth' AND '$endOfMonth' THEN 1 ELSE 0 END) as monthly"),
-            DB::raw("SUM(CASE WHEN DATE(users.last_login_at) BETWEEN '$startOfYear' AND '$endOfYear' THEN 1 ELSE 0 END) as yearly")
-        )
-        ->join('users as companies', 'users.brand_id', '=', 'companies.id')
-        ->where('companies.type', 'company')
-        ->groupBy('companies.id', 'companies.name')
-        ->get();
-
-    return response()->json([
-        'status'        => 'success',
-        'total_records' => $brandData->sum('yearly'),
-        'data'          => $brandData,
-    ], 200);
-}
 
 
+    public function getDashboardBirthday(Request $request)
+    {
+        $user = \Auth::user();
 
-public function getDashboardBirthday(Request $request)
-{
-    $user = \Auth::user();
+        $excludedTypes = ['company', 'team', 'client', 'Agent'];
 
-    $excludedTypes = ['company', 'team', 'client', 'Agent'];
+        // Pagination settings
+        $perPage = 200; // fixed per your requirement
+        $page = $request->input('page', 1);
 
-    // Pagination settings
-    $perPage = 200; // fixed per your requirement
-    $page = $request->input('page', 1);
+        $employeesQuery = User::select('users.name', 'users.avatar', 'users.last_login_at')
+            ->whereNotIn('users.type', $excludedTypes);
 
-    $employeesQuery = User::select('users.name', 'users.avatar', 'users.last_login_at')
-        ->whereNotIn('users.type', $excludedTypes);
+        // Apply user-specific restrictions
+        if ($user->can('level 1') || $user->type === 'super admin') {
+            // full access
+        } elseif ($user->type === 'company') {
+            $employeesQuery->where('users.brand_id', $user->id);
+        } elseif ($user->can('level 2')) {
+            $brandIds = array_keys(FiltersBrands());
+            $employeesQuery->whereIn('users.brand_id', $brandIds);
+        } elseif ($user->can('level 3') && $user->region_id) {
+            $employeesQuery->where('users.region_id', $user->region_id);
+        } elseif ($user->can('level 4') && $user->branch_id) {
+            $employeesQuery->where('users.branch_id', $user->branch_id);
+        } else {
+            $employeesQuery->where('users.id', $user->id);
+        }
 
-    // Apply user-specific restrictions
-    if ($user->can('level 1') || $user->type === 'super admin') {
-        // full access
-    } elseif ($user->type === 'company') {
-        $employeesQuery->where('users.brand_id', $user->id);
-    } elseif ($user->can('level 2')) {
-        $brandIds = array_keys(FiltersBrands());
-        $employeesQuery->whereIn('users.brand_id', $brandIds);
-    } elseif ($user->can('level 3') && $user->region_id) {
-        $employeesQuery->where('users.region_id', $user->region_id);
-    } elseif ($user->can('level 4') && $user->branch_id) {
-        $employeesQuery->where('users.branch_id', $user->branch_id);
-    } else {
-        $employeesQuery->where('users.id', $user->id);
+        // Filter for todayâ€™s login
+        $today = now()->toDateString();
+        $employeesQuery->whereDate('users.date_of_birth', $today);
+
+        // âœ… Paginate properly
+        $employees = $employeesQuery->orderBy('users.date_of_birth', 'DESC')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'status'         => 'success',
+            'data'           => $employees->items(),
+            'current_page'   => $employees->currentPage(),
+            'last_page'      => $employees->lastPage(),
+            'total_records'  => $employees->total(),
+            'per_page'       => $employees->perPage(),
+        ], 200);
     }
 
-    // Filter for todayâ€™s login
-    $today = now()->toDateString();
-    $employeesQuery->whereDate('users.date_of_birth', $today);
+    public function getDashboardCurrentMonthexpiredDocument(Request $request)
+    {
+        $user = \Auth::user();
 
-    // âœ… Paginate properly
-    $employees = $employeesQuery->orderBy('users.date_of_birth', 'DESC')
-        ->paginate($perPage, ['*'], 'page', $page);
+        $excludedTypes = ['company', 'team', 'client', 'Agent'];
 
-    return response()->json([
-        'status'         => 'success',
-        'data'           => $employees->items(),
-        'current_page'   => $employees->currentPage(),
-        'last_page'      => $employees->lastPage(),
-        'total_records'  => $employees->total(),
-        'per_page'       => $employees->perPage(),
-    ], 200);
-}
+        // Pagination settings
+        $perPage = 200; // fixed per your requirement
+        $page = $request->input('page', 1);
 
-public function getDashboardCurrentMonthexpiredDocument(Request $request)
-{
-    $user = \Auth::user();
+        $employeesQuery = User::select('users.id as user_id', 'users.name', 'employee_documents.renewal_date', 'employee_documents.description', 'document_types.name as document_type_name')
+            ->whereNotIn('users.type', $excludedTypes)
+            ->leftJoin('employee_documents', 'users.id', '=', 'employee_documents.employee_id')
+            ->leftJoin('document_types', 'document_types.id', '=', 'employee_documents.documenttypeID');
 
-    $excludedTypes = ['company', 'team', 'client', 'Agent'];
+        // Apply user-specific restrictions
+        if ($user->can('level 1') || $user->type === 'super admin') {
+            // full access
+        } elseif ($user->type === 'company') {
+            $employeesQuery->where('users.brand_id', $user->id);
+        } elseif ($user->can('level 2')) {
+            $brandIds = array_keys(FiltersBrands());
+            $employeesQuery->whereIn('users.brand_id', $brandIds);
+        } elseif ($user->can('level 3') && $user->region_id) {
+            $employeesQuery->where('users.region_id', $user->region_id);
+        } elseif ($user->can('level 4') && $user->branch_id) {
+            $employeesQuery->where('users.branch_id', $user->branch_id);
+        } else {
+            $employeesQuery->where('users.id', $user->id);
+        }
 
-    // Pagination settings
-    $perPage = 200; // fixed per your requirement
-    $page = $request->input('page', 1);
+        // ðŸ”¹ Expired documents within current month
+        $startOfMonth = now()->startOfMonth()->toDateString();
+        $endOfMonth   = now()->endOfMonth()->toDateString();
 
-    $employeesQuery = User::select('users.id as user_id','users.name', 'employee_documents.renewal_date', 'employee_documents.description','document_types.name as document_type_name')
-        ->whereNotIn('users.type', $excludedTypes)
-         ->leftJoin('employee_documents', 'users.id', '=', 'employee_documents.employee_id')
-         ->leftJoin('document_types', 'document_types.id', '=', 'employee_documents.documenttypeID');
+        $employeesQuery->whereBetween('employee_documents.renewal_date', [$startOfMonth, $endOfMonth])
+            ->where('employee_documents.set_is_renewable', 1);
 
-    // Apply user-specific restrictions
-    if ($user->can('level 1') || $user->type === 'super admin') {
-        // full access
-    } elseif ($user->type === 'company') {
-        $employeesQuery->where('users.brand_id', $user->id);
-    } elseif ($user->can('level 2')) {
-        $brandIds = array_keys(FiltersBrands());
-        $employeesQuery->whereIn('users.brand_id', $brandIds);
-    } elseif ($user->can('level 3') && $user->region_id) {
-        $employeesQuery->where('users.region_id', $user->region_id);
-    } elseif ($user->can('level 4') && $user->branch_id) {
-        $employeesQuery->where('users.branch_id', $user->branch_id);
-    } else {
-        $employeesQuery->where('users.id', $user->id);
+        // âœ… Paginate properly
+        $employees = $employeesQuery->orderBy('users.date_of_birth', 'DESC')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'status'         => 'success',
+            'data'           => $employees->items(),
+            'current_page'   => $employees->currentPage(),
+            'last_page'      => $employees->lastPage(),
+            'total_records'  => $employees->total(),
+            'per_page'       => $employees->perPage(),
+        ], 200);
     }
 
-      // ðŸ”¹ Expired documents within current month
-    $startOfMonth = now()->startOfMonth()->toDateString();
-    $endOfMonth   = now()->endOfMonth()->toDateString();
+    public function sendexpiredDocumentEmail(Request $request)
+    {
+        $user = \Auth::user();
 
-    $employeesQuery->whereBetween('employee_documents.renewal_date', [$startOfMonth, $endOfMonth])
-                   ->where('employee_documents.set_is_renewable', 1);
+        $excludedTypes = ['team', 'client', 'Agent'];
 
-    // âœ… Paginate properly
-    $employees = $employeesQuery->orderBy('users.date_of_birth', 'DESC')
-        ->paginate($perPage, ['*'], 'page', $page);
+        $branchespluck = Branch::all()->keyBy('id');
+        $userspluck    = User::whereNotIn('type', $excludedTypes)->get()->keyBy('id');
+        $regionspluck  = Region::all()->keyBy('id');
 
-    return response()->json([
-        'status'         => 'success',
-        'data'           => $employees->items(),
-        'current_page'   => $employees->currentPage(),
-        'last_page'      => $employees->lastPage(),
-        'total_records'  => $employees->total(),
-        'per_page'       => $employees->perPage(),
-    ], 200);
-}
-
-public function sendexpiredDocumentEmail(Request $request)
-{
-    $user = \Auth::user();
-
-    $excludedTypes = ['team', 'client', 'Agent'];
-
-    $branchespluck = Branch::all()->keyBy('id');
-    $userspluck    = User::whereNotIn('type', $excludedTypes)->get()->keyBy('id');
-    $regionspluck  = Region::all()->keyBy('id');
-
-    $employeesQuery = User::select(
+        $employeesQuery = User::select(
             'users.*',
             'employee_documents.renewal_date',
             'employee_documents.description',
             'document_types.name as document_type_name'
         )
-        ->leftJoin('employee_documents', 'users.id', '=', 'employee_documents.employee_id')
-        ->leftJoin('document_types', 'document_types.id', '=', 'employee_documents.documenttypeID')
-        ->where('employee_documents.set_is_renewable', 1);
+            ->leftJoin('employee_documents', 'users.id', '=', 'employee_documents.employee_id')
+            ->leftJoin('document_types', 'document_types.id', '=', 'employee_documents.documenttypeID')
+            ->where('employee_documents.set_is_renewable', 1);
 
-    // ðŸ”¹ Handle duration
-    $duration = $request->input('duration', 'this_month'); // allowed: 1 week, 1 month, etc.
-    $today    = now();
-    switch ($duration) {
-        case '1_week':
-            $end = $today->copy()->addWeek();
-            break;
-        case '2_week':
-            $end = $today->copy()->addWeeks(2);
-            break;
-        case '3_week':
-            $end = $today->copy()->addWeeks(3);
-            break;
-        case '1_month':
-            $end = $today->copy()->addMonth();
-            break;
-        case '3_month':
-            $end = $today->copy()->addMonths(3);
-            break;
-        case '6_month':
-            $end = $today->copy()->addMonths(6);
-            break;
-        case '1_year':
-            $end = $today->copy()->addYear();
-            break;
-        case 'this_month':
-        default:
-            $end = $today->copy()->endOfMonth();
-            break;
+        // ðŸ”¹ Handle duration
+        $duration = $request->input('duration', 'this_month'); // allowed: 1 week, 1 month, etc.
+        $today    = now();
+        switch ($duration) {
+            case '1_week':
+                $end = $today->copy()->addWeek();
+                break;
+            case '2_week':
+                $end = $today->copy()->addWeeks(2);
+                break;
+            case '3_week':
+                $end = $today->copy()->addWeeks(3);
+                break;
+            case '1_month':
+                $end = $today->copy()->addMonth();
+                break;
+            case '3_month':
+                $end = $today->copy()->addMonths(3);
+                break;
+            case '6_month':
+                $end = $today->copy()->addMonths(6);
+                break;
+            case '1_year':
+                $end = $today->copy()->addYear();
+                break;
+            case 'this_month':
+            default:
+                $end = $today->copy()->endOfMonth();
+                break;
+        }
+
+        $employeesQuery->whereBetween('employee_documents.renewal_date', [$today->toDateString(), $end->toDateString()]);
+
+        //dd($employeesQuery->toSql(), $employeesQuery->getBindings());
+        $employees = $employeesQuery->get();
+
+        $expiredTemplateId = Utility::getValByName('expired_document_email_template');
+        $expiredTemplate   = EmailTemplate::find($expiredTemplateId);
+
+        $insertData = [];
+
+        foreach ($employees as $employee) {
+            $branch_detail  = $branchespluck[$employee->branch_id] ?? null;
+            $region_detail  = $regionspluck[$employee->region_id] ?? null;
+            $brand_detail   = $userspluck[$employee->brand_id] ?? null;
+
+            $branch_manager_detail  = $branch_detail && $userspluck->has($branch_detail->branch_manager_id)
+                ? $userspluck[$branch_detail->branch_manager_id]
+                : null;
+
+            $region_manager_detail  = $region_detail && $userspluck->has($region_detail->region_manager_id)
+                ? $userspluck[$region_detail->region_manager_id]
+                : null;
+
+            $project_manager_detail = $brand_detail && $userspluck->has($brand_detail->project_manager_id)
+                ? $userspluck[$brand_detail->project_manager_id]
+                : null;
+
+            // CC list
+            $ccList = [];
+            if (!empty($branch_manager_detail?->email)) $ccList[] = $branch_manager_detail->email;
+            if (!empty($region_manager_detail?->email)) $ccList[] = $region_manager_detail->email;
+            if (!empty($project_manager_detail?->email)) $ccList[] = $project_manager_detail->email;
+            $ccList[] = 'scorp-erp_attendance@convosoft.com'; // always include
+
+            // Inject manager info for tag replacement (do not overwrite relations)
+            $employee->branch_manager    = $branch_manager_detail;
+            $employee->region_manager    = $region_manager_detail;
+            $employee->project_manager   = $project_manager_detail;
+
+            // Extra placeholders for document details
+            $employee->document_name     = $employee->document_type_name ?? '';
+            $employee->document_expiry   = $employee->renewal_date ?? '';
+
+            // Queue email
+            $insertData[] = $this->buildEmailData($expiredTemplate, $employee, implode(',', $ccList));
+        }
+
+        if (!empty($insertData)) {
+            EmailSendingQueue::insert($insertData);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => 'Emails queued for sending. ' . count($insertData) . ' emails added to the queue.',
+        ], 200);
     }
 
-    $employeesQuery->whereBetween('employee_documents.renewal_date', [$today->toDateString(), $end->toDateString()]);
 
-    //dd($employeesQuery->toSql(), $employeesQuery->getBindings());
-    $employees = $employeesQuery->get();
+    public function getDashboardholiday(Request $request)
+    {
 
-    $expiredTemplateId = Utility::getValByName('expired_document_email_template');
-    $expiredTemplate   = EmailTemplate::find($expiredTemplateId);
+        $startOfMonth = now()->startOfMonth()->toDateString();
+        $endOfMonth   = now()->endOfMonth()->toDateString();
 
-    $insertData = [];
+        $currentMonthHolidays = DB::table('holidays')
+            ->where(function ($query) use ($startOfMonth, $endOfMonth) {
+                $query->whereBetween('date', [$startOfMonth, $endOfMonth])     // holiday starts this month
+                    ->orWhereBetween('end_date', [$startOfMonth, $endOfMonth]) // holiday ends this month
+                    ->orWhere(function ($q) use ($startOfMonth, $endOfMonth) {
+                        $q->where('date', '<=', $startOfMonth)   // holiday starts before month
+                            ->where('end_date', '>=', $endOfMonth); // holiday ends after month
+                    });
+            })
+            ->get();
 
-    foreach ($employees as $employee) {
-        $branch_detail  = $branchespluck[$employee->branch_id] ?? null;
-        $region_detail  = $regionspluck[$employee->region_id] ?? null;
-        $brand_detail   = $userspluck[$employee->brand_id] ?? null;
 
-        $branch_manager_detail  = $branch_detail && $userspluck->has($branch_detail->branch_manager_id)
-            ? $userspluck[$branch_detail->branch_manager_id]
-            : null;
 
-        $region_manager_detail  = $region_detail && $userspluck->has($region_detail->region_manager_id)
-            ? $userspluck[$region_detail->region_manager_id]
-            : null;
 
-        $project_manager_detail = $brand_detail && $userspluck->has($brand_detail->project_manager_id)
-            ? $userspluck[$brand_detail->project_manager_id]
-            : null;
-
-        // CC list
-        $ccList = [];
-        if (!empty($branch_manager_detail?->email)) $ccList[] = $branch_manager_detail->email;
-        if (!empty($region_manager_detail?->email)) $ccList[] = $region_manager_detail->email;
-        if (!empty($project_manager_detail?->email)) $ccList[] = $project_manager_detail->email;
-        $ccList[] = 'scorp-erp_attendance@convosoft.com'; // always include
-
-        // Inject manager info for tag replacement (do not overwrite relations)
-        $employee->branch_manager    = $branch_manager_detail;
-        $employee->region_manager    = $region_manager_detail;
-        $employee->project_manager   = $project_manager_detail;
-
-        // Extra placeholders for document details
-        $employee->document_name     = $employee->document_type_name ?? '';
-        $employee->document_expiry   = $employee->renewal_date ?? '';
-
-        // Queue email
-        $insertData[] = $this->buildEmailData($expiredTemplate, $employee, implode(',', $ccList));
+        return response()->json([
+            'status'         => 'success',
+            'data'           => $currentMonthHolidays,
+        ], 200);
     }
-
-    if (!empty($insertData)) {
-        EmailSendingQueue::insert($insertData);
-    }
-
-    return response()->json([
-        'status' => 'success',
-        'data'   => 'Emails queued for sending. ' . count($insertData) . ' emails added to the queue.',
-    ], 200);
-}
-
-
-public function getDashboardholiday(Request $request)
-{
-
-    $startOfMonth = now()->startOfMonth()->toDateString();
-    $endOfMonth   = now()->endOfMonth()->toDateString();
-
-    $currentMonthHolidays = DB::table('holidays')
-        ->where(function ($query) use ($startOfMonth, $endOfMonth) {
-            $query->whereBetween('date', [$startOfMonth, $endOfMonth])     // holiday starts this month
-                ->orWhereBetween('end_date', [$startOfMonth, $endOfMonth]) // holiday ends this month
-                ->orWhere(function ($q) use ($startOfMonth, $endOfMonth) {
-                    $q->where('date', '<=', $startOfMonth)   // holiday starts before month
-                        ->where('end_date', '>=', $endOfMonth); // holiday ends after month
-                });
-        })
-        ->get();
-
-
-
-
-    return response()->json([
-        'status'         => 'success',
-        'data'           => $currentMonthHolidays,
-    ], 200);
-}
 
 
 
@@ -1430,7 +1426,7 @@ public function getDashboardholiday(Request $request)
     {
 
 
-        $EmployeeDetails = User::with('employee','branch.manager','region.manager','designation')->select(
+        $EmployeeDetails = User::with('employee', 'branch.manager', 'region.manager', 'designation')->select(
             'users.*',
             'assignedUser.name as brand_name',
             'regions.name as region_name',
@@ -1712,16 +1708,16 @@ public function getDashboardholiday(Request $request)
                 ];
                 return response()->stream(function () use ($data) {
                     $f = fopen('php://output', 'w');
-                fputcsv($f, ['ID', 'Name', 'Website Link', 'Project Director', 'Email']);
-                foreach ($data as $row) {
-                    fputcsv($f, [
-                        $row['id'],
-                        $row['name'],
-                        $row['website_link'],
-                        $row['project_director'],
-                        $row['email'],
-                    ]);
-                }
+                    fputcsv($f, ['ID', 'Name', 'Website Link', 'Project Director', 'Email']);
+                    foreach ($data as $row) {
+                        fputcsv($f, [
+                            $row['id'],
+                            $row['name'],
+                            $row['website_link'],
+                            $row['project_director'],
+                            $row['email'],
+                        ]);
+                    }
                     fclose($f);
                 }, 200, $headers);
             }
@@ -2031,8 +2027,8 @@ public function getDashboardholiday(Request $request)
                     'message' => __('Brand not found.')
                 ], 200);
             }
- // Find user
-             $regions = Region::where('brands', $user->id)->count();
+            // Find user
+            $regions = Region::where('brands', $user->id)->count();
 
             if ($regions) {
                 return response()->json([
@@ -2113,21 +2109,21 @@ public function getDashboardholiday(Request $request)
     {
         // Validate request
 
-         $brandId = urldecode($request->id);
+        $brandId = urldecode($request->id);
 
-            // Then decrypt them
-            $decryptedBrandId = decryptData($brandId);
+        // Then decrypt them
+        $decryptedBrandId = decryptData($brandId);
 
-            // Validate decrypted values are numeric
-            if (!is_numeric($decryptedBrandId)  ) {
-                return response()->json([
-                    'errors' => ['general' => 'Invalid encrypted data format']
-                ], 422);
-            }
-            // Cast to integers and merge back to request
-            $request->merge([
-                'id' => (int)$decryptedBrandId
-            ]);
+        // Validate decrypted values are numeric
+        if (!is_numeric($decryptedBrandId)) {
+            return response()->json([
+                'errors' => ['general' => 'Invalid encrypted data format']
+            ], 422);
+        }
+        // Cast to integers and merge back to request
+        $request->merge([
+            'id' => (int)$decryptedBrandId
+        ]);
         $validator = Validator::make($request->all(), [
             'id' => 'required|integer|exists:users,id',
         ]);
@@ -2195,8 +2191,8 @@ public function getDashboardholiday(Request $request)
         }
 
         $hrmFileAttachment = EmployeeDocument::where('employee_id', $request->employee_id)
-        ->orderBy('id', 'desc')
-        ->get();
+            ->orderBy('id', 'desc')
+            ->get();
 
 
         if (!$hrmFileAttachment) {
@@ -2272,7 +2268,7 @@ public function getDashboardholiday(Request $request)
 
 
         // Log changed fields only
-        $changes =['avatar'];
+        $changes = ['avatar'];
         $updatedFields = ['avatar'];
 
         $typeoflog = 'employee document';
@@ -2413,29 +2409,29 @@ public function getDashboardholiday(Request $request)
         $employeeDocument->save();
 
         // Log updated fields
-              //  ========== add ============
-                $typeoflog = $employeeDocument->documentType->name ?? 'document';
-                addLogActivity([
-                    'type' => 'success',
-                    'note' => json_encode([
-                        'title' => $user->name. ' '.$typeoflog.' created',
-                        'message' => $user->name. ' '.$typeoflog.'  created'
-                    ]),
-                    'module_id' => $user->id,
-                    'module_type' => 'employee',
-                    'notification_type' => ' '.$typeoflog.'  Created',
-                ]);
+        //  ========== add ============
+        $typeoflog = $employeeDocument->documentType->name ?? 'document';
+        addLogActivity([
+            'type' => 'success',
+            'note' => json_encode([
+                'title' => $user->name . ' ' . $typeoflog . ' created',
+                'message' => $user->name . ' ' . $typeoflog . '  created'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employee',
+            'notification_type' => ' ' . $typeoflog . '  Created',
+        ]);
 
-                addLogActivity([
-                    'type' => 'success',
-                    'note' => json_encode([
-                        'title' => $user->name. ' '.$typeoflog.'  created',
-                        'message' => $user->name. ' '.$typeoflog.'  created'
-                    ]),
-                    'module_id' => $user->id,
-                    'module_type' => 'employeeprofile',
-                    'notification_type' => ' '.$typeoflog.'  Created',
-                ]);
+        addLogActivity([
+            'type' => 'success',
+            'note' => json_encode([
+                'title' => $user->name . ' ' . $typeoflog . '  created',
+                'message' => $user->name . ' ' . $typeoflog . '  created'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employeeprofile',
+            'notification_type' => ' ' . $typeoflog . '  Created',
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -2445,7 +2441,7 @@ public function getDashboardholiday(Request $request)
     }
     public function agentFileDocument(Request $request)
     {
-          if (!\Auth::user()->type == 'Agent') {
+        if (!\Auth::user()->type == 'Agent') {
             return response()->json([
                 'status' => 'error',
                 'msg' => 'Permission Denied',
@@ -2473,7 +2469,7 @@ public function getDashboardholiday(Request $request)
         ]);
 
 
-       $request->id = \Auth::user()->id;
+        $request->id = \Auth::user()->id;
 
         if ($validator->fails()) {
             return response()->json([
@@ -2544,29 +2540,29 @@ public function getDashboardholiday(Request $request)
         $employeeDocument->save();
 
         // Log updated fields
-              //  ========== add ============
-                $typeoflog = $employeeDocument->documentType->name ?? 'document';
-                addLogActivity([
-                    'type' => 'success',
-                    'note' => json_encode([
-                        'title' => $user->name. ' '.$typeoflog.' created',
-                        'message' => $user->name. ' '.$typeoflog.'  created'
-                    ]),
-                    'module_id' => $user->id,
-                    'module_type' => 'employee',
-                    'notification_type' => ' '.$typeoflog.'  Created',
-                ]);
+        //  ========== add ============
+        $typeoflog = $employeeDocument->documentType->name ?? 'document';
+        addLogActivity([
+            'type' => 'success',
+            'note' => json_encode([
+                'title' => $user->name . ' ' . $typeoflog . ' created',
+                'message' => $user->name . ' ' . $typeoflog . '  created'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employee',
+            'notification_type' => ' ' . $typeoflog . '  Created',
+        ]);
 
-                addLogActivity([
-                    'type' => 'success',
-                    'note' => json_encode([
-                        'title' => $user->name. ' '.$typeoflog.'  created',
-                        'message' => $user->name. ' '.$typeoflog.'  created'
-                    ]),
-                    'module_id' => $user->id,
-                    'module_type' => 'employeeprofile',
-                    'notification_type' => ' '.$typeoflog.'  Created',
-                ]);
+        addLogActivity([
+            'type' => 'success',
+            'note' => json_encode([
+                'title' => $user->name . ' ' . $typeoflog . '  created',
+                'message' => $user->name . ' ' . $typeoflog . '  created'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employeeprofile',
+            'notification_type' => ' ' . $typeoflog . '  Created',
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -2607,7 +2603,7 @@ public function getDashboardholiday(Request $request)
             ], 404);
         }
         $user = User::find($EmployeeDocument->employee_id);
-          $typeoflog = $EmployeeDocument->description;
+        $typeoflog = $EmployeeDocument->description;
         $EmployeeDocument->delete();
 
 
@@ -2616,29 +2612,29 @@ public function getDashboardholiday(Request $request)
 
 
         // Log updated fields
-              //  ========== add ============
+        //  ========== add ============
 
-                addLogActivity([
-                    'type' => 'warning',
-                    'note' => json_encode([
-                        'title' => $user->name. ' '.$typeoflog.' deleted',
-                        'message' => $user->name. ' '.$typeoflog.'  deleted'
-                    ]),
-                    'module_id' => $user->id,
-                    'module_type' => 'employee',
-                    'notification_type' => ' '.$typeoflog.'  deleted',
-                ]);
+        addLogActivity([
+            'type' => 'warning',
+            'note' => json_encode([
+                'title' => $user->name . ' ' . $typeoflog . ' deleted',
+                'message' => $user->name . ' ' . $typeoflog . '  deleted'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employee',
+            'notification_type' => ' ' . $typeoflog . '  deleted',
+        ]);
 
-                addLogActivity([
-                    'type' => 'warning',
-                    'note' => json_encode([
-                        'title' => $user->name. ' '.$typeoflog.'  deleted',
-                        'message' => $user->name. ' '.$typeoflog.'  deleted'
-                    ]),
-                    'module_id' => $user->id,
-                    'module_type' => 'employeeprofile',
-                    'notification_type' => ' '.$typeoflog.'  deleted',
-                ]);
+        addLogActivity([
+            'type' => 'warning',
+            'note' => json_encode([
+                'title' => $user->name . ' ' . $typeoflog . '  deleted',
+                'message' => $user->name . ' ' . $typeoflog . '  deleted'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employeeprofile',
+            'notification_type' => ' ' . $typeoflog . '  deleted',
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -3142,24 +3138,24 @@ public function getDashboardholiday(Request $request)
 
 
 
-             $new_employee_email_template = Utility::getValByName('new_employee_email_template');
+            $new_employee_email_template = Utility::getValByName('new_employee_email_template');
 
 
 
             $new_employee_email_template = EmailTemplate::find($new_employee_email_template);
 
 
-             $insertData = [];
+            $insertData = [];
 
             $insertData[] = $this->buildEmailData($new_employee_email_template, $user);
 
 
 
             //dd($insertData);
-                // --- Batch Insert ---
-                if (!empty($insertData)) {
-                    EmailSendingQueue::insert($insertData);
-                }
+            // --- Batch Insert ---
+            if (!empty($insertData)) {
+                EmailSendingQueue::insert($insertData);
+            }
 
 
             // Log Activity
@@ -3227,62 +3223,60 @@ public function getDashboardholiday(Request $request)
             ], 400);
         }
 
-            $user = User::find($request->emp_id);
+        $user = User::find($request->emp_id);
 
 
-             $new_employee_email_template = Utility::getValByName('new_employee_email_template');
-
-
-
-            $new_employee_email_template = EmailTemplate::find($new_employee_email_template);
-
-
-             $insertData = [];
-
-            $insertData[] = $this->buildEmailData($new_employee_email_template, $user);
+        $new_employee_email_template = Utility::getValByName('new_employee_email_template');
 
 
 
-            //dd($insertData);
-                // --- Batch Insert ---
-                if (!empty($insertData)) {
-                    EmailSendingQueue::insert($insertData);
-                }
+        $new_employee_email_template = EmailTemplate::find($new_employee_email_template);
 
 
-            // Log Activity
-            addLogActivity([
-                'type' => 'info',
-                'note' => json_encode([
-                    'title' => $user->name . ' new employee email  sent',
-                    'message' => $user->name . ' new employee email  sent'
-                ]),
-                'module_id' => $user->id,
-                'module_type' => 'employee',
-                'notification_type' => 'Employee Created',
-            ]);
+        $insertData = [];
 
-            addLogActivity([
-                'type' => 'info',
-                'note' => json_encode([
-                    'title' => $user->name . ' new employee email  sent',
-                    'message' => $user->name . ' new employee email  sent'
-                ]),
-                'module_id' => $user->id,
-                'module_type' => 'employeeprofile',
-                'notification_type' => 'Employee Created',
-            ]);
+        $insertData[] = $this->buildEmailData($new_employee_email_template, $user);
 
 
-             return response()->json([
-                'status' => true,
-                'message' => 'New employee email  sent.',
-                'data' => [
-                    'user' => $user,
-                ],
-            ]);
+
+        //dd($insertData);
+        // --- Batch Insert ---
+        if (!empty($insertData)) {
+            EmailSendingQueue::insert($insertData);
+        }
 
 
+        // Log Activity
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => $user->name . ' new employee email  sent',
+                'message' => $user->name . ' new employee email  sent'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employee',
+            'notification_type' => 'Employee Created',
+        ]);
+
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => $user->name . ' new employee email  sent',
+                'message' => $user->name . ' new employee email  sent'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employeeprofile',
+            'notification_type' => 'Employee Created',
+        ]);
+
+
+        return response()->json([
+            'status' => true,
+            'message' => 'New employee email  sent.',
+            'data' => [
+                'user' => $user,
+            ],
+        ]);
     }
 
     public function UpdateEmployee(Request $request)
@@ -3870,239 +3864,234 @@ public function getDashboardholiday(Request $request)
             'data' => $metas // Returns as object
         ]);
     }
-  public function TerminateEmployee(Request $request)
-{
-    if (!\Auth::user()->can('edit employee')) {
-        return response()->json([
-            'status' => 'error',
-            'msg' => 'Permission Denied',
-        ], 403);
-    }
-
-    $validator = \Validator::make($request->all(), [
-        'id' => 'required|exists:users,id',
-        'is_active' => 'required|in:0,1,2,3',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'msg' => $validator->errors()->first(),
-        ], 400);
-    }
-
-    try {
-        $user = User::with([
-            'branch.manager',
-            'region.manager',
-            'brand.manager',
-        ])->findOrFail($request->id);
-
-        // resolve manager details via relations
-        $branch_manager_detail  = $user->branch?->manager;
-        $region_manager_detail  = $user->region?->manager;
-        $project_manager_detail = $user->brand?->manager;
-
-        // CC list
-        $ccList = [];
-        if (!empty($branch_manager_detail?->email))  $ccList[] = $branch_manager_detail->email;
-        if (!empty($region_manager_detail?->email))  $ccList[] = $region_manager_detail->email;
-        if (!empty($project_manager_detail?->email)) $ccList[] = $project_manager_detail->email;
-        $ccList[] = 'scorp-erp_attendance@convosoft.com';
-
-
-        // update status
-        $user->is_active = $request->is_active;
-        $user->save();
-
-         // inject manager objects for email template tags
-        $user->branch_manager  = $branch_manager_detail;
-        $user->region_manager  = $region_manager_detail;
-        $user->project_manager = $project_manager_detail;
-
-
-        $statusMap = [
-            0 => 'Inactive',
-            1 => 'Active',
-            2 => 'Terminated',
-            3 => 'Suspended',
-        ];
-        $statusText = $statusMap[$request->is_active] ?? 'Unknown';
-        $user->employee_status = $statusText;
-
-        // email template
-        $templateId = Utility::getValByName('account_status_employee_email_template');
-        $emailTemplate = EmailTemplate::find($templateId);
-
-        $insertData = [];
-        $insertData[] = $this->buildEmailData($emailTemplate, $user,implode(',', $ccList));
-
-        if (!empty($insertData)) {
-            EmailSendingQueue::insert($insertData);
+    public function TerminateEmployee(Request $request)
+    {
+        if (!\Auth::user()->can('edit employee')) {
+            return response()->json([
+                'status' => 'error',
+                'msg' => 'Permission Denied',
+            ], 403);
         }
 
-        // logs
-        $logData = [
-            'type' => 'info',
-            'note' => json_encode([
-                'title' => $user->name . ' status updated to ' . $statusText,
-                'message' => $user->name . ' status updated to ' . $statusText,
-            ]),
-            'module_id' => $user->id,
-            'module_type' => 'employee',
-            'notification_type' => 'employee Updated'
-        ];
-        addLogActivity($logData);
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'is_active' => 'required|in:0,1,2,3',
+        ]);
 
-        $logData['module_type'] = 'employeeprofile';
-        addLogActivity($logData);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'msg' => $validator->errors()->first(),
+            ], 400);
+        }
 
-        return response()->json([
-            'status' => 'success',
-            'msg' => $statusText . ' Employee successfully',
-        ], 200);
+        try {
+            $user = User::with([
+                'branch.manager',
+                'region.manager',
+                'brand.manager',
+            ])->findOrFail($request->id);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'msg' => 'Something went wrong: ' . $e->getMessage(),
-        ], 500);
+            // resolve manager details via relations
+            $branch_manager_detail  = $user->branch?->manager;
+            $region_manager_detail  = $user->region?->manager;
+            $project_manager_detail = $user->brand?->manager;
+
+            // CC list
+            $ccList = [];
+            if (!empty($branch_manager_detail?->email))  $ccList[] = $branch_manager_detail->email;
+            if (!empty($region_manager_detail?->email))  $ccList[] = $region_manager_detail->email;
+            if (!empty($project_manager_detail?->email)) $ccList[] = $project_manager_detail->email;
+            $ccList[] = 'scorp-erp_attendance@convosoft.com';
+
+
+            // update status
+            $user->is_active = $request->is_active;
+            $user->save();
+
+            // inject manager objects for email template tags
+            $user->branch_manager  = $branch_manager_detail;
+            $user->region_manager  = $region_manager_detail;
+            $user->project_manager = $project_manager_detail;
+
+
+            $statusMap = [
+                0 => 'Inactive',
+                1 => 'Active',
+                2 => 'Terminated',
+                3 => 'Suspended',
+            ];
+            $statusText = $statusMap[$request->is_active] ?? 'Unknown';
+            $user->employee_status = $statusText;
+
+            // email template
+            $templateId = Utility::getValByName('account_status_employee_email_template');
+            $emailTemplate = EmailTemplate::find($templateId);
+
+            $insertData = [];
+            $insertData[] = $this->buildEmailData($emailTemplate, $user, implode(',', $ccList));
+
+            if (!empty($insertData)) {
+                EmailSendingQueue::insert($insertData);
+            }
+
+            // logs
+            $logData = [
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => $user->name . ' status updated to ' . $statusText,
+                    'message' => $user->name . ' status updated to ' . $statusText,
+                ]),
+                'module_id' => $user->id,
+                'module_type' => 'employee',
+                'notification_type' => 'employee Updated'
+            ];
+            addLogActivity($logData);
+
+            $logData['module_type'] = 'employeeprofile';
+            addLogActivity($logData);
+
+            return response()->json([
+                'status' => 'success',
+                'msg' => $statusText . ' Employee successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'msg' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
 
 
-  public function change_agent_status(Request $request)
-{
-    // if (!\Auth::user()->can('edit employee')) {
-    //     return response()->json([
-    //         'status' => 'error',
-    //         'msg' => 'Permission Denied',
-    //     ], 403);
-    // }
+    public function change_agent_status(Request $request)
+    {
+        // if (!\Auth::user()->can('edit employee')) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'msg' => 'Permission Denied',
+        //     ], 403);
+        // }
 
-    $validator = \Validator::make($request->all(), [
-        'id' => 'required|exists:users,id',
-        'is_active' => 'required|in:0,1,2,3,4',
-    ]);
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'is_active' => 'required|in:0,1,2,3,4',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'msg' => $validator->errors()->first(),
-        ], 400);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'msg' => $validator->errors()->first(),
+            ], 400);
+        }
 
-    try {
-        $user = User::with([
-            'branch.manager',
-            'region.manager',
-            'brand.manager',
-        ])->findOrFail($request->id);
+        try {
+            $user = User::with([
+                'branch.manager',
+                'region.manager',
+                'brand.manager',
+            ])->findOrFail($request->id);
 
-        // resolve manager details via relations
-        $branch_manager_detail  = $user->branch?->manager;
-        $region_manager_detail  = $user->region?->manager;
-        $project_manager_detail = $user->brand?->manager;
+            // resolve manager details via relations
+            $branch_manager_detail  = $user->branch?->manager;
+            $region_manager_detail  = $user->region?->manager;
+            $project_manager_detail = $user->brand?->manager;
 
-        // CC list
-        $ccList = [];
-        if (!empty($branch_manager_detail?->email))  $ccList[] = $branch_manager_detail->email;
-        if (!empty($region_manager_detail?->email))  $ccList[] = $region_manager_detail->email;
-        if (!empty($project_manager_detail?->email)) $ccList[] = $project_manager_detail->email;
-        $ccList[] = 'scorp-erp_attendance@convosoft.com';
-
-
-        // update status
-        $user->is_active = $request->is_active;
-        $user->blocked_reason = $request->comment ?? null;
-        $role = Role::find(60);
-        $user->assignRole($role);
-        $user->save();
-
-         // inject manager objects for email template tags
-        $user->branch_manager  = $branch_manager_detail;
-        $user->region_manager  = $region_manager_detail;
-        $user->project_manager = $project_manager_detail;
+            // CC list
+            $ccList = [];
+            if (!empty($branch_manager_detail?->email))  $ccList[] = $branch_manager_detail->email;
+            if (!empty($region_manager_detail?->email))  $ccList[] = $region_manager_detail->email;
+            if (!empty($project_manager_detail?->email)) $ccList[] = $project_manager_detail->email;
+            $ccList[] = 'scorp-erp_attendance@convosoft.com';
 
 
-        $statusMap = [
-            0 => 'Inactive',
-            1 => 'Approved',
-            2 => 'Terminated',
-            3 => 'Suspended',
-            4 => 'Rejected',
-        ];
-        $statusText = $statusMap[$request->is_active] ?? 'Unknown';
-        $user->profile_status = $statusText;
-        $user->comment = $user->blocked_reason;
+            // update status
+            $user->is_active = $request->is_active;
+            $user->blocked_reason = $request->comment ?? null;
+            $role = Role::find(60);
+            $user->assignRole($role);
+            $user->save();
+
+            // inject manager objects for email template tags
+            $user->branch_manager  = $branch_manager_detail;
+            $user->region_manager  = $region_manager_detail;
+            $user->project_manager = $project_manager_detail;
 
 
+            $statusMap = [
+                0 => 'Inactive',
+                1 => 'Approved',
+                2 => 'Terminated',
+                3 => 'Suspended',
+                4 => 'Rejected',
+            ];
+            $statusText = $statusMap[$request->is_active] ?? 'Unknown';
+            $user->profile_status = $statusText;
+            $user->comment = $user->blocked_reason;
 
 
 
 
-        // email template
-        $templateId = Utility::getValByName('account_status_agent_email_template');
-        $emailTemplate = EmailTemplate::find($templateId);
 
-        $insertData = $this->buildEmailData($emailTemplate, $user,implode(',', $ccList));
 
-        if (!empty($insertData)) {
-           // EmailSendingQueue::insert($insertData);
+            // email template
+            $templateId = Utility::getValByName('account_status_agent_email_template');
+            $emailTemplate = EmailTemplate::find($templateId);
 
-             // FIX: Create the queue record and get the ID
+            $insertData = $this->buildEmailData($emailTemplate, $user, implode(',', $ccList));
+
+            if (!empty($insertData)) {
+                // EmailSendingQueue::insert($insertData);
+
+                // FIX: Create the queue record and get the ID
                 $queueId = EmailSendingQueue::insertGetId($insertData);
                 // FIX: Now retrieve the queue record
                 $queue = EmailSendingQueue::find($queueId);
 
-                 try {
+                try {
                     Mail::to($queue->to)->send(new CampaignEmail($queue));
 
                     // only update after successful send
                     $queue->is_send = '1';
                     $queue->save();
-
-
                 } catch (\Exception $e) {
                     $queue->status = '2';
                     $queue->mailerror = $e->getMessage();
                     $queue->save();
-
                 }
+            }
+
+            // logs
+            $logData = [
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => $user->name . ' status updated to ' . $statusText,
+                    'message' => $user->name . ' status updated to ' . $statusText,
+                ]),
+                'module_id' => $user->id,
+                'module_type' => 'agent',
+                'notification_type' => 'agent Updated'
+            ];
+            addLogActivity($logData);
+
+            $logData['module_type'] = 'agentprofile';
+            addLogActivity($logData);
+
+
+
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $statusText . ' agent successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // logs
-        $logData = [
-            'type' => 'info',
-            'note' => json_encode([
-                'title' => $user->name . ' status updated to ' . $statusText,
-                'message' => $user->name . ' status updated to ' . $statusText,
-            ]),
-            'module_id' => $user->id,
-            'module_type' => 'agent',
-            'notification_type' => 'agent Updated'
-        ];
-        addLogActivity($logData);
-
-        $logData['module_type'] = 'agentprofile';
-        addLogActivity($logData);
-
-
-
-
-        return response()->json([
-            'status' => 'success',
-            'message' => $statusText . ' agent successfully',
-        ], 200);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Something went wrong: ' . $e->getMessage(),
-        ], 500);
     }
-}
 
 
     public function BrandAttachments(Request $request)
@@ -4145,13 +4134,13 @@ public function getDashboardholiday(Request $request)
         $user = User::find($request->id);
 
         if (!empty($uploadedFiles['avatar'])) {
-            $user->avatar = 'EmployeeDocument/'.$uploadedFiles['avatar'];
+            $user->avatar = 'EmployeeDocument/' . $uploadedFiles['avatar'];
         }
         $user->save();
         $user->update(['project_director_id' => $request->project_director_id]);
         $user->update(['project_manager_id' => $request->project_manager_id]);
 
-        $changes =['avatar'];
+        $changes = ['avatar'];
         $updatedFields = ['avatar'];
 
         $typeoflog = 'Brand Profile';
@@ -4179,7 +4168,7 @@ public function getDashboardholiday(Request $request)
         ]);
     }
 
-     public function sendBirthdayAndAnniversaryEmails()
+    public function sendBirthdayAndAnniversaryEmails()
     {
         $today = now()->format('m-d');
         $insertData = [];
@@ -4189,8 +4178,8 @@ public function getDashboardholiday(Request $request)
             ->where('is_active', 1)
             ->get();
 
-             $birthday_email_template = Utility::getValByName('birthday_email_template');
-             $anniversary_email_template = Utility::getValByName('anniversary_email_template');
+        $birthday_email_template = Utility::getValByName('birthday_email_template');
+        $anniversary_email_template = Utility::getValByName('anniversary_email_template');
 
 
 
@@ -4206,7 +4195,7 @@ public function getDashboardholiday(Request $request)
         $anniversaryUsers = User::where('is_active', 1)
             ->whereHas('employeeMetas', function ($q) use ($today) {
                 $q->where('meta_key', 'commencedDate')
-                  ->whereRaw("DATE_FORMAT(meta_value, '%m-%d') = ?", [$today]);
+                    ->whereRaw("DATE_FORMAT(meta_value, '%m-%d') = ?", [$today]);
             })
             ->get();
 
@@ -4224,7 +4213,7 @@ public function getDashboardholiday(Request $request)
         return count($insertData) . " emails queued.";
     }
 
-    private function buildEmailData($template, $user,$cc=null)
+    private function buildEmailData($template, $user, $cc = null)
     {
         if (!$template) {
             return [];
@@ -4263,7 +4252,7 @@ public function getDashboardholiday(Request $request)
 
         foreach ($tags as $tag) {
             $key = '{' . $tag->tag . '}';
-              // If tag exists as dynamic property on $user (from $additionalTags)
+            // If tag exists as dynamic property on $user (from $additionalTags)
             if (isset($user->{$tag->tag})) {
                 $value = $user->{$tag->tag};
             } else {
@@ -4299,22 +4288,22 @@ public function getDashboardholiday(Request $request)
                         $user->employeeMetas->where('meta_key', 'commencedDate')->first()
                     )->meta_value ?? '';
                     break;
-                        // ðŸ”¹ Document info
-                    case 'document_name':
-                        $value = $user->document_name ?? '';
-                        break;
-                    case 'document_expiry':
-                        $value = $user->document_expiry ?? '';
-                        break;
+                // ðŸ”¹ Document info
+                case 'document_name':
+                    $value = $user->document_name ?? '';
+                    break;
+                case 'document_expiry':
+                    $value = $user->document_expiry ?? '';
+                    break;
 
-                    // ðŸ”¹ Managers
-                    case 'project_manager_name':
-                        $value = $user->project_manager?->name ?? '';
-                        break;
-                    case 'project_manager_email':
-                        $value = $user->project_manager?->email ?? '';
-                        break;
-                    }
+                // ðŸ”¹ Managers
+                case 'project_manager_name':
+                    $value = $user->project_manager?->name ?? '';
+                    break;
+                case 'project_manager_email':
+                    $value = $user->project_manager?->email ?? '';
+                    break;
+            }
 
             $replacePairs[$key] = $value;
         }
@@ -4323,114 +4312,113 @@ public function getDashboardholiday(Request $request)
     }
 
     public function completeProfile(Request $request)
-{
+    {
 
-    // Validation for NEW business profile fields
-    $validator = \Validator::make($request->all(), [
-        'emp_id' => 'required|exists:users,id',
+        // Validation for NEW business profile fields
+        $validator = \Validator::make($request->all(), [
+            'emp_id' => 'required|exists:users,id',
 
-        // Name fields
-        'fullname' => 'required|string|max:255',
+            // Name fields
+            'fullname' => 'required|string|max:255',
 
-        // Business info
-        'business_name' => 'required|string|max:500',
-        'business_address' => 'nullable|string|max:500',
+            // Business info
+            'business_name' => 'required|string|max:500',
+            'business_address' => 'nullable|string|max:500',
 
-        // National ID
-        'passport_number' => 'required|string|max:20',
+            // National ID
+            'passport_number' => 'required|string|max:20',
 
-        // Business location
-        'country' => 'required|string',
-        'street_address' => 'required|string',
-        'city' => 'required|string',
-        'state' => 'required|string',
-        'postal_code' => 'nullable|string',
-    ]);
+            // Business location
+            'country' => 'required|string',
+            'street_address' => 'required|string',
+            'city' => 'required|string',
+            'state' => 'required|string',
+            'postal_code' => 'nullable|string',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => false,
-            'message' => $validator->errors(),
-        ], 400);
-    }
-
-    \DB::beginTransaction();
-    try {
-
-        $user = User::find($request->emp_id);
-
-        if (!$user) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'message' => 'User not found.',
+                'message' => $validator->errors(),
             ], 400);
         }
 
-        // Save original values for logging
-        $originalData = $user->toArray();
+        \DB::beginTransaction();
+        try {
 
-        // Update name
-        $user->name = $request->fullname;
+            $user = User::find($request->emp_id);
 
-        // Update business profile fields
-        $user->business_name = $request->business_name;
-        $user->business_address = $request->business_address ?? $user->business_address;
-        $user->passport_number = $request->passport_number;
-
-        // Update address components
-       // $user->country = $request->country;
-        $user->country_id = $request->country;
-        $user->Province = $request->state;
-        $user->City = $request->city;
-       $user->Postal = $request->postal_code ?? $user->Postal;
-        $user->address = $request->street_address;
-        $user->is_agent_profile_completed = 1;
-
-        $user->save();
-
-        // Detect changed fields
-        $changes = [];
-        foreach ($originalData as $field => $oldValue) {
-            if (in_array($field, ['created_at','updated_at','password'])) continue;
-
-            if ($user->$field != $oldValue) {
-                $changes[$field] = [
-                    'old' => $oldValue,
-                    'new' => $user->$field
-                ];
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found.',
+                ], 400);
             }
-        }
 
-        if (!empty($changes)) {
-            addLogActivity([
-                'type' => 'info',
-                'note' => json_encode([
-                    'title' => $user->name." agent profile updated",
-                    'message' => "Fields updated: " . implode(", ", array_keys($changes)),
-                    'changes' => $changes
-                ]),
-                'module_id' => $user->id,
-                'module_type' => 'agent_profile',
-                'notification_type' => 'Profile Updated',
+            // Save original values for logging
+            $originalData = $user->toArray();
+
+            // Update name
+            $user->name = $request->fullname;
+
+            // Update business profile fields
+            $user->business_name = $request->business_name;
+            $user->business_address = $request->business_address ?? $user->business_address;
+            $user->passport_number = $request->passport_number;
+
+            // Update address components
+            // $user->country = $request->country;
+            $user->country_id = $request->country;
+            $user->Province = $request->state;
+            $user->City = $request->city;
+            $user->Postal = $request->postal_code ?? $user->Postal;
+            $user->address = $request->street_address;
+            $user->is_agent_profile_completed = 1;
+
+            $user->save();
+
+            // Detect changed fields
+            $changes = [];
+            foreach ($originalData as $field => $oldValue) {
+                if (in_array($field, ['created_at', 'updated_at', 'password'])) continue;
+
+                if ($user->$field != $oldValue) {
+                    $changes[$field] = [
+                        'old' => $oldValue,
+                        'new' => $user->$field
+                    ];
+                }
+            }
+
+            if (!empty($changes)) {
+                addLogActivity([
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => $user->name . " agent profile updated",
+                        'message' => "Fields updated: " . implode(", ", array_keys($changes)),
+                        'changes' => $changes
+                    ]),
+                    'module_id' => $user->id,
+                    'module_type' => 'agent_profile',
+                    'notification_type' => 'Profile Updated',
+                ]);
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Profile updated successfully.',
+                'data' => $user
             ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        \DB::commit();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Profile updated successfully.',
-            'data' => $user
-        ]);
-
-    } catch (\Exception $e) {
-        \DB::rollBack();
-        return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
-        ], 500);
     }
-}
     public function agreeTerms(Request $request)
     {
         $request->validate([
@@ -4441,6 +4429,8 @@ public function getDashboardholiday(Request $request)
         $user = auth()->user();
 
         $user->terms_agreed = $request->terms_agreed;
+
+        $user->is_agent_profile_completed = 1;
         $user->terms_agreed_at = $request->terms_agreed_at
             ? Carbon::parse($request->terms_agreed_at)
             : now();
@@ -4455,5 +4445,213 @@ public function getDashboardholiday(Request $request)
                 'terms_agreed_at' => $user->terms_agreed_at
             ]
         ], 200);
+    }
+
+     public function createAgentProfile(Request $request)
+    {
+
+        // Validation for NEW business profile fields
+        $validator = \Validator::make($request->all(), [
+            'emp_id' => 'required|exists:users,id',
+
+            // Name fields
+            'fullname' => 'required|string|max:255',
+
+
+            // National ID
+            'passport_number' => 'required|string|max:20',
+            'phone' => 'required|string|max:20',
+
+
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors(),
+            ], 400);
+        }
+
+        \DB::beginTransaction();
+        try {
+
+            $user = User::find($request->emp_id);
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found.',
+                ], 400);
+            }
+
+            // Save original values for logging
+            $originalData = $user->toArray();
+
+            // Update name
+            $user->name = $request->fullname;
+
+            $user->passport_number = $request->passport_number;
+
+            // Update address components
+            // $user->country = $request->country;
+            $user->phone = $request->phone;
+
+            $user->save();
+
+            // Detect changed fields
+            $changes = [];
+            foreach ($originalData as $field => $oldValue) {
+                if (in_array($field, ['created_at', 'updated_at', 'password'])) continue;
+
+                if ($user->$field != $oldValue) {
+                    $changes[$field] = [
+                        'old' => $oldValue,
+                        'new' => $user->$field
+                    ];
+                }
+            }
+
+            if (!empty($changes)) {
+                addLogActivity([
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => $user->name . " agent profile updated",
+                        'message' => "Fields updated: " . implode(", ", array_keys($changes)),
+                        'changes' => $changes
+                    ]),
+                    'module_id' => $user->id,
+                    'module_type' => 'agent_profile',
+                    'notification_type' => 'Profile Updated',
+                ]);
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Profile updated successfully.',
+                'data' => $user
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+      public function createBusinessProfile(Request $request)
+    {
+
+        // Validation for NEW business profile fields
+        $validator = \Validator::make($request->all(), [
+            'emp_id' => 'required|exists:users,id',
+
+
+            // Business info
+            'business_name' => 'required|string|max:500',
+            'business_address' => 'nullable|string|max:500',
+
+
+            // Business location
+            'country' => 'required|string',
+            'street_address' => 'required|string',
+            'city' => 'required|string',
+            'state' => 'required|string',
+
+            'acount_holder_name' => 'required|string',
+            'bank_name' => 'required|string',
+            'iban' => 'required|string',
+            'sort_code' => 'required|string',
+
+            'postal_code' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors(),
+            ], 400);
+        }
+
+        \DB::beginTransaction();
+        try {
+
+            $user = User::find($request->emp_id);
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found.',
+                ], 400);
+            }
+
+            // Save original values for logging
+            $originalData = $user->toArray();
+
+            // Update name
+
+            // Update business profile fields
+            $user->business_name = $request->business_name;
+            $user->business_address = $request->business_address ?? $user->business_address;
+
+            // Update address components
+            // $user->country = $request->country;
+            $user->country_id = $request->country;
+            $user->Province = $request->state;
+            $user->City = $request->city;
+            $user->Postal = $request->postal_code ?? $user->Postal;
+            $user->address = $request->street_address;
+
+            $user->acount_holder_name = $request->acount_holder_name;
+            $user->bank_name = $request->bank_name;
+            $user->iban = $request->iban;
+            $user->sort_code = $request->sort_code;
+            $user->bank_location = $request->bank_location;
+
+            $user->save();
+
+            // Detect changed fields
+            $changes = [];
+            foreach ($originalData as $field => $oldValue) {
+                if (in_array($field, ['created_at', 'updated_at', 'password'])) continue;
+
+                if ($user->$field != $oldValue) {
+                    $changes[$field] = [
+                        'old' => $oldValue,
+                        'new' => $user->$field
+                    ];
+                }
+            }
+
+            if (!empty($changes)) {
+                addLogActivity([
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => $user->name . " agent profile updated",
+                        'message' => "Fields updated: " . implode(", ", array_keys($changes)),
+                        'changes' => $changes
+                    ]),
+                    'module_id' => $user->id,
+                    'module_type' => 'agent_profile',
+                    'notification_type' => 'Profile Updated',
+                ]);
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Profile updated successfully.',
+                'data' => $user
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

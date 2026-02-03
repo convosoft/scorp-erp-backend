@@ -522,6 +522,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/newEmployeeEmailSend', [UserController::class, 'newEmployeeEmailSend']);
     Route::post('/UpdateEmployee', [UserController::class, 'UpdateEmployee']);
     Route::post('/completeProfile', [UserController::class, 'completeProfile']);
+    Route::post('/createAgentProfile', [UserController::class, 'createAgentProfile']);
+    Route::post('/createBusinessProfile', [UserController::class, 'createBusinessProfile']);
     Route::post('/TerminateEmployee', [UserController::class, 'TerminateEmployee']);
     Route::post('/change_agent_status', [UserController::class, 'change_agent_status']);
 
