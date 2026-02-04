@@ -594,8 +594,8 @@ class UserController extends Controller
 
         $statusCounts = $countsQuery->select(
             DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
-            DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `suspended`"),
-            DB::raw("SUM(CASE WHEN is_active = 3 THEN 1 ELSE 0 END) as `terminated`")
+            DB::raw("SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as `suspended`"),
+            DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `terminated`")
         )->first();
         //  dd($request->input('download_csv'));
         // Check if CSV download is requested
