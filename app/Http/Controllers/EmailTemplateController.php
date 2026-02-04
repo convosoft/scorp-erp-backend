@@ -840,18 +840,18 @@ private function executeLeadQuery()
         if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
             // No additional filtering needed
         } elseif ($userType === 'company') {
-            $email_sending_queues_query->where('sq.brand_id', \Auth::user()->id);
+            $email_sending_queues_query->where('esq.brand_id', \Auth::user()->id);
         } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
-            $email_sending_queues_query->whereIn('sq.brand_id', $brand_ids);
+            $email_sending_queues_query->whereIn('esq.brand_id', $brand_ids);
         } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
-            $email_sending_queues_query->where('sq.region_id', \Auth::user()->region_id);
+            $email_sending_queues_query->where('esq.region_id', \Auth::user()->region_id);
         } elseif (($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
-            $email_sending_queues_query->where('sq.branch_id', \Auth::user()->branch_id);
+            $email_sending_queues_query->where('esq.branch_id', \Auth::user()->branch_id);
         } else {
-            $email_sending_queues_query->where('sq.sender_id', \Auth::user()->id);
+            $email_sending_queues_query->where('esq.sender_id', \Auth::user()->id);
         }
 
-         $email_sending_queues_query->where('sq.priority', '3');
+         $email_sending_queues_query->where('esq.priority', '3');
 
         // Apply dynamic filters
         foreach ($filters as $column => $value) {
