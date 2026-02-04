@@ -1037,7 +1037,46 @@ private function executeLeadQuery()
 
         return $filters;
     }
-    public function email_marketing_queue(Request $request)
+    public function email_marketing_queue_old(Request $request)
+    {
+        try {
+            if (\Auth::user()->type == 'Agent') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Permission Denied.'
+                ], 403);
+            }
+
+            // Page and pagination setup
+            $current_page = $request->input('page', 1);
+            $per_page = $request->input('perPage', 50);
+
+            // Fetch executed data
+            $executed_data = $this->executeLeadQuery();
+
+            // ✅ Get total records directly from query (accurate count)
+            $total_records = (int) $executed_data['total_records'];
+            $emailQueues = collect($executed_data['email_sending_queues']);
+
+            // ✅ Calculate last page using total records (not sliced data)
+            $last_page = max(1, ceil($total_records / $per_page));
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $emailQueues->values(),
+                'total_records' => $total_records,
+                'current_page' => (int) $current_page,
+                'last_page' => (int) $last_page,
+                'perPage' => (int) $per_page,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+        public function email_marketing_queue(Request $request)
     {
         try {
             if (\Auth::user()->type == 'Agent') {
