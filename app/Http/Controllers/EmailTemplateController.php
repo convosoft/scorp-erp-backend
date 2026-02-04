@@ -19,6 +19,7 @@ use App\Models\Region;
 use App\Models\SavedFilter;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class EmailTemplateController extends Controller
 {
