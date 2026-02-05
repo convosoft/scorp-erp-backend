@@ -19,6 +19,7 @@ use App\Models\Region;
 use App\Models\SavedFilter;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class EmailTemplateController extends Controller
 {
@@ -653,6 +654,7 @@ return response()->json([
         // Build the leads query with complete email statistics
         $subquery = \DB::table('email_sending_queues')
             ->select(
+
                 'subject',
                 'sender_id',
                 \DB::raw('MIN(id) as id'),
@@ -684,21 +686,26 @@ return response()->json([
                      ->on('sq.sender_id', '=', 'esq.sender_id') ;
             })
             ->select(
-                'esq.*',
-                'sq.total_emails',
-                'sq.sent_emails',
-                'sq.processed_emails',
-                'sq.delivered_emails',
-                'sq.opened_emails',
-                'sq.clicked_emails',
-                'sq.bounced_emails',
-                'sq.processing_rate',
-                'sq.delivery_rate',
-                'sq.open_rate',
-                'sq.click_rate',
-                'sq.bounce_rate',
-                'sq.click_to_open_rate'
-            );
+    \DB::raw('MIN(sq.id) as id'),
+    'sq.subject',
+    'sq.sender_id',
+
+    \DB::raw('MAX(sq.total_emails) as total_emails'),
+    \DB::raw('MAX(sq.sent_emails) as sent_emails'),
+    \DB::raw('MAX(sq.processed_emails) as processed_emails'),
+    \DB::raw('MAX(sq.delivered_emails) as delivered_emails'),
+    \DB::raw('MAX(sq.opened_emails) as opened_emails'),
+    \DB::raw('MAX(sq.clicked_emails) as clicked_emails'),
+    \DB::raw('MAX(sq.bounced_emails) as bounced_emails'),
+
+    \DB::raw('MAX(sq.processing_rate) as processing_rate'),
+    \DB::raw('MAX(sq.delivery_rate) as delivery_rate'),
+    \DB::raw('MAX(sq.open_rate) as open_rate'),
+    \DB::raw('MAX(sq.click_rate) as click_rate'),
+    \DB::raw('MAX(sq.bounce_rate) as bounce_rate'),
+    \DB::raw('MAX(sq.click_to_open_rate) as click_to_open_rate')
+)
+->groupBy('sq.subject', 'sq.sender_id');;
 
         if (!empty($_GET['Assigned'])) {
             $email_sending_queues_query->whereNotNull('esq.sender_id');
@@ -908,7 +915,46 @@ return response()->json([
 
         return $filters;
     }
-    public function email_marketing_queue(Request $request)
+    public function email_marketing_queue_old(Request $request)
+    {
+        try {
+            if (\Auth::user()->type == 'Agent') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Permission Denied.'
+                ], 403);
+            }
+
+            // Page and pagination setup
+            $current_page = $request->input('page', 1);
+            $per_page = $request->input('perPage', 50);
+
+            // Fetch executed data
+            $executed_data = $this->executeLeadQuery();
+
+            // ✅ Get total records directly from query (accurate count)
+            $total_records = (int) $executed_data['total_records'];
+            $emailQueues = collect($executed_data['email_sending_queues']);
+
+            // ✅ Calculate last page using total records (not sliced data)
+            $last_page = max(1, ceil($total_records / $per_page));
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $emailQueues->values(),
+                'total_records' => $total_records,
+                'current_page' => (int) $current_page,
+                'last_page' => (int) $last_page,
+                'perPage' => (int) $per_page,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+        public function email_marketing_queue(Request $request)
     {
         try {
             if (\Auth::user()->type == 'Agent') {

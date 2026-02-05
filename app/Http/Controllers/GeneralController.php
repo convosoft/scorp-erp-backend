@@ -1675,12 +1675,12 @@ public function GetBranchByType()
     {
         $user = Auth::user();
 
-        if (!$user->can('manage company settings')) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Permission denied.')
-            ], 403);
-        }
+        // if (!$user->can('manage company settings')) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => __('Permission denied.')
+        //     ], 403);
+        // }
 
         // Fetch settings for current company/creator
         $settings = DB::table('settings')

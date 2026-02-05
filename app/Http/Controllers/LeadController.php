@@ -26,6 +26,7 @@ use App\Models\LeadFile;
 use App\Models\LeadNote;
 use App\Models\LeadStage;
 use App\Models\LeadTag;
+use App\Models\LeadView;
 use App\Models\Organization;
 use App\Models\Pipeline;
 use App\Models\SavedFilter;
@@ -314,6 +315,221 @@ class LeadController extends Controller
             'per_page' => $leads->perPage(),
         ], 200);
     }
+
+    public function getLeadsByView(Request $request)
+{
+    // ... validation stays same ...
+
+        $validator = Validator::make($request->all(), [
+
+            'perPage' => 'nullable|integer|min:1',
+            'page' => 'nullable|integer|min:1',
+            'name' => 'nullable|string',
+            'view' => 'required|string',
+            'brand' => 'nullable|integer|exists:users,id',
+            'region_id' => 'nullable|integer',
+            'branch_id' => 'nullable|integer',
+            'stage_id' => 'nullable|integer|exists:lead_stages,id',
+            'users' => 'nullable|array',
+            'lead_assigned_user' => 'sometimes|nullable',
+            'created_by' => 'sometimes|nullable',
+            'created_at_from' => 'nullable|date',
+            'created_at_to' => 'nullable|date',
+            'tag' => 'nullable|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+    $view = $request->input('view', 'list');
+    $usr = \Auth::user();
+    $perPage = $request->input('perPage', env('RESULTS_ON_PAGE', 50));
+    $page = $request->input('page', 1);
+
+    // ✅ Use the view instead of complex joins
+    $leadsQuery = LeadView::query();
+
+    // ✅ All filters become simple where clauses
+    if ($request->filled('Assigned')) {
+        $leadsQuery->whereNotNull('user_id');
+    }
+
+    if ($request->filled('Unassigned')) {
+        $leadsQuery->whereNull('user_id');
+    }
+
+    if ($request->filled('brand')) {
+        $leadsQuery->where('brand_id', $request->brand);
+    }
+
+    if ($request->filled('region_id')) {
+        $leadsQuery->where('region_id', $request->region_id);
+    }
+
+    if ($request->filled('branch_id')) {
+        $leadsQuery->where('branch_id', $request->branch_id);
+    }
+
+    if ($request->filled('stage_id')) {
+        $leadsQuery->where('stage_id', $request->stage_id);
+    }
+
+    if ($request->filled('tag')) {
+        $leadsQuery->whereRaw('FIND_IN_SET(?, tag_ids_list)', [$request->tag]);
+    }
+
+    if ($request->filled('lead_assigned_user')) {
+        $leadsQuery->where('user_id', $request->lead_assigned_user);
+    }
+
+    if ($request->filled('created_by')) {
+        $leadsQuery->where('created_by', $request->created_by);
+    }
+
+    if ($request->filled('created_at_from')) {
+        $leadsQuery->whereDate('created_at', '>=', $request->created_at_from);
+    }
+
+    if ($request->filled('created_at_to')) {
+        $leadsQuery->whereDate('created_at', '<=', $request->created_at_to);
+    }
+
+    // ✅ Days at stage filter - now super simple!
+    if ($request->filled('days_at_stage')) {
+        $days = $request->days_at_stage;
+
+        if ($days === '30+') {
+            $leadsQuery->where('days_at_stage', '>=', 30);
+        } else {
+            $leadsQuery->whereBetween('days_at_stage', [(int)$days, (int)$days]);
+        }
+    }
+
+    // User permissions
+    $userType = $usr->type;
+    if ($userType === 'company') {
+        $leadsQuery->where('brand_id', $usr->id);
+    } elseif ($userType === 'Region Manager' && $usr->region_id) {
+        $leadsQuery->where('region_id', $usr->region_id);
+    } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
+        $leadsQuery->where('branch_id', $usr->branch_id);
+    } elseif ($userType === 'Agent') {
+        $leadsQuery->where('agent_id', $usr->agent_id);
+    }
+
+    // Search
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $leadsQuery->where(function ($query) use ($search) {
+            $query->where('name', 'like', "%$search%")
+                ->orWhere('email', 'like', "%$search%")
+                ->orWhere('phone', 'like', "%$search%");
+        });
+    }
+
+    // ✅ CSV Export - No joins needed!
+    if ($request->input('download_csv')) {
+        $download_csv = $leadsQuery->where('is_converted', 0)->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="leads_'.time().'.csv"',
+        ];
+
+        $callback = function () use ($download_csv) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['ID', 'Name', 'Email', 'Brand', 'Branch', 'AssignTo', 'Stage', 'Days at Stage']);
+
+            foreach ($download_csv as $lead) {
+                fputcsv($file, [
+                    $lead->id,
+                    $lead->name,
+                    $lead->email,
+                    $lead->brand_name,        // ✅ Already in view
+                    $lead->branch_name,       // ✅ Already in view
+                    $lead->assigned_to_name,  // ✅ Already in view
+                    $lead->stage_name,        // ✅ Already in view
+                    $lead->days_at_stage,     // ✅ Already calculated
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // ✅ Kanban View
+    if ($view === 'kanban') {
+        $KANBAN_PER_PAGE = 1000;
+
+        $leads = $leadsQuery
+            ->where('is_converted', 0)
+            ->orderBy('created_at', 'desc')
+            ->limit($KANBAN_PER_PAGE)
+            ->get();
+
+        $stages = DB::table('lead_stages')->select('id', 'name')->get();
+
+        $colors = [
+            1 => ['#4F46E5', '#eef2ff'],
+            2 => ['#F59E0B', '#fff7ed'],
+            3 => ['#22C55E', '#f0fdf4'],
+            4 => ['#EC928E', '#fef2f2'],
+            5 => ['#0EA5E9', '#e0f2fe'],
+            6 => ['#6B7280', '#f3f4f6'],
+        ];
+
+        $kanban = [];
+
+        foreach ($stages as $stage) {
+            $stageLeads = $leads->where('stage_id', $stage->id)->values();
+
+            $kanban[] = [
+                'stage_id' => $stage->id,
+                'title' => $stage->name,
+                'count' => $stageLeads->count(),
+                'color' => $colors[$stage->id][0] ?? '#000',
+                'bgColor' => $colors[$stage->id][1] ?? '#fff',
+                'leads' => $stageLeads->map(fn ($lead) => [
+                    'id' => $lead->id,
+                    'name' => $lead->name,
+                    'phone' => $lead->phone,
+                    'email' => $lead->email,
+                    'city' => $lead->city,
+                    'days_at_stage' => $lead->days_at_stage, // ✅ Pre-calculated
+                    'assigned_to' => $lead->assigned_to_name,
+                ]),
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'view' => 'kanban',
+            'data' => $kanban,
+            'total_records' => $leads->count(),
+        ]);
+    }
+
+    // ✅ List View - Simple pagination
+    $leads = $leadsQuery
+        ->where('is_converted', 0)
+        ->orderBy('created_at', 'desc')
+        ->paginate($perPage, ['*'], 'page', $page);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $leads->items(), // ✅ Everything already loaded!
+        'current_page' => $leads->currentPage(),
+        'last_page' => $leads->lastPage(),
+        'total_records' => $leads->total(),
+        'per_page' => $leads->perPage(),
+    ], 200);
+}
 
     public function saveLead(Request $request)
     {

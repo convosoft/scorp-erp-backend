@@ -327,6 +327,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Leads start here
     Route::post('/getLeads', [LeadController::class, 'getLeads']);
+    Route::post('/getLeadsByView', [LeadController::class, 'getLeadsByView']);
     Route::post('/leadsKanban', [LeadController::class, 'leadsKanban']);
     Route::post('/fetchColumns', [LeadController::class, 'fetchColumns']);
     Route::post('/importCsv', [LeadController::class, 'importCsv']);
