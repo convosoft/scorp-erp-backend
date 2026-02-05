@@ -26,6 +26,7 @@ use App\Models\LeadFile;
 use App\Models\LeadNote;
 use App\Models\LeadStage;
 use App\Models\LeadTag;
+use App\Models\LeadView;
 use App\Models\Organization;
 use App\Models\Pipeline;
 use App\Models\SavedFilter;
