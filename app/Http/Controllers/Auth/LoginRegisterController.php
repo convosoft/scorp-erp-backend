@@ -533,6 +533,7 @@ public function registerAgent(Request $request)
 
         // Step 2: Update agent_id with its own ID
         $user->agent_id = $user->id;
+        $user->phone = $request->phone;
         $user->save();
 
         // Create Agency Record
