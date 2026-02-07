@@ -247,6 +247,9 @@ class UniversityController extends Controller
                 'GlobalPaymentType:id,name',
                 'InstallmentPayOut:id,name',
                 'ToolkitTeam:id,name',
+                'homeuniversity.ToolkitLevel',
+                'homeuniversity.PaymentType',
+                'homeuniversity.GlobalPaymentType',
             ])
             ->get()
             ->append('country_name');
