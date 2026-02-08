@@ -409,6 +409,27 @@ class LeadController extends Controller
         }
     }
 
+    if ($request->filled('fetcttype')) {
+
+        if($request->fetcttype=='yourleads'){
+            $leadsQuery->where('created_by', '=', $usr->id);
+        }
+
+        if($request->fetcttype=='assigntome'){
+            $leadsQuery->where('user_id', '=', $usr->id);
+        }
+
+
+
+
+    }
+
+        if ($request->fetcttype === 'agentleads') {
+                $leadsQuery->whereNotNull('agent_id');
+            } else {
+                $leadsQuery->whereNull('agent_id');
+            }
+
     // User permissions
     $userType = $usr->type;
     if ($userType === 'company') {
