@@ -102,6 +102,7 @@ use App\Http\Controllers\SendGridWebhookController;
 |
 */
 
+    Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
 Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']);
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
 
@@ -754,7 +755,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateUniversityInternationalStatus', [UniversityController::class, 'updateUniversityInternationalStatus']);
     Route::post('/updateUniversityhomeStatus', [UniversityController::class, 'updateUniversityhomeStatus']);
     Route::post('/updateAboutUniversity', [UniversityController::class, 'updateAboutUniversity']);
-    Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
     Route::post('/getIntakeMonthByUniversity', [UniversityController::class, 'getIntakeMonthByUniversity']);
     Route::post('/get_course_campus', [UniversityController::class, 'get_course_campus']);
 
