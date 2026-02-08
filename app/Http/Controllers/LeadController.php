@@ -820,6 +820,10 @@ class LeadController extends Controller
         $lead->user_id = $request->lead_assigned_user;
         $lead->tag_ids = ! empty($request->tag_ids) ? implode(',', $request->tag_ids) : $lead->tag_ids;
         $lead->drive_link = $request->drive_link ?? $lead->drive_link;
+        $lead->language_test = $request->lead_language_test ;
+        $lead->passing_year = $request->lead_passing_year ;
+        $lead->cgpa_percentage = $request->lead_cgpa_percentage ;
+        $lead->last_education = $request->lead_last_education ;
 
         $lead->save();
 
