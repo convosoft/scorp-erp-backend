@@ -659,6 +659,9 @@ class LeadController extends Controller
         $lead->passing_year = $request->lead_passing_year ?? null;
         $lead->cgpa_percentage = $request->lead_cgpa_percentage ?? null;
         $lead->last_education = $request->lead_last_education ?? null;
+        $lead->branch_nearby = $request->lead_branch_nearby ?? null;
+        $lead->preferred_course = $request->lead_preferred_course ?? null;
+        $lead->preferred_destination = $request->lead_preferred_destination ?? null;
 
         $lead->save();
 
@@ -824,6 +827,9 @@ class LeadController extends Controller
         $lead->passing_year = $request->lead_passing_year ;
         $lead->cgpa_percentage = $request->lead_cgpa_percentage ;
         $lead->last_education = $request->lead_last_education ;
+        $lead->branch_nearby = $request->lead_branch_nearby ?? null;
+        $lead->preferred_course = $request->lead_preferred_course ?? null;
+        $lead->preferred_destination = $request->lead_preferred_destination ?? null;
 
         $lead->save();
 
