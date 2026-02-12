@@ -115,6 +115,7 @@ class DealController extends Controller
         $query = Deal::select(
             'deals.id',
             'deals.name',
+            'deals.created_by',
             'deals.stage_id',
             'deals.tag_ids',
             'deals.assigned_to',
