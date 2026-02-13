@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class AdmissionView extends Model
 {
 
- protected $table = 'leads_view';
+ protected $table = 'admission_view';
 
 
     public function labels()
