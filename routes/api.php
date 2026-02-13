@@ -917,7 +917,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
      //     adminission
      Route::post('/getAdmission', [DealController::class, 'getAdmission']);
-     Route::post('/getAdmissionByView', [DealController::class, 'getAdmissionByView']);
+     Route::post('/getAdmissionByView', [DealController::class, 'getAdmissionByView']); // get by view
      Route::post('/getAdmissionDetails', [DealController::class, 'getAdmissionDetails']);
      Route::post('/getMoveApplicationPluck', [DealController::class, 'getMoveApplicationPluck']);
      Route::post('/moveApplicationsave', [DealController::class, 'moveApplicationsave']);

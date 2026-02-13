@@ -369,7 +369,7 @@ class DealController extends Controller
 
     return response()->json([
         'status' => 'success',
-        'data' => $deals->items(),
+        //'data' => $deals->items(),
         'current_page' => $deals->currentPage(),
         'last_page' => $deals->lastPage(),
         'total_records' => $deals->total(),
