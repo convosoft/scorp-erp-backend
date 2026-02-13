@@ -365,7 +365,7 @@ class DealController extends Controller
     }
 
     // List view
-    dd($query->toSql(), $query->getBindings());
+
     $deals = $query->groupBy('admission_view.id')
               ->orderByDesc('id')
               ->paginate($perPage, ['*'], 'page', $page);
