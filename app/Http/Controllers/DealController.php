@@ -43,6 +43,7 @@ use App\Models\CompanyPermission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Models\ApplicationNote;
+use App\Models\AdmissionView;
 use App\Models\City;
 use App\Models\instalment;
 use App\Models\Institute;
@@ -209,6 +210,173 @@ class DealController extends Controller
             'per_page' => $deals->perPage()
         ]);
     }
+    public function getAdmissionByView(Request $request)
+{
+    $user = Auth::user();
+
+    if (!($user->can('view deal') || $user->can('manage deal') || in_array($user->type, ['super admin', 'company', 'Admin Team']))) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Permission Denied.',
+        ], 403);
+    }
+
+    $view = $request->input('view', 'list');
+    $perPage = $request->input('perPage', env("RESULTS_ON_PAGE", 50));
+    $page = $request->input('page', 1);
+
+    $query = AdmissionView::query();
+
+    // Permissions logic
+    if (!in_array($user->type, ['super admin', 'Admin Team']) && !$user->can('level 1')) {
+        if ($user->type == 'company') {
+            $query->where('brand_id', $user->id);
+        } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
+            $query->whereIn('brand_id', array_keys(FiltersBrands()));
+        } elseif ($user->type == 'Region Manager' && $user->region_id) {
+            $query->where('region_id', $user->region_id);
+        } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
+            $query->where('branch_id', $user->branch_id);
+        } elseif ($user->type == 'Agent') {
+            $query->where('agent_id', $user->agent_id);
+        } else {
+            $query->where('assigned_to', $user->id); // fallback
+        }
+    }
+
+    // Filters from request
+    $filters = $this->dealFilters();
+    foreach ($filters as $column => $value) {
+        if ($column === 'name') $query->where('name', 'like', "%{$value}%");
+        elseif ($column === 'stage_id') $query->where('stage_id', $value);
+        elseif ($column === 'users') $query->whereIn('created_by', $value);
+        elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
+        elseif ($column === 'brand') $query->where('brand_id', $value);
+        elseif ($column === 'region_id') $query->where('region_id', $value);
+        elseif ($column === 'branch_id') $query->where('branch_id', $value);
+        elseif ($column === 'deal_assigned_user') $query->where('assigned_to', $value);
+        elseif ($column === 'created_at_from') $query->whereDate('created_at', '>=', $value);
+        elseif ($column === 'created_at_to') $query->whereDate('created_at', '<=', $value);
+        elseif ($column === 'tag') $query->whereRaw('FIND_IN_SET(?, tag_ids)', [$value]);
+        elseif ($column === 'days_at_stage') {
+            if ($value === '30+') $query->where('days_at_stage', '>=', 30);
+            else $query->where('days_at_stage', '=', (int)$value);
+        }
+    }
+
+    // fetcttype filter
+    if ($request->filled('fetcttype')) {
+        $type = $request->fetcttype;
+        if ($type === 'yourdeals') $query->where('created_by', $user->id);
+        if ($type === 'assigntome') $query->where('assigned_to', $user->id);
+        if ($type === 'agentdeals') $query->whereNotNull('agent_id');
+        else $query->whereNull('agent_id');
+    }
+
+    // Search filter
+    if ($request->filled('search')) {
+        $search = $request->get('search');
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('phone', 'like', "%{$search}%")
+              ->orWhere('price', 'like', "%{$search}%")
+              ->orWhere('passport_number', 'like', "%{$search}%")
+              ->orWhere('lead_name', 'like', "%{$search}%")
+              ->orWhere('lead_email', 'like', "%{$search}%")
+              ->orWhere('lead_phone', 'like', "%{$search}%");
+        });
+    }
+
+    // CSV Export
+    if ($request->input('download_csv')) {
+        $dealsCsv = $query->get();
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="admissions_'.time().'.csv"',
+        ];
+        $callback = function () use ($dealsCsv) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['ID','Name','Stage','Brand','Agent','Assigned','Client Passport','Lead Name','Lead Email','University','Price','Created At']);
+            foreach ($dealsCsv as $deal) {
+                fputcsv($file, [
+                    $deal->id,
+                    $deal->name,
+                    $deal->stage_name,
+                    $deal->brand_name,
+                    $deal->agent_name,
+                    $deal->assigned_user_name,
+                    $deal->passport_number,
+                    $deal->lead_name,
+                    $deal->lead_email,
+                    $deal->university_name,
+                    $deal->price,
+                    $deal->created_at,
+                ]);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // Kanban view
+    if ($view === 'kanban') {
+        $KANBAN_PER_PAGE = 1000;
+        $deals = $query->orderBy('created_at', 'desc')->limit($KANBAN_PER_PAGE)->get();
+
+        $stages = DB::table('stages')->select('id', 'name')->get();
+        $colors = [
+            1 => ['#4F46E5', '#eef2ff'],
+            2 => ['#F59E0B', '#fff7ed'],
+            3 => ['#22C55E', '#f0fdf4'],
+            4 => ['#EC928E', '#fef2f2'],
+            5 => ['#0EA5E9', '#e0f2fe'],
+            6 => ['#6B7280', '#f3f4f6'],
+        ];
+
+        $kanban = [];
+        foreach ($stages as $stage) {
+            $stageDeals = $deals->where('stage_id', $stage->id)->values();
+            $kanban[] = [
+                'stage_id' => $stage->id,
+                'title' => $stage->name,
+                'count' => $stageDeals->count(),
+                'color' => $colors[$stage->id][0] ?? '#000',
+                'bgColor' => $colors[$stage->id][1] ?? '#fff',
+                'deals' => $stageDeals->map(fn($deal) => [
+                    'id' => $deal->id,
+                    'name' => $deal->name,
+                    'phone' => $deal->phone,
+                    'price' => $deal->price,
+                    'assigned_to' => $deal->assigned_user_name,
+                    'brand' => $deal->brand_name,
+                    'agent' => $deal->agent_name,
+                    'client_passport' => $deal->passport_number,
+                    'lead_name' => $deal->lead_name,
+                ]),
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'view' => 'kanban',
+            'data' => $kanban,
+            'total_records' => $deals->count(),
+        ]);
+    }
+
+    // List view
+    $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $deals->items(),
+        'current_page' => $deals->currentPage(),
+        'last_page' => $deals->lastPage(),
+        'total_records' => $deals->total(),
+        'per_page' => $deals->perPage()
+    ]);
+}
+
     public function getAdmissionDetails(Request $request)
     {
 
