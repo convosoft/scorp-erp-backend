@@ -365,7 +365,8 @@ class DealController extends Controller
     }
 
     // List view
-    $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+    $deals = $query->distinct()->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+
 
     $totalRecords = DB::table('admission_view')->count();
 
