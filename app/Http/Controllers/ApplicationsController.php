@@ -26,6 +26,7 @@ use App\Models\DealApplication;
 use App\Models\DealTask;
 use App\Models\LeadTag;
 use App\Models\Region;
+use App\Models\ApplicationView;
 use Illuminate\Support\Facades\Validator;
 use Session;
 
@@ -118,6 +119,174 @@ class ApplicationsController extends Controller
             'per_page' => $applications->perPage(),
         ]);
     }
+
+    public function getApplicationsByView(Request $request)
+{
+    $usr = \Auth::user();
+
+    // Permission check
+    if (!($usr->can('view application') || in_array($usr->type, ['super admin', 'company', 'Admin Team']) || $usr->can('level 1'))) {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 403);
+    }
+
+    $perPage = (int) $request->input('num_results_on_page', env("RESULTS_ON_PAGE", 50));
+    $page = (int) $request->input('page', 1);
+
+    // Start query on the view
+    $query = ApplicationView::query();
+
+    // Role-based filtering
+    $userType = $usr->type;
+    if ($userType === 'company') {
+        $query->where('brand_id', $usr->id);
+    } elseif ($userType === 'Region Manager' && $usr->region_id) {
+        $query->where('region_id', $usr->region_id);
+    } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
+        $query->where('branch_id', $usr->branch_id);
+    } elseif ($userType === 'Agent') {
+        $query->where('agent_id', $usr->agent_id);
+    } elseif (!in_array($userType, ['super admin', 'Admin Team'])) {
+        $query->where('assigned_to', $usr->id); // fallback
+    }
+
+    // Filters from request
+    $filters = $this->ApplicationFilters($request); // your existing filter method
+    foreach ($filters as $column => $value) {
+        match ($column) {
+            'name' => $query->where('name', 'like', "%{$value}%"),
+            'stage_id' => $query->where('stage_id', $value),
+            'university_id' => $query->where('university_id', $value),
+            'created_by' => $query->where('created_by', $value),
+            'brand' => $query->where('brand_id', $value),
+            'region_id' => $query->where('region_id', $value),
+            'branch_id' => $query->where('branch_id', $value),
+            'assigned_to' => $query->where('assigned_to', $value),
+            'created_at_from' => $query->whereDate('created_at', '>=', $value),
+            'created_at_to' => $query->whereDate('created_at', '<=', $value),
+            'tag' => $query->whereRaw('FIND_IN_SET(?, tag_ids)', [$value]),
+            default => null,
+        };
+    }
+
+    // Search filter
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        if (strpos($search, 'APC') === 0) {
+            $numericId = preg_replace('/^[A-Z]+/', '', $search);
+            $query->where('id', $numericId);
+        } else {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('application_key', 'like', "%{$search}%")
+                  ->orWhere('course', 'like', "%{$search}%")
+                  ->orWhere('university_name', 'like', "%{$search}%");
+            });
+        }
+    }
+
+    // Fetcttype filter (your existing logic)
+    if ($request->filled('fetcttype')) {
+        $type = $request->fetcttype;
+        if ($type === 'yourapplications') $query->where('created_by', $usr->id);
+        if ($type === 'assigntome') $query->where('assigned_to', $usr->id);
+        if ($type === 'agentapplications') $query->whereNotNull('agent_id');
+        else $query->whereNull('agent_id');
+    }
+
+    // CSV Export
+    if ($request->input('download_csv')) {
+        $applicationsCsv = $query->get();
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="applications_'.time().'.csv"',
+        ];
+
+        $callback = function () use ($applicationsCsv) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'ID', 'Application Key', 'Name', 'University', 'Course', 'Brand', 'Branch', 'Assigned User', 'Stage', 'Created At'
+            ]);
+
+            foreach ($applicationsCsv as $app) {
+                fputcsv($file, [
+                    $app->id,
+                    $app->application_key,
+                    $app->name,
+                    $app->university_name,
+                    $app->course_name,
+                    $app->brand_name,
+                    $app->branch_name,
+                    $app->assigned_user_name,
+                    $app->stage_name,
+                    $app->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // Kanban view
+    if ($request->input('view') === 'kanban') {
+        $KANBAN_PER_PAGE = 1000;
+        $applications = $query->orderBy('created_at', 'desc')->limit($KANBAN_PER_PAGE)->get();
+
+        $stages = DB::table('application_stages')->select('id', 'name')->get();
+        $colors = [
+            1 => ['#4F46E5', '#eef2ff'],
+            2 => ['#F59E0B', '#fff7ed'],
+            3 => ['#22C55E', '#f0fdf4'],
+            4 => ['#EC928E', '#fef2f2'],
+            5 => ['#0EA5E9', '#e0f2fe'],
+            6 => ['#6B7280', '#f3f4f6'],
+        ];
+
+        $kanban = [];
+        foreach ($stages as $stage) {
+            $stageApps = $applications->where('stage_id', $stage->id)->values();
+            $kanban[] = [
+                'stage_id' => $stage->id,
+                'title' => $stage->name,
+                'count' => $stageApps->count(),
+                'color' => $colors[$stage->id][0] ?? '#000',
+                'bgColor' => $colors[$stage->id][1] ?? '#fff',
+                'applications' => $stageApps->map(fn($app) => [
+                    'id' => $app->id,
+                    'name' => $app->name,
+                    'course' => $app->course,
+                    'university' => $app->university_name,
+                    'assigned_to' => $app->assigned_user_name,
+                    'stage' => $app->stage_name,
+                ]),
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'view' => 'kanban',
+            'data' => $kanban,
+            'total_records' => $applications->count(),
+        ]);
+    }
+
+    // List view - simple pagination
+    $applications = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $applications->items(),
+        'current_page' => $applications->currentPage(),
+        'last_page' => $applications->lastPage(),
+        'total_records' => $applications->total(),
+        'per_page' => $applications->perPage(),
+    ]);
+}
+
 
     private function ApplicationFilters(Request $request)
     {
