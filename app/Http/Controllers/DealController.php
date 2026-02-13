@@ -365,21 +365,14 @@ class DealController extends Controller
     }
 
     // List view
-
-    $deals = $query->groupBy('admission_view.id')
-              ->orderByDesc('id')
-              ->paginate($perPage, ['*'], 'page', $page);
-
-
-    $totalRecords = DB::table('admission_view')->count();
+    $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
     return response()->json([
         'status' => 'success',
-        //'data' => $deals->items(),
+        'data' => $deals->items(),
         'current_page' => $deals->currentPage(),
         'last_page' => $deals->lastPage(),
         'total_records' => $deals->total(),
-        'totalRecords' => $totalRecords,
         'per_page' => $deals->perPage()
     ]);
 }
