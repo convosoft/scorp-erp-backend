@@ -2481,7 +2481,7 @@ class LeadController extends Controller
 
                 // Log activity
                 $data = [
-                    'type' => 'success',
+                    'type' => 'info',
                     'note' => json_encode([
                         'title' => 'Lead Notes Updated',
                         'message' => 'Lead notes updated successfully',
@@ -2512,7 +2512,7 @@ class LeadController extends Controller
 
             // Log activity
             $data = [
-                'type' => 'info',
+                'type' => 'success',
                 'note' => json_encode([
                     'title' => 'Notes Created',
                     'message' => 'Notes created successfully',
