@@ -2107,12 +2107,12 @@ class LeadController extends Controller
         $data = [
             'type' => 'sucssess',
             'note' => json_encode([
-                'title' => 'Deal Created',
-                'message' => 'Deal created successfully.',
+                'title' => 'Admission  Created',
+                'message' => 'Admission  created successfully.',
             ]),
             'module_id' => $deal->id,
             'module_type' => 'deal',
-            'notification_type' => 'Deal Created',
+            'notification_type' => 'Admission  Created',
         ];
         addLogActivity($data);
 
