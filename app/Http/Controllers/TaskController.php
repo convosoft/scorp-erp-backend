@@ -619,7 +619,7 @@ class TaskController extends Controller
 
         if (isset($dealTask->deal_id) && in_array($dealTask->related_type, ['organization', 'lead', 'deal', 'application', 'toolkit', 'agency', 'task'])) {
             $logData = [
-                'type' => 'info',
+                'type' => 'success',
                 'note' => json_encode($remarks),
                 'module_id' => $dealTask->related_type == 'task' ? $dealTask->id : $dealTask->deal_id,
                 'module_type' => $dealTask->related_type,
