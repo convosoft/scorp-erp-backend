@@ -2592,6 +2592,19 @@ class LeadController extends Controller
             ], 422);
         }
         $discussions = \App\Models\LeadNote::find($request->id);
+
+         // Log activity
+                $data = [
+                    'type' => 'warning',
+                    'note' => json_encode([
+                        'title' => 'Lead Notes deleted',
+                        'message' => 'Lead notes deleted successfully',
+                    ]),
+                    'module_id' => $discussions->lead_id,
+                    'module_type' => 'lead',
+                    'notification_type' => 'Lead Notes Updated',
+                ];
+                addLogActivity($data);
         if (! empty($discussions)) {
             $discussions->delete();
         }
