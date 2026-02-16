@@ -706,4 +706,194 @@ class DealController extends Controller
             'data'   => $stage_histories,
         ], 200);
     }
+
+   public function updateAdmission(Request $request)
+{
+    $user = Auth::user();
+
+    // Permission check
+    if (!$user->can('edit deal') && $user->type != 'super admin') {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 200);
+    }
+
+    // Validation
+    $validator = Validator::make($request->all(), [
+        'id' => 'required|exists:deals,id',
+        'name' => 'required',
+        'intake_month' => 'required',
+        'intake_year' => 'required',
+        'brand_id' => 'required|gt:0',
+        'region_id' => 'required|gt:0',
+        'lead_branch' => 'required|gt:0',
+        'lead_assigned_user' => 'required|gt:0',
+        'pipeline_id' => 'required',
+        'gender' => 'required',
+        'nationality' => 'required',
+        'date_of_birth' => 'required',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $validator->errors()->first()
+        ], 422);
+    }
+
+    // Get Deal
+    $deal = Deal::findOrFail($request->id);
+    $originalData = $deal->toArray(); // before update
+
+    // Check ownership permission (same logic preserved)
+    if (!$user->can('edit deal') && $deal->created_by != $user->ownerId() && $user->type != 'super admin') {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 200);
+    }
+
+    // Get related user
+    $user_who_have_password = User::whereIn('id', function ($query) use ($request) {
+        $query->select('client_id')
+            ->from('client_deals')
+            ->where('deal_id', $request->id);
+    })->first();
+
+    // Passport validation (same logic preserved)
+    if ($user_who_have_password) {
+        $passportValidator = Validator::make($request->all(), [
+            'passport_number' => 'required|unique:users,passport_number,' . $user_who_have_password->id,
+        ]);
+
+        if ($passportValidator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $passportValidator->errors()->first()
+            ], 422);
+        }
+    }
+
+    // Update Deal
+    $deal->name  = $request->name;
+    $deal->category = $request->input('category');
+    $deal->university_id = $request->input('university_id');
+    $deal->organization_id = $request->input('organization_id');
+    $deal->phone = $request->input('lead_phone');
+    $deal->brand_id = $request->input('brand_id');
+    $deal->region_id = $request->input('region_id');
+    $deal->branch_id = $request->input('lead_branch');
+    $deal->assigned_to = $request->input('lead_assigned_user');
+    $deal->intake_month = $request->input('intake_month');
+    $deal->intake_year = $request->input('intake_year');
+    $deal->price = 0;
+    $deal->pipeline_id = $request->input('pipeline_id');
+    $deal->description = $request->input('deal_description');
+    $deal->status = 'Active';
+    $deal->created_by = $deal->created_by;
+    $deal->save();
+
+    // Update User
+    if ($user_who_have_password) {
+        $user_who_have_password->passport_number = $request->passport_number;
+        $user_who_have_password->gender = $request->gender;
+        $user_who_have_password->nationality = $request->nationality;
+        $user_who_have_password->date_of_birth = $request->date_of_birth;
+        $user_who_have_password->save();
+    }
+
+    // Update or Create Lead
+    $lead = Lead::where('is_converted', $request->id)->first();
+
+    if (!empty($lead)) {
+
+        if (!empty($request->lead_email)) {
+            $lead->email = $request->lead_email;
+        }
+
+        if (!empty($request->lead_phone)) {
+            $lead->phone = $request->full_number;
+        }
+
+        $lead->save();
+
+    } else {
+
+        $lead = new Lead();
+        $lead->title = $request->name;
+        $lead->name = $request->name;
+        $lead->email = $request->lead_email;
+        $lead->phone = $request->full_number;
+        $lead->mobile_phone = $request->full_number;
+        $lead->branch_id = $request->lead_branch;
+        $lead->brand_id = $request->brand_id;
+        $lead->region_id = $request->region_id;
+        $lead->organization_id = "--";
+        $lead->organization_link = "--";
+        $lead->sources = "--";
+        $lead->referrer_email = $request->lead_email;
+        $lead->street = "--";
+        $lead->city = "--";
+        $lead->state = "--";
+        $lead->postal_code = "--";
+        $lead->country = "--";
+        $lead->keynotes = "--";
+        $lead->tags = "--";
+        $lead->stage_id = "1";
+        $lead->subject = $request->name;
+        $lead->user_id = $deal->assigned_to;
+        $lead->tag_ids = "";
+        $lead->pipeline_id = "1";
+        $lead->created_by = $deal->created_by;
+        $lead->date = date('Y-m-d');
+        $lead->drive_link = "";
+        $lead->is_converted = $deal->id;
+        $lead->save();
+    }
+
+    // change tracking here
+$changes = [];
+$updatedFields = [];
+
+foreach ($originalData as $field => $oldValue) {
+
+    if (in_array($field, ['created_at', 'updated_at'])) {
+        continue;
+    }
+
+    if ($deal->$field != $oldValue) {
+
+        $changes[$field] = [
+            'old' => $oldValue,
+            'new' => $deal->$field
+        ];
+
+        $updatedFields[] = $field;
+    }
+}
+
+if (!empty($changes)) {
+
+    addLogActivity([
+        'type' => 'info',
+        'note' => json_encode([
+            'title' => 'Deal updated: ' . $deal->name,
+            'message' => 'Fields updated: ' . implode(', ', $updatedFields),
+            'changes' => $changes
+        ]),
+        'module_id' => $deal->id,
+        'module_type' => 'deal',
+        'notification_type' => 'Deal Updated'
+    ]);
+
+}
+
+    return response()->json([
+        'status' => 'success',
+        'deal' => $deal,
+        'message' => __('Deal successfully updated!')
+    ]);
+}
+
 }
