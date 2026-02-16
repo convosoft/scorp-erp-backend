@@ -267,9 +267,9 @@ class DealController extends Controller
     // fetcttype filter
     if ($request->filled('fetcttype')) {
         $type = $request->fetcttype;
-        if ($type === 'yourdeals') $query->where('created_by', $user->id);
+        if ($type === 'youradmissions') $query->where('created_by', $user->id);
         if ($type === 'assigntome') $query->where('assigned_to', $user->id);
-        if ($type === 'agentdeals') $query->whereNotNull('agent_id');
+        if ($type === 'agentadmissions') $query->whereNotNull('agent_id');
         else $query->whereNull('agent_id');
     }
 
