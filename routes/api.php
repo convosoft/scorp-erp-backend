@@ -922,7 +922,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/getMoveApplicationPluck', [DealController::class, 'getMoveApplicationPluck']);
      Route::post('/moveApplicationsave', [DealController::class, 'moveApplicationsave']);
      Route::post('/updateAdmission', [DealController::class, 'updateAdmission']);
-     Route::post('/GetLeadNotes', [DealController::class, 'GetLeadNotes']);
+     Route::post('/GetadmissionNotes', [DealController::class, 'GetadmissionNotes']);
 
 
      //   Announcement Category

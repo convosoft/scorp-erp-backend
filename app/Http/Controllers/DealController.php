@@ -896,7 +896,7 @@ if (!empty($changes)) {
     ]);
 }
 
- public function GetLeadNotes(Request $request)
+ public function GetadmissionNotes(Request $request)
     {
         $validator = Validator::make(
             $request->all(),
