@@ -896,4 +896,53 @@ if (!empty($changes)) {
     ]);
 }
 
+ public function GetLeadNotes(Request $request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'deal_id' => 'required|exists:deals,id',
+            ]
+        );
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 400);
+        }
+        $deal_id = $request->deal_id;
+        $notesQuery = \App\Models\DealNote::with('author')->where('deal_id', $deal_id);
+        $userType = \Auth::user()->type;
+        if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+            // No additional filtering needed
+        } elseif ($userType === 'company') {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && ! empty(\Auth::user()->region_id)) {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } elseif ($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer', 'Careers Consultant']) || (\Auth::user()->can('level 4') && ! empty(\Auth::user()->branch_id))) {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } else {
+            $notesQuery->where('created_by', \Auth::user()->id); // Updated 'user_id' to 'created_by'
+        }
+
+        $notes = $notesQuery->orderBy('created_at', 'DESC')
+            ->get()->map(function ($discussion) {
+                return [
+                    'id' => $discussion->id,
+                    'text' => htmlspecialchars_decode($discussion->description),
+                    'author' => $discussion?->author?->name,
+                    'time' => $discussion->created_at->diffForHumans(),
+                    'pinned' => false, // Default value as per the requirement
+                    'timestamp' => $discussion->created_at->toISOString(),
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $notes,
+        ], 201);
+    }
+
 }
