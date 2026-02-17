@@ -565,7 +565,7 @@ class ApplicationsController extends Controller
         if (!$user_id || !User::find($user_id)) {
             return  response()->json([
                 'status' => 'error',
-                'message' => 'Client not found for this deal.'
+                'message' => 'Client not found for this admission.'
             ]);
         }
         $user = User::find($user_id); // Single object, not plural
