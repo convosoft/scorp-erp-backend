@@ -728,7 +728,7 @@ class DealController extends Controller
         'brand_id' => 'required|gt:0',
         'region_id' => 'required|gt:0',
         'lead_branch' => 'required|gt:0',
-        'lead_assigned_user' => 'required|gt:0',
+        'assigned_to' => 'required|exists:users,id',
         'pipeline_id' => 'required',
         'gender' => 'required',
         'nationality' => 'required',
@@ -784,7 +784,7 @@ class DealController extends Controller
     $deal->brand_id = $request->input('brand_id');
     $deal->region_id = $request->input('region_id');
     $deal->branch_id = $request->input('lead_branch');
-    $deal->assigned_to = $request->input('lead_assigned_user');
+    $deal->assigned_to = $request->input('assigned_to');
     $deal->intake_month = $request->input('intake_month');
     $deal->intake_year = $request->input('intake_year');
     $deal->price = 0;
