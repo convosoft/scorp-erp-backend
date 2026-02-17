@@ -730,7 +730,7 @@ class DealController extends Controller
         'lead_branch' => 'required|gt:0',
         'assigned_to' => 'required|exists:users,id',
         'pipeline_id' => 'required',
-        'gender' => 'required',
+        //'gender' => 'required',
         'nationality' => 'required',
         'date_of_birth' => 'required',
     ]);
@@ -797,7 +797,7 @@ class DealController extends Controller
     // Update User
     if ($user_who_have_password) {
         $user_who_have_password->passport_number = $request->passport_number;
-        $user_who_have_password->gender = $request->gender;
+        //$user_who_have_password->gender = $request->gender;
         $user_who_have_password->nationality = $request->nationality;
         $user_who_have_password->date_of_birth = $request->date_of_birth;
         $user_who_have_password->save();
