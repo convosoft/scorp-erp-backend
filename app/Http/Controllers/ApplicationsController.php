@@ -594,7 +594,7 @@ class ApplicationsController extends Controller
             $messages = $validator->getMessageBag();
             return response()->json([
                 'status' => 'error',
-                'message' => $messages->first()
+                'errors' => $messages
             ]);
         }
 
