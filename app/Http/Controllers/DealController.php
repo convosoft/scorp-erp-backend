@@ -945,4 +945,69 @@ if (!empty($changes)) {
         ], 201);
     }
 
+       public function deleteAdmission(Request $request)
+    {
+        // Validate the Request Data
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required|exists:deals,id',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+        // Check Permission
+        if (! \Auth::user()->can('delete deal') && \Auth::user()->type != 'super admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Permission Denied.'),
+            ], 403);
+        }
+
+        // Find the Lead
+        $deal = Deal::find($request->id);
+
+
+        $applications = DealApplication::where('deal_id', $request->id)
+                ->orderBy('stage_id', 'desc')
+                ->get();
+
+
+         if (count($applications) > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('The application created for this admission cannot be deleted.'),
+            ], 403);
+        }
+
+
+        // Log the deletion
+        $data = [
+            'type' => 'warning',
+            'note' => json_encode([
+                'title' => $deal->name .' admission Deleted',
+                'message' => $deal->name .' admission deleted successfully',
+            ]),
+            'module_id' => $deal->id,
+            'module_type' => 'deal',
+            'notification_type' => 'deal Deleted',
+        ];
+        addLogActivity($data);
+
+        // Delete the deal
+        $deal->delete();
+
+        // Return Success Response
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Lead successfully deleted!'),
+        ], 200);
+    }
+
 }
