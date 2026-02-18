@@ -2265,6 +2265,14 @@ class LeadController extends Controller
         // Find the Lead
         $lead = Lead::find($request->id);
 
+
+         if ($lead->is_converted !=0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('The Addmission created for this lead cannot be deleted.'),
+            ], 403);
+        }
+
         // Delete related data
         LeadDiscussion::where('lead_id', '=', $lead->id)->delete();
         LeadFile::where('lead_id', '=', $lead->id)->delete();
@@ -2273,10 +2281,10 @@ class LeadController extends Controller
 
         // Log the deletion
         $data = [
-            'type' => 'info',
+            'type' => 'warning',
             'note' => json_encode([
-                'title' => 'Lead Deleted',
-                'message' => 'Lead deleted successfully',
+                'title' => $lead->name .' Lead Deleted',
+                'message' => $lead->name .' Lead deleted successfully',
             ]),
             'module_id' => $lead->id,
             'module_type' => 'lead',
