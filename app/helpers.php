@@ -852,19 +852,19 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
             // Super admins
             $admins = [];
             if ($branch->name == 'Admin') {
-                $admins = User::where('type', 'super admin')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $admins = User::where('type', 'super admin')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
             }
 
             // Product Coordinators
             $Product_Coordinator = [];
             if ($branch->name == 'Product') {
-                $Product_Coordinator = User::where('type', 'Product Coordinator')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $Product_Coordinator = User::where('type', 'Product Coordinator')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
             }
 
             // Marketing team
             $Marketing_team = [];
             if ($branch->name == 'Marketing') {
-                $Marketing_team = User::where('type', 'Marketing Officer')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $Marketing_team = User::where('type', 'Marketing Officer')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
             }
 
             // Project directors
@@ -872,6 +872,7 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
                 ->whereIn('brand_id', $brand_ids)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
+                ->where('is_active', 1)
                 ->toArray();
 
             // Regional managers
@@ -879,6 +880,7 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
                 ->whereIn('region_id', $regions)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
+                ->where('is_active', 1)
                 ->toArray();
 
             // Branch-specific users
@@ -886,6 +888,7 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
                 ->where('branch_id', $id)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
+                ->where('is_active', 1)
                 ->toArray();
 
             // Currently logged-in user
