@@ -928,7 +928,11 @@ class LeadController extends Controller
                 $first_row = $this->readExcelHeader($file);
             }
 
-            $users = User::where('created_by', '=', \Auth::user()->creatorId())->where('type', '!=', 'client')->where('type', '!=', 'company')->where('id', '!=', \Auth::user()->id)->get()->pluck('name', 'id');
+            $users = User::where('created_by', \Auth::user()->creatorId())
+                ->where('is_active', 1)
+                ->whereNotIn('type', ['Agent', 'client', 'company'])
+                ->where('id', '!=', \Auth::id())
+                ->pluck('name', 'id');
 
             $pipelines = Pipeline::get()->pluck('name', 'id');
             $companies = FiltersBrands();
