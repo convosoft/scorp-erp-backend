@@ -12,8 +12,8 @@ class DealApplication extends Model
     protected $products;
     protected $sources;
     protected $fillable = ['labels','application_key','deal_id', 'university_id', 'course','courses_id','country_id', 'stage_id', 'external_app_id', 'name', 'intake', 'created_by'];
-    protected $with = ['stage:id,name','source:id,name','assignedUser:id,name','brand:id,name','branch:id,name','university:id,name','lead']; // Always eager load this relationship
-   
+    protected $with = ['stage:id,name','region:id,name','source:id,name','assignedUser:id,name','brand:id,name','branch:id,name','university:id,name','lead','contact']; // Always eager load this relationship
+
     public function getUniversity($id)
     {
         return University::where('id', $id)->first();
@@ -29,6 +29,14 @@ class DealApplication extends Model
 
         return \Auth::user()->priceFormat($total);
     }
+    public function region()
+{
+    return $this->belongsTo(Region::class, 'region_id');
+}
+    public function contact()
+{
+    return $this->belongsTo(User::class, 'contact_id');
+}
 
     public function labels()
     {
@@ -67,7 +75,7 @@ class DealApplication extends Model
         return $this->hasOne('App\Models\ApplicationStage', 'id', 'stage_id');
     }
 
-    
+
 public function brand()
 {
     return $this->belongsTo(User::class, 'brand_id');
