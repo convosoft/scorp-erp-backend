@@ -624,8 +624,13 @@ class ApplicationsController extends Controller
                 $courseName = $request->course2;
             }
 
+             $student_origin_country = $request->student_origin_country;
+            $student_origin_country = Country::where('country_code', $student_origin_country)->first();
+             $countryId = $request->countryId;
+            $countryId = Country::where('country_code', $countryId)->first();
+
             $new_app = DealApplication::create([
-                'student_origin_country' => $request->student_origin_country ?? null,
+                'student_origin_country' => $student_origin_country->id ?? null,
                 'student_origin_city' => $request->student_origin_city ?? null,
                 'student_previous_university' => $request->student_previous_university ?? null,
                 'application_key' => $userName . '-' . $passport_number . '-' . $university_name,
@@ -640,6 +645,7 @@ class ApplicationsController extends Controller
             ]);
             $new_app->tag_ids     = !empty($request->tag_ids) ? implode(',', $request->tag_ids) : '';
             $new_app->brand_id = $deal->brand_id;
+            $new_app->country_id = $countryId->id;
             $new_app->agent_id = $deal->agent_id;
             $new_app->campus = $request->campus;
             $new_app->intakeYear = $request->intakeYear;
