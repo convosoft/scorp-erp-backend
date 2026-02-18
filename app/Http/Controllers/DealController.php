@@ -1006,7 +1006,7 @@ if (!empty($changes)) {
         // Return Success Response
         return response()->json([
             'status' => 'success',
-            'message' => __('Lead successfully deleted!'),
+            'message' => __('Admission successfully deleted!'),
         ], 200);
     }
 
