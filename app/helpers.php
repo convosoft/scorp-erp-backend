@@ -870,26 +870,27 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
             // Project directors
             $project_directors = User::whereIn('type', ['Project Director', 'Project Manager'])
                 ->whereIn('brand_id', $brand_ids)
+                ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
-                ->where('is_active', 1)
                 ->toArray();
 
             // Regional managers
             $regional_managers = User::where('type', 'Region Manager')
                 ->whereIn('region_id', $regions)
+                ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
-                ->where('is_active', 1)
                 ->toArray();
 
             // Branch-specific users
             $users = User::whereNotIn('type', ['super admin', 'company', 'client', 'team'])
                 ->where('branch_id', $id)
+                ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
-                ->where('is_active', 1)
                 ->toArray();
+
 
             // Currently logged-in user
             $login_user = [\Auth::id() => \Auth::user()->name];
