@@ -622,7 +622,7 @@ class ApplicationsController extends Controller
                 }
             } else {
                 $course_id = null;
-                $courseName = $request->course2;
+                $courseName = $request->CoursesName;
             }
 
              $student_origin_country = $request->student_origin_country;
@@ -646,6 +646,8 @@ class ApplicationsController extends Controller
             ]);
             $new_app->tag_ids     = !empty($request->tag_ids) ? implode(',', $request->tag_ids) : '';
             $new_app->brand_id = $deal->brand_id;
+            $new_app->region_id = $deal->region_id;
+            $new_app->branch_id = $deal->branch_id;
             $new_app->country_id = $countryId->id;
             $new_app->agent_id = $deal->agent_id;
             $new_app->campus = $request->campus;
