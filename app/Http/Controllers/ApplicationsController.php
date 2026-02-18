@@ -1817,4 +1817,45 @@ class ApplicationsController extends Controller
             'message' => 'Application updated successfully!',
         ], 200);
     }
+
+    public function addApplicationTags(Request $request)
+    {
+
+      // Validate Input
+        $validator = \Validator::make($request->all(), [
+            'selectedIds' => 'required|string', // Expecting comma-separated IDs
+            'tagid' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+        $ids = explode(',', $request->selectedIds);
+        $Leads = DealApplication::whereIn('id', $ids)->get();
+        if (!empty($ids) && !empty($Leads) && $Leads->count() > 0) {
+            foreach ($Leads as $Lead) {
+                $Lead->tag_ids = $Lead->tag_ids ? $Lead->tag_ids . ',' . $request->tagid : $request->tagid;
+                $Lead->save();
+
+                addLogActivity([
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => $Lead->name. ' Tag Updated for application',
+                        'message' => $Lead->name. " Tag Updated for application",
+                    ]),
+                    'module_id' => $Lead->id,
+                    'module_type' => 'application',
+                    'notification_type' => 'Tag Updated',
+                ]);
+            }
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Tag added successfully'
+            ]);
+        }
+    }
 }

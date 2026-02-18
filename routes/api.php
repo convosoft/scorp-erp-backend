@@ -946,6 +946,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/deleteApplication', [ApplicationsController::class, 'deleteApplication']);
      Route::post('/updateApplicationStage', [ApplicationsController::class, 'updateApplicationStage']);
      Route::post('/DeleteApplicationNotes', [ApplicationsController::class, 'DeleteApplicationNotes']);
+     Route::post('/addApplicationTags', [ApplicationsController::class, 'addApplicationTags']);
 
      Route::post('/application_request_save_deposite', [ApplicationsController::class, 'application_request_save_deposite']);
 
