@@ -587,6 +587,7 @@ class ApplicationsController extends Controller
             ],
             'status' => 'required',
             'intake_month' => 'required',
+            'tag_ids' => 'required|array',
         ]);
 
         if ($validator->fails()) {
