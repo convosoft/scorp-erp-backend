@@ -924,6 +924,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/updateAdmission', [DealController::class, 'updateAdmission']);
      Route::post('/GetadmissionNotes', [DealController::class, 'GetadmissionNotes']);
      Route::post('/deleteAdmission', [DealController::class, 'deleteAdmission']);
+     Route::post('/addAdmissionTags', [DealController::class, 'addAdmissionTags']);
 
 
      //   Announcement Category
