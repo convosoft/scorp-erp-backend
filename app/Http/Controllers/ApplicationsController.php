@@ -28,6 +28,7 @@ use App\Models\LeadTag;
 use App\Models\Region;
 use App\Models\ApplicationView;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Session;
 
 class ApplicationsController extends Controller
