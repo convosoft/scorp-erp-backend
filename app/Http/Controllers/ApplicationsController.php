@@ -614,8 +614,8 @@ class ApplicationsController extends Controller
                 )
             )->name;
             //
-            if (!empty($request->course)) {
-                $course = Course::find($request->course);
+            if (!empty($request->courses_id)) {
+                $course = Course::find($request->courses_id);
                 if (!empty($course)) {
                     $course_id = $course->id;
                     $courseName = $course->name . ' - ' . $course->campus . ' - ' . $course->intake_month . ' - ' . $course->intakeYear . ' (' . $course->duration . ')';
