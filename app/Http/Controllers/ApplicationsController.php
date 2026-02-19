@@ -1698,7 +1698,7 @@ class ApplicationsController extends Controller
 
     public function application_request_save_deposite(Request $request)
     {
-        $id=$request->appid;
+        $id=$request->application_id;
         $application = DealApplication::with('university')->find($id);
 
         $currentStages = array_filter(explode(',', trim($application->request_stage, ',')));
