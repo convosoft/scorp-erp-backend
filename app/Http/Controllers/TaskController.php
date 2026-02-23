@@ -386,6 +386,7 @@ class TaskController extends Controller
                     'deal_tasks.assigned_to',
                     'brandname.name as brand_name',
                     'users.name as user_name',
+                    'users.name as assigned_to_name',
                     'deal_tasks.tag_ids',
                 )
                 ->join($tempTable, 'deal_tasks.id', '=', "{$tempTable}.id")
