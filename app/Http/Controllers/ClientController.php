@@ -814,6 +814,7 @@ class ClientController extends Controller
             $validator = \Validator::make($request->all(), [
                 'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
                 'id' => 'required|exists:users,id',
+                'deal_id' => 'required|exists:deals,id',
             ]);
             if ($validator->fails()) {
                 $messages = $validator->getMessageBag();
