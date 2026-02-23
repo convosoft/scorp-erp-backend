@@ -85,7 +85,13 @@ class ClientController extends Controller
 
         // Build query
         $query = User::where('users.type', 'client')
-            ->withCount(['clientDeals', 'clientApplications']);
+            ->withCount('clientDeals')
+                ->addSelect([
+                    'client_applications_count' => \App\Models\Deal::selectRaw('COUNT(deal_applications.id)')
+                        ->join('deal_applications', 'deal_applications.deal_id', '=', 'deals.id')
+                        ->join('client_deals', 'client_deals.deal_id', '=', 'deals.id')
+                        ->whereColumn('client_deals.client_id', 'users.id')
+                ]);
 
         // Filters
         if ($request->filled('name')) {
