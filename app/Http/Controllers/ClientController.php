@@ -109,6 +109,15 @@ class ClientController extends Controller
             });
         }
 
+         if ($request->fetcttype == 'blocked') {
+                $query->where('users.blocked_status','=','1');
+            }
+
+         if ($request->fetcttype == 'unblockedrequest') {
+                $query->where('users.unblock_status','=','1');
+            }
+
+
         // Get paginated result
         $paginated = $query->orderBy('users.created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
@@ -444,6 +453,7 @@ class ClientController extends Controller
             }
 
             $client = User::where('id', $request->id)->first();
+          $clienthistory =  HistoryRequest::where('student_id', $request->id)->orderBy('created_at', 'desc')->get();
 
             if (!$client) {
                 return response()->json(['status' => 'error', 'message' => 'Client not found.'], 404);
@@ -477,6 +487,7 @@ class ClientController extends Controller
                     'lead' => $lead,
                     'deals' => $deals,
                     'applications' => $applications,
+                    'clienthistory' => $clienthistory,
                     'stages' => $stages
                 ]
             ]);
