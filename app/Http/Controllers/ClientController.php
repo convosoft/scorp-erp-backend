@@ -815,6 +815,7 @@ class ClientController extends Controller
                 'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
                 'id' => 'required|exists:users,id',
                 'deal_id' => 'required|exists:deals,id',
+                'blocked_reason' => 'required',
             ]);
             if ($validator->fails()) {
                 $messages = $validator->getMessageBag();
@@ -872,5 +873,76 @@ class ClientController extends Controller
             return response()->json(['error' => __('Permission Denied.')], 401);
         }
     }
+
+       public function unBlockClient(Request $request){
+        if (\Auth::user()->can('edit deal')) {
+            $validator = \Validator::make($request->all(), [
+                'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
+                'id' => 'required|exists:users,id',
+                'blocked_reason' => 'required',
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->getMessageBag();
+                return json_encode([
+                    'status' => 'error',
+                    'message' =>  $messages->first()
+                ]);
+            }
+            $User = User::findOrFail($request->id);
+            if ($request->hasFile('block_attachments')) {
+                $blockAttachmentName = time() . '.' . $request->file('block_attachments')->extension();
+                $request->file('block_attachments')->move(public_path('unblock_attachments'), $blockAttachmentName);
+                $User->unblock_attachments = $blockAttachmentName; // Save the file path if needed
+            }
+            $User->unblock_reason=$request->blocked_reason;
+            $User->unblock_status= '1';
+
+
+
+            $HistoryRequest = new \App\Models\HistoryRequest();
+            $HistoryRequest->type = 'Unblocked';
+            $HistoryRequest->status = '2';
+            $HistoryRequest->start_date = date('Y-m-d');
+            $HistoryRequest->time = date('H:i:s');
+            $HistoryRequest->note = json_encode([
+            'title' => 'Contact Updated',
+            'message' => 'Contact Unblocked Request'
+            ]);
+            $HistoryRequest->module_type = 'Unblocked';
+            $HistoryRequest->student_id = $request->id;
+            $HistoryRequest->created_by = \Auth::user()->id;
+            $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+            $HistoryRequest->attachments = $blockAttachmentName ?? null;
+            $HistoryRequest->save();
+
+
+
+
+
+            $User->unblock_by= \Auth::id();
+            $User->save();
+
+            $data = [
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Client Unblock Request',
+                    'message' => 'Client Unblock Request'
+                ]),
+                'module_id' => $User->id,
+                'module_type' => 'client',
+                'notification_type' => 'Client Unblock Request Submit Successfully'
+            ];
+            addLogActivity($data);
+
+            return json_encode([
+                'status' => 'success',
+                'message' => 'Unlock Request Submit Successfully',
+                'deal_id' => $User->id,
+            ]);
+        } else {
+            return response()->json(['error' => __('Permission Denied.')], 401);
+        }
+    }
+
 
 }
