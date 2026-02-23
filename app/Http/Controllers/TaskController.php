@@ -307,9 +307,9 @@ class TaskController extends Controller
             }
 
             if ($request->fetcttype === 'agenttask') {
-                $tasksQuery->whereNotNull('agent_id');
+                $tasksQuery->whereNotNull('deal_tasks.agent_id');
             } else {
-                $tasksQuery->whereNull('agent_id');
+                $tasksQuery->whereNull('deal_tasks.agent_id');
             }
 
             // Apply all filters
