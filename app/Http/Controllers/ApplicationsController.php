@@ -1001,7 +1001,7 @@ class ApplicationsController extends Controller
             'related_type' => 'application',
         ])->where('tasks_type', 'Compliance')->latest()->first();
         // ......
-        $tasksStatusInvalid = isset($hasUncompletedTasks->tasks_type_status) && in_array($hasUncompletedTasks->tasks_type_status, ['2', '0']);
+        $tasksStatusInvalid = isset($hasUncompletedTasks->tasks_type_status) && in_array($hasUncompletedTasks->tasks_type_status, ['1']);
         $request_stage = explode(',', trim($application->request_stage ?? '', ','));
         $stages = [
             'initial' => [0, 1, 2, 3, 4, 5, 6],
