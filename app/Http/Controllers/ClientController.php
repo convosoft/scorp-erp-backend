@@ -812,7 +812,7 @@ class ClientController extends Controller
         public function blockClient(Request $request){
         if (\Auth::user()->can('edit deal')) {
             $validator = \Validator::make($request->all(), [
-                'block_attachments' => 'required|file|mimes:jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
+                'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
                 'id' => 'required|exists:users,id',
             ]);
             if ($validator->fails()) {
