@@ -821,7 +821,7 @@ class ClientController extends Controller
                 $messages = $validator->getMessageBag();
                 return json_encode([
                     'status' => 'error',
-                    'message' =>  $messages->first()
+                    'message' =>  $messages
                 ]);
             }
             $User = User::findOrFail($request->id);
@@ -885,7 +885,7 @@ class ClientController extends Controller
                 $messages = $validator->getMessageBag();
                 return json_encode([
                     'status' => 'error',
-                    'message' =>  $messages->first()
+                    'message' =>  $messages
                 ]);
             }
             $User = User::findOrFail($request->id);
@@ -943,6 +943,115 @@ class ClientController extends Controller
             return response()->json(['error' => __('Permission Denied.')], 401);
         }
     }
+
+
+        public function updateUnblockRequestStatus(Request $request){
+
+         $validator = \Validator::make($request->all(), [
+                'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
+                'id' => 'required|exists:users,id',
+                'blocked_reason' => 'required',
+                'admin_action_status' => 'required',
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->getMessageBag();
+                return json_encode([
+                    'status' => 'error',
+                    'message' =>  $messages
+                ]);
+            }
+        if (\Auth::user()->can('edit deal')) {
+            if($request->admin_action_status != null){
+                 if($request->admin_action_status == '1'){
+
+                    $User = User::findOrFail($request->id);
+
+                    $HistoryRequest = new \App\Models\HistoryRequest();
+                    $HistoryRequest->type = 'Approved';
+                    $HistoryRequest->status = '3';
+                    $HistoryRequest->start_date = date('Y-m-d');
+                    $HistoryRequest->time = date('H:i:s');
+                    $HistoryRequest->note = json_encode([
+                    'title' => 'Contact Updated',
+                    'message' => 'Contact Approved Unblock Request'
+                    ]);
+                    $HistoryRequest->module_type = 'Approved';
+                    $HistoryRequest->student_id = $request->id;
+                    $HistoryRequest->created_by = \Auth::user()->id;
+                    $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+                    $HistoryRequest->attachments = $blockAttachmentName ?? null;
+                    $HistoryRequest->save();
+
+                    $User->blocked_status = '0';
+                    $User->unblock_status = '0';
+
+                    $User->save();
+
+                    $data = [
+                        'type' => 'info',
+                        'note' => json_encode([
+                            'title' => 'Client Unblock Request',
+                            'message' => 'Client Unblock Request'
+                        ]),
+                        'module_id' => $User->id,
+                        'module_type' => 'client',
+                        'notification_type' => 'Client Unblock Request Submit Successfully'
+                    ];
+                    addLogActivity($data);
+
+                     return response()->json([
+                        'status' => 'success',
+                        'message' => 'Unlock Request Submit Successfully',
+                        'id' => $User->id,
+                    ]);
+                 }else{
+
+                    $User = User::findOrFail($request->id);
+
+
+                    $User = User::findOrFail($request->id);
+
+                    $HistoryRequest = new \App\Models\HistoryRequest();
+                    $HistoryRequest->type = 'Rejected';
+                    $HistoryRequest->status = '4';
+                    $HistoryRequest->start_date = date('Y-m-d');
+                    $HistoryRequest->time = date('H:i:s');
+                    $HistoryRequest->note = json_encode([
+                    'title' => 'Contact Updated',
+                    'message' => 'Contact Rejected Unblock Request'
+                    ]);
+                    $HistoryRequest->module_type = 'Rejected';
+                    $HistoryRequest->student_id = $request->id;
+                    $HistoryRequest->created_by = \Auth::user()->id;
+                    $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+                    $HistoryRequest->attachments = $blockAttachmentName ?? null;
+                    $HistoryRequest->save();
+
+                    $data = [
+                        'type' => 'info',
+                        'note' => json_encode([
+                            'title' => 'Rejected Client Unblocked Request',
+                            'message' => 'Rejected Client Unblocked Request'
+                        ]),
+                        'module_id' => $User->id,
+                        'module_type' => 'client',
+                        'notification_type' => 'Rejected Client Unblocked Request Submit Successfully'
+                    ];
+                    addLogActivity($data);
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Rejected Client Request Successfully',
+                        'id' => $request->id,
+                    ]);
+                 }
+            }else{
+
+            }
+        } else {
+            return response()->json(['error' => __('Permission Denied.')], 401);
+        }
+    }
+
 
 
 }
