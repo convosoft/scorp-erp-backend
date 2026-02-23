@@ -84,8 +84,8 @@ class ClientController extends Controller
         $page    = $request->input('page', 1);
 
         // Build query
-        $query = User::select('users.*')
-            ->where('users.type', 'client');
+        $query = User::where('users.type', 'client')
+            ->withCount(['clientDeals', 'clientApplications']);
 
         // Filters
         if ($request->filled('name')) {
