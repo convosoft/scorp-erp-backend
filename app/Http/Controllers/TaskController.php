@@ -282,35 +282,6 @@ class TaskController extends Controller
                 }
             }
 
-             // Additional filters
-            if ($request->filled('fetcttype')) {
-                $fetcttype  =   $request->fetcttype;
-
-                if( $fetcttype=='yourtask'){
-                    $tasksQuery->where('deal_tasks.created_by', \Auth::id());
-                }
-
-                if( $fetcttype=='assignedbyme'){
-                    $tasksQuery->where('deal_tasks.assigned_to', \Auth::id());
-                }
-
-                if( $fetcttype=='Quality'){
-                    $tasksQuery->where('deal_tasks.tasks_type', 'Quality');
-                }
-
-                if( $fetcttype=='Compliance'){
-                    $tasksQuery->where('deal_tasks.tasks_type', 'Compliance');
-                }
-
-
-
-            }
-
-            if ($request->fetcttype == 'agenttask') {
-                $tasksQuery->whereNotNull('deal_tasks.agent_id');
-            } else {
-                $tasksQuery->whereNull('deal_tasks.agent_id');
-            }
 
             // Apply all filters
             $filters = $this->TasksFilter();
@@ -434,6 +405,37 @@ class TaskController extends Controller
                       ->orWhere('users.name', 'like', "%{$search}%")
                       ->orWhere('deal_tasks.due_date', 'like', "%{$search}%");
                 });
+            }
+
+
+              // Additional filters
+            if ($request->filled('fetcttype')) {
+                $fetcttype  =   $request->fetcttype;
+
+                if( $fetcttype=='yourtask'){
+                    $finalQuery->where('deal_tasks.created_by', \Auth::id());
+                }
+
+                if( $fetcttype=='assignedbyme'){
+                    $finalQuery->where('deal_tasks.assigned_to', \Auth::id());
+                }
+
+                if( $fetcttype=='Quality'){
+                    $finalQuery->where('deal_tasks.tasks_type', 'Quality');
+                }
+
+                if( $fetcttype=='Compliance'){
+                    $finalQuery->where('deal_tasks.tasks_type', 'Compliance');
+                }
+
+
+
+            }
+
+            if ($request->fetcttype == 'agenttask') {
+                $finalQuery->whereNotNull('deal_tasks.agent_id');
+            } else {
+                $finalQuery->whereNull('deal_tasks.agent_id');
             }
 
 
