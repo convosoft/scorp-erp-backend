@@ -282,6 +282,36 @@ class TaskController extends Controller
                 }
             }
 
+             // Additional filters
+            if ($request->filled('fetcttype')) {
+                $fetcttype  =   $request->fetcttype;
+
+                if( $fetcttype=='yourtask'){
+                    $tasksQuery->where('deal_tasks.created_by', \Auth::id());
+                }
+
+                if( $fetcttype=='assignedbyme'){
+                    $tasksQuery->where('deal_tasks.assigned_to', \Auth::id());
+                }
+
+                if( $fetcttype=='Quality'){
+                    $tasksQuery->where('deal_tasks.tasks_type', 'Quality');
+                }
+
+                if( $fetcttype=='Compliance'){
+                    $tasksQuery->where('deal_tasks.tasks_type', 'Compliance');
+                }
+
+
+
+            }
+
+            if ($request->fetcttype === 'agenttask') {
+                $tasksQuery->whereNotNull('agent_id');
+            } else {
+                $tasksQuery->whereNull('agent_id');
+            }
+
             // Apply all filters
             $filters = $this->TasksFilter();
             foreach ($filters as $column => $value) {
@@ -409,7 +439,7 @@ class TaskController extends Controller
 
 
             // Apply sorting
-            $status = $_GET['tasks_type'] ?? null;
+            $status =  $request->fetcttype ?? null;
             $user = \Auth::user();
 
             if ($status === 'Quality' || $status === 'Compliance') {
