@@ -885,6 +885,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/getClients', [ClientController::class, 'getClients']);
      Route::post('/clientDetail', [ClientController::class, 'clientDetail']);
      Route::post('/updateClient', [ClientController::class, 'updateClient']);
+     Route::post('/blockClient', [ClientController::class, 'blockClient']);
 
      //     University Rules
      Route::post('/addUniversityRule', [UniversityRuleController::class, 'addUniversityRule']);

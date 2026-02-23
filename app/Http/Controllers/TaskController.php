@@ -232,6 +232,7 @@ class TaskController extends Controller
                 'deal_tasks.id',
                 'deal_tasks.due_date',
                 'deal_tasks.status',
+                'deal_tasks.created_by',
                 'deal_tasks.assigned_to'
             )
             ->join('users', 'users.id', '=', 'deal_tasks.assigned_to')
@@ -384,6 +385,7 @@ class TaskController extends Controller
                     'deal_tasks.due_date',
                     'deal_tasks.status',
                     'deal_tasks.assigned_to',
+                    'deal_tasks.created_by',
                     'brandname.name as brand_name',
                     'users.name as user_name',
                     'users.name as assigned_to_name',

@@ -1581,6 +1581,16 @@ class ApplicationsController extends Controller
         }
         $discussions = ApplicationNote::find($request->id);
         if (! empty($discussions)) {
+              addLogActivity([
+                'type' => 'warning',
+                'note' => json_encode([
+                    'title' => 'Application Notes deleted',
+                    'message' => 'Application notes deleted successfully',
+                ]),
+                'module_id' => $discussions->application_id,
+                'module_type' => 'application',
+                'notification_type' => 'Application Notes deleted',
+            ]);
             $discussions->delete();
         }
 

@@ -809,4 +809,67 @@ class ClientController extends Controller
             'html' => $html
         ]);
     }
+        public function blockClient(Request $request){
+        if (\Auth::user()->can('edit deal')) {
+            $validator = \Validator::make($request->all(), [
+                'block_attachments' => 'required|file|mimes:jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
+                'id' => 'required|exists:users,id',
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->getMessageBag();
+                return json_encode([
+                    'status' => 'error',
+                    'message' =>  $messages->first()
+                ]);
+            }
+            $User = User::findOrFail($request->id);
+            if ($request->hasFile('block_attachments')) {
+                $blockAttachmentName = time() . '.' . $request->file('block_attachments')->extension();
+                $request->file('block_attachments')->move(public_path('block_attachments'), $blockAttachmentName);
+                $User->block_attachments = $blockAttachmentName; // Save the file path if needed
+            }
+            // HistoryRequest
+            $HistoryRequest = new \App\Models\HistoryRequest();
+            $HistoryRequest->type = 'Blocked';
+            $HistoryRequest->status = '1';
+            $HistoryRequest->start_date = date('Y-m-d');
+            $HistoryRequest->time = date('H:i:s');
+            $HistoryRequest->note = json_encode([
+                    'title' => 'Contact Updated',
+                    'message' => 'Contact Blocked Request'
+                ]);
+            $HistoryRequest->module_type = 'Blocked';
+            $HistoryRequest->student_id = $request->id;
+            $HistoryRequest->created_by = \Auth::user()->id;
+            $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+            $HistoryRequest->attachments = $blockAttachmentName ?? null;
+            $HistoryRequest->save();
+
+            $User->blocked_reason=$request->blocked_reason;
+            $User->blocked_status= '1';
+            $User->blocked_by= \Auth::id();
+            $User->save();
+
+            $data = [
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Client Blocked Request',
+                    'message' => 'Client Blocked Request'
+                ]),
+                'module_id' => $User->id,
+                'module_type' => 'client',
+                'notification_type' => 'Client Blocked Request Submit Successfully'
+            ];
+            addLogActivity($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Blocked User Successfully',
+                'id' => $request->deal_id,
+            ]);
+        } else {
+            return response()->json(['error' => __('Permission Denied.')], 401);
+        }
+    }
+
 }
