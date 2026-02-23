@@ -819,7 +819,7 @@ class ClientController extends Controller
             ]);
             if ($validator->fails()) {
                 $messages = $validator->getMessageBag();
-                return json_encode([
+                 return response()->json([
                     'status' => 'error',
                     'message' =>  $messages
                 ]);
@@ -883,7 +883,7 @@ class ClientController extends Controller
             ]);
             if ($validator->fails()) {
                 $messages = $validator->getMessageBag();
-                return json_encode([
+                 return response()->json([
                     'status' => 'error',
                     'message' =>  $messages
                 ]);
@@ -955,7 +955,7 @@ class ClientController extends Controller
             ]);
             if ($validator->fails()) {
                 $messages = $validator->getMessageBag();
-                return json_encode([
+                 return response()->json([
                     'status' => 'error',
                     'message' =>  $messages
                 ]);
