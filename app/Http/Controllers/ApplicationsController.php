@@ -1089,7 +1089,7 @@ class ApplicationsController extends Controller
         } elseif (in_array($stage_id, $final_stages)) {
             if ($stage_id < 12 && $current_stage !== 12) {
                 $request_stage = explode(',', trim($application->request_stage ?? '', ','));
-                if (!in_array(6, $request_stage) || $tasksStatusInvalid) {
+                if ((!in_array(6, $request_stage) || $tasksStatusInvalid) && $application->university_id==7 ) {
                     $newStage = ApplicationStage::find($stage_id);
                     return response()->json([
                         'status' => 'error',
