@@ -410,7 +410,7 @@ class DealController extends Controller
 
             // $branches = Branch::pluck('name', 'id');
             // $users = allUsers();
-            $logActivities = getLogActivity($deal->id, 'deal');
+//$logActivities = getLogActivity($deal->id, 'deal');
 
             // Lead Stage History
             $stageHistories = StageHistory::where('type', 'deal')
@@ -424,7 +424,7 @@ class DealController extends Controller
             'status' => 'success',
             'data' => $deal,
             'stageHistories' => $stageHistories,
-            'logActivities' => $logActivities,
+           // 'logActivities' => $logActivities,
             'tasks' => $tasks,
             'stages' => $stages,
             'applications' => $applications,

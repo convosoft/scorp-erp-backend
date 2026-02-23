@@ -319,6 +319,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/taskDelete', [TaskController::class, 'taskDelete']);
     Route::get('/downloadTasks', [TaskController::class, 'downloadTasks']);
     Route::post('/ApprovedTaskStatus', [TaskController::class, 'ApprovedTaskStatus']);
+    Route::post('/RejectTaskStatus', [TaskController::class, 'RejectTaskStatus']);
     Route::post('/GetTaskByRelatedToRelatedType', [TaskController::class, 'GetTaskByRelatedToRelatedType']);
 
 

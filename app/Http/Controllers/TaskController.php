@@ -1086,6 +1086,7 @@ class TaskController extends Controller
                 'FirstApp',
                 'CourseName',
                 'applied_meta_html',
+                'applied_meta',
             )
         ]);
     }
