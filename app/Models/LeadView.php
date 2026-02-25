@@ -30,21 +30,26 @@ class LeadView extends Model
     ];
 
     // Accessor for tags as array
+    // public function getTagsAttribute()
+    // {
+    //     if (!$this->tag_names) {
+    //         return [];
+    //     }
+
+    //     $names = explode(', ', $this->tag_names);
+    //     $ids = explode(',', $this->tag_ids_list);
+
+    //     return collect($names)->map(function($name, $index) use ($ids) {
+    //         return [
+    //             'id' => $ids[$index] ?? null,
+    //             'name' => $name,
+    //         ];
+    //     });
+    // }
+
     public function getTagsAttribute()
     {
-        if (!$this->tag_names) {
-            return [];
-        }
-
-        $names = explode(', ', $this->tag_names);
-        $ids = explode(',', $this->tag_ids_list);
-
-        return collect($names)->map(function($name, $index) use ($ids) {
-            return [
-                'id' => $ids[$index] ?? null,
-                'name' => $name,
-            ];
-        });
+        return LeadTag::whereRaw("FIND_IN_SET(id, ?)", [$this->tag_ids])->get();
     }
 
     // If you still need the actual relationships for updates
