@@ -63,7 +63,7 @@ class OrganizationController extends Controller
         $perPage = $request->input('perPage', env("RESULTS_ON_PAGE", 50));
         $page = $request->input('page', 1);
 
-        $query = User::select(['users.*'])
+        $query = User::select(['users.*'])->with('organizationDetail')
             ->join('organizations', 'organizations.user_id', '=', 'users.id')
             ->where('users.type', 'organization');
 
@@ -299,7 +299,6 @@ class OrganizationController extends Controller
     public function organizationshow(Request $request)
     {
          $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer|exists:users,id',
             'id' => 'required|integer|exists:organizations,id',
         ]);
 
