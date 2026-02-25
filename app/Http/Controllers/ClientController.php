@@ -370,7 +370,7 @@ class ClientController extends Controller
             addLogActivity([
                 'type' => 'info',
                 'note' => json_encode([
-                    'title' => 'Client Updated',
+                    'title' =>  $client->name. '  contact Updated',
                     'message' => 'Fields updated successfully',
                     'changes' => $changes
                 ]),
@@ -388,14 +388,40 @@ class ClientController extends Controller
     }
 
 
-    public function destroy(User $client)
+    public function deleteClient(Request $request)
     {
+
+     // Validate request input
+        $validator = Validator::make($request->all(), [
+            'id'              => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        $client = User::where('id', $request->id)->first();
+
         $user = \Auth::user();
         if ($client->created_by == $user->creatorId()) {
-            $estimation = Estimation::where('client_id', '=', $client->id)->first();
+            $estimation = Estimation::where('client_id', '=', $request->id)->first();
             if (empty($estimation)) {
                 /*  ClientDeal::where('client_id', '=', $client->id)->delete();
                     ClientPermission::where('client_id', '=', $client->id)->delete();*/
+
+                    addLogActivity([
+                'type' => 'warning',
+                'note' => json_encode([
+                    'title' => $client->name. ' contact deleted',
+                    'message' =>  $client->name. '  contact deleted',
+                ]),
+                'module_id' => $client->id,
+                'module_type' => 'client',
+                'notification_type' => 'Client Updated'
+            ]);
                 $client->delete();
                 return redirect()->back()->with('success', __('Client Deleted Successfully!'));
             } else {
