@@ -106,7 +106,7 @@ class DestinationMetaController extends Controller
     public function storeOrUpdateMetas(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'destination_id' => 'required|integer|exists:universities,id',
+            'destination_id' => 'required|integer|exists:destinations,id',
              'type' => 'required|integer|in:1,2',
         ]);
 
