@@ -188,7 +188,7 @@ class User extends Authenticatable
 
     public function organizationDetail()
     {
-        return $this->hasOne('App\Models\Organization', 'id', 'user_id');
+         return $this->belongsTo(Organization::class,  'id', 'user_id');
     }
 
     public function companyPermissions()
