@@ -489,9 +489,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // agency
     Route::post('/getagency', [AgencyController::class, 'index']);
-    Route::post('/storeagency', [AgencyController::class, 'storeagency']);
+    Route::post('/agencyCreate', [AgencyController::class, 'agencyCreate']);
     Route::post('/updateagency', [AgencyController::class, 'updateagency']);
     Route::post('/GetAgencyDetail', [AgencyController::class, 'GetAgencyDetail']);
+    Route::post('/deleteAgency', [AgencyController::class, 'deleteAgency']);
 
     // Apraisals
     Route::post('/getGoalTrackings', [GoalTrackingController::class, 'getGoalTrackings']);
