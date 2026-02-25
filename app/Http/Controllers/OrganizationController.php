@@ -259,7 +259,7 @@ class OrganizationController extends Controller
         }
 
           $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer|exists:user,id',
+            'user_id' => 'required|integer|exists:users,id',
             'id' => 'required|integer|exists:organizations,id',
         ]);
 
