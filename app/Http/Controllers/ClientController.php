@@ -112,6 +112,9 @@ class ClientController extends Controller
          if ($request->fetcttype == 'blocked') {
                 $query->where('users.blocked_status','=','1');
             }
+        if ($request->fetcttype == 'blocked') {
+                $query->where('users.blocked_status','=','0');
+            }
 
          if ($request->fetcttype == 'unblockedrequest') {
                 $query->where('users.unblock_status','=','1');
