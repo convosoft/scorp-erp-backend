@@ -537,10 +537,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //organization
     Route::post('getorganization', [OrganizationController::class, 'getorganization']);
-    Route::post('organizationstore', [OrganizationController::class, 'organizationstore']);
+    Route::post('organizationCreate', [OrganizationController::class, 'organizationCreate']);
     Route::post('organizationupdate', [OrganizationController::class, 'organizationupdate']);
 
     Route::post('organizationshow', [OrganizationController::class, 'organizationshow']);
+    Route::post('organizationDetail', [OrganizationController::class, 'organizationshow']);
+    Route::post('organizationDelete', [OrganizationController::class, 'organizationDelete']);
 
     // Branches
     Route::post('/getRegions', [RegionController::class, 'getRegions']);

@@ -50,7 +50,7 @@ class OrganizationController extends Controller
         if (isset($_POST['search']) && !empty($_POST['search'])) {
             $filters['search'] = $_POST['search'];
         }
-        
+
         return $filters;
     }
 
@@ -110,7 +110,7 @@ class OrganizationController extends Controller
         ], 200);
     }
 
-    public function organizationstore(Request $request)
+    public function organizationCreate(Request $request)
     {
         if (!auth()->user()->can('create organization')) {
             return response()->json(['error' => 'Permission Denied.'], 403);
@@ -125,7 +125,7 @@ class OrganizationController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => $validator->errors()->first(),
+                'message' => $validator->errors(),
             ], 422);
         }
 
@@ -179,7 +179,19 @@ class OrganizationController extends Controller
 
     public function organizationupdate(Request $request)
     {
-        $id=$request->id;
+
+     $validator = Validator::make($request->all(), [
+            'user_id' => 'required|integer|exists:user,id',
+            'id' => 'required|integer|exists:organizations,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+        $id=$request->user_id;
         if (!auth()->user()->can('create organization')) {
             return response()->json(['error' => 'Permission Denied.'], 403);
         }
@@ -200,7 +212,10 @@ class OrganizationController extends Controller
             ], 422);
         }
 
-        $user->update($request->only(['organization_name', 'organization_email']));
+
+        $user->name = $request->organization_name;
+        $user->email =  $request->organization_email;
+        $user->save();
 
          Organization::where('user_id', $user->id)->update([
             'type' => $request->organization_type,
@@ -222,8 +237,8 @@ class OrganizationController extends Controller
         $data = [
             'type' => 'info',
             'note' => json_encode([
-                'title' => 'Organization Updated',
-                'message' => 'Organization updated successfully'
+                'title' => $user->name. ' Organization Updated',
+                'message' => $user->name. ' Organization updated successfully'
             ]),
             'module_id' => $user->id,
             'module_type' => 'organization',
@@ -237,13 +252,38 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function organizationDelete(Request $request)
     {
         if (!auth()->user()->can('delete organization')) {
             return response()->json(['error' => 'Permission Denied.'], 403);
         }
 
+          $validator = Validator::make($request->all(), [
+            'user_id' => 'required|integer|exists:user,id',
+            'id' => 'required|integer|exists:organizations,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+        $id=$request->user_id;
+
         $user = User::findOrFail($id);
+            //Log
+        $data = [
+            'type' => 'warning',
+            'note' => json_encode([
+                'title' => $user->name .' Organization deleted',
+                'message' =>  $user->name .' Organization deleted',
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'organization',
+            'notification_type' => 'Organization Updated'
+        ];
+        addLogActivity($data);
         $user->delete();
 
         $organization = Organization::where('user_id', $id)->first();
@@ -251,12 +291,25 @@ class OrganizationController extends Controller
             $organization->delete();
         }
 
+
+
         return response()->json(['status' => 'success', 'message' => 'Organization successfully deleted.']);
     }
 
     public function organizationshow(Request $request)
     {
-        $organization = Organization::where('user_id', $request->id)->with('user')->firstOrFail();
+         $validator = Validator::make($request->all(), [
+            'user_id' => 'required|integer|exists:user,id',
+            'id' => 'required|integer|exists:organizations,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+        $organization = Organization::where('id', $request->id)->with('user')->firstOrFail();
 
         return response()->json([
             'status' => 'success',
