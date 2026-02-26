@@ -350,7 +350,7 @@ class ApplicationsController extends Controller
 
         $application = DealApplication::with([
             'city:id,name',
-            'course',
+            'coursedetail',
             'preinstitute:id,name',
             'country:country_code,name'
         ])->where('id', $id)->first();
