@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Organization;
 use App\Models\OrganizationType;
+
+use App\Models\OrganizationNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -315,4 +317,144 @@ class OrganizationController extends Controller
             'data' => $organization,
         ]);
     }
+
+        public function DeleteOrganizationNotes(Request $request)
+    {
+        $rules = [
+            'id' => 'required|integer|min:1',
+        ];
+        $validator = \Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+        $discussions = OrganizationNote::find($request->id);
+        if (! empty($discussions)) {
+              addLogActivity([
+                'type' => 'warning',
+                'note' => json_encode([
+                    'title' => 'Organization Notes deleted',
+                    'message' => 'Organization notes deleted successfully',
+                ]),
+                'module_id' => $discussions->organization_id,
+                'module_type' => 'organization',
+                'notification_type' => 'Organization Notes deleted',
+            ]);
+            $discussions->delete();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Organization Note deleted!'),
+        ], 201);
+    }
+    public function OrganizationNotesStore(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|exists:organizations,id', // Organization ID
+            'description' => 'required',
+            'note_id' => 'nullable|exists:organization_notes,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+            ]);
+        }
+
+        $OrganizationId = $request->id;
+        $authId = Session::get('auth_type_id') ?? \Auth::id();
+
+        if (!empty($request->note_id)) {
+            // Update existing note
+            $note = OrganizationNote::where('id', $request->note_id)->first();
+            $note->description = $request->description;
+            $note->update();
+
+            addLogActivity([
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Organization Notes Updated',
+                    'message' => 'Organization notes updated successfully',
+                ]),
+                'module_id' => $OrganizationId,
+                'module_type' => 'Organization',
+                'notification_type' => 'Organization Notes Updated',
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Notes updated successfully'),
+                'note' => $note,
+            ]);
+        }
+
+        // Create new note
+        $note = new OrganizationNote();
+        $note->description = $request->description;
+        $note->created_by = $authId;
+        $note->organization_id = $OrganizationId;
+        $note->save();
+
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => 'Notes Created',
+                'message' => 'Organization notes created successfully',
+            ]),
+            'module_id' => $OrganizationId,
+            'module_type' => 'organization',
+            'notification_type' => 'Organization Notes Created',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Notes added successfully'),
+            'note' => $note,
+        ]);
+    }
+
+    public function getOrganizationNotes(Request $request)
+    {
+        // ✅ Validate required input
+        $request->validate([
+            'organization_id' => 'required|exists:organizations,id',
+        ]);
+
+        $user = Auth::user();
+
+        // ✅ Permission check
+        if (!$user->can('view Organization') && $user->type !== 'super admin') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Permission Denied.',
+            ], 403);
+        }
+
+        // ✅ Fetch and format notes
+        $notes = OrganizationNote::where('organization_id', $request->organization_id)
+            ->orderBy('created_at', 'DESC')
+            ->get()
+            ->map(function ($note) {
+                return [
+                    'id'        => $note->id,
+                    'text'      => htmlspecialchars_decode($note->description),
+                    'author'    => $note?->author?->name,
+                    'time'      => $note->created_at->diffForHumans(),
+                    'pinned'    => false, // default as required
+                    'timestamp' => $note->created_at->toISOString(),
+                ];
+            });
+
+        // ✅ Return structured response
+        return response()->json([
+            'status'  => true,
+            'message' => 'Organization notes fetched successfully.',
+            'data'    => $notes,
+        ]);
+    }
+
 }

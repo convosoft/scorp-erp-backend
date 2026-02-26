@@ -335,7 +335,7 @@ class AgencyController extends Controller
             $messages = $validator->getMessageBag();
             return json_encode([
                 'status' => 'error',
-                'message' =>  $messages->first()
+                'message' =>  $messages
             ]);
         }
         $id = $request->id;
@@ -437,7 +437,10 @@ class AgencyController extends Controller
         return view('leads.notes_edit', compact('note'));
     }
 
-    public function notesUpdate(Request $request, $id)
+
+
+
+    public function notesDelete(Request $request)
     {
 
 
@@ -445,7 +448,7 @@ class AgencyController extends Controller
             $request->all(),
             [
                 // 'title' => 'required',
-                'description' => 'required'
+                'id' => 'required|exists:agency_notes,id',
             ]
         );
 
@@ -453,46 +456,15 @@ class AgencyController extends Controller
             $messages = $validator->getMessageBag();
             return json_encode([
                 'status' => 'error',
-                'message' =>  $messages->first()
+                'message' =>  $messages
             ]);
         }
+        $agency_id = $request->id;
 
-        $note = AgencyNote::where('id', $request->note_id)->first();
-        $note->title = $request->input('title');
-        $note->description = $request->input('description');
-        $note->update();
-
-        $data = [
-            'type' => 'info',
-            'note' => json_encode([
-                'title' => 'Agency Notes Updated',
-                'message' => 'Agency notes updated successfully'
-            ]),
-            'module_id' => $request->id,
-            'module_type' => 'agency',
-            'notification_type' => 'Agency Notes Updated'
-        ];
-        addLogActivity($data);
-
-
-        $notes = AgencyNote::where('agency_id', $id)->orderBy('created_at', 'DESC')->get();
-        $html = view('agency.getNotes', compact('notes'))->render();
-
-        return json_encode([
-            'status' => 'success',
-            'html' => $html,
-            'message' =>  __('Notes updated successfully')
-        ]);
-    }
-
-
-    public function notesDelete(Request $request, $id)
-    {
-
-        $note = AgencyNote::where('id', $id)->first();
+        $note = AgencyNote::where('id', $agency_id)->first();
         $note->delete();
 
-        $notesQuery = AgencyNote::where('agency_id', $request->lead_id);
+        $notesQuery = AgencyNote::where('agency_id', $request->agency_id);
         if(\Auth::user()->type != 'super admin' && \Auth::user()->type != 'Project Director' && \Auth::user()->type != 'Project Manager') {
                 $notesQuery->where('created_by', \Auth::user()->id);
         }
@@ -517,6 +489,59 @@ class AgencyController extends Controller
             'status' => 'success',
             'html' => $html,
             'message' =>  __('Notes deleted successfully')
+        ]);
+    }
+
+    public function getAgencyNotes(Request $request)
+    {
+
+
+          $validator = \Validator::make(
+            $request->all(),
+            [
+                // 'title' => 'required',
+                'agency_id' => 'required|exists:agencies,id',
+            ]
+        );
+
+        if ($validator->fails()) {
+            $messages = $validator->getMessageBag();
+            return json_encode([
+                'status' => 'error',
+                'message' =>  $messages
+            ]);
+        }
+
+        $user = Auth::user();
+
+        // ✅ Permission check
+        if (!$user->can('view Organization') && $user->type !== 'super admin') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Permission Denied.',
+            ], 403);
+        }
+
+        // ✅ Fetch and format notes
+        $notes = AgencyNote::where('agency_id', $request->agency_id)
+            ->orderBy('created_at', 'DESC')
+            ->get()
+            ->map(function ($note) {
+                return [
+                    'id'        => $note->id,
+                    'text'      => htmlspecialchars_decode($note->description),
+                    'author'    => $note?->author?->name,
+                    'time'      => $note->created_at->diffForHumans(),
+                    'pinned'    => false, // default as required
+                    'timestamp' => $note->created_at->toISOString(),
+                ];
+            });
+
+        // ✅ Return structured response
+        return response()->json([
+            'status'  => true,
+            'message' => 'Organization notes fetched successfully.',
+            'data'    => $notes,
         ]);
     }
 

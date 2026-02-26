@@ -493,6 +493,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateagency', [AgencyController::class, 'updateagency']);
     Route::post('/GetAgencyDetail', [AgencyController::class, 'GetAgencyDetail']);
     Route::post('/deleteAgency', [AgencyController::class, 'deleteAgency']);
+    Route::post('/notesStore', [AgencyController::class, 'notesStore']);
+    Route::post('/notesDelete', [AgencyController::class, 'notesDelete']);
+    Route::post('/getAgencyNotes', [AgencyController::class, 'getAgencyNotes']);
 
     // Apraisals
     Route::post('/getGoalTrackings', [GoalTrackingController::class, 'getGoalTrackings']);
@@ -544,6 +547,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('organizationshow', [OrganizationController::class, 'organizationshow']);
     Route::post('organizationDetail', [OrganizationController::class, 'organizationshow']);
     Route::post('organizationDelete', [OrganizationController::class, 'organizationDelete']);
+    Route::post('DeleteOrganizationNotes', [OrganizationController::class, 'DeleteOrganizationNotes']);
+    Route::post('OrganizationNotesStore', [OrganizationController::class, 'OrganizationNotesStore']);
+    Route::post('getOrganizationNotes', [OrganizationController::class, 'getOrganizationNotes']);
 
     // Branches
     Route::post('/getRegions', [RegionController::class, 'getRegions']);
