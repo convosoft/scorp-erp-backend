@@ -1036,7 +1036,7 @@ class ClientController extends Controller
                         'status' => 'success',
                         'message' => 'Unlock Request Submit Successfully',
                         'id' => $User->id,
-                    ]);
+                    ],200);
                  }else{
 
                     $User = User::findOrFail($request->id);
