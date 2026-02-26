@@ -468,7 +468,6 @@ class AgencyController extends Controller
                 $notesQuery->where('created_by', \Auth::user()->id);
         }
         $notes = $notesQuery->orderBy('created_at', 'DESC')->get();
-        $html = view('leads.getNotes', compact('notes'))->render();
 
 
         $data = [
@@ -486,7 +485,7 @@ class AgencyController extends Controller
 
         return json_encode([
             'status' => 'success',
-            'html' => $html,
+            'data' => $notes,
             'message' =>  __('Notes deleted successfully')
         ]);
     }
@@ -539,7 +538,7 @@ class AgencyController extends Controller
         // ✅ Return structured response
         return response()->json([
             'status'  => true,
-            'message' => 'Organization notes fetched successfully.',
+            'message' => 'Agency notes fetched successfully.',
             'data'    => $notes,
         ]);
     }
