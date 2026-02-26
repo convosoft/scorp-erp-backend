@@ -365,11 +365,10 @@ class AgencyController extends Controller
                     $notesQuery->where('created_by', \Auth::user()->id);
             }
             $notes = $notesQuery->orderBy('created_at', 'DESC')->get();
-            $html = view('leads.getNotes', compact('notes'))->render();
 
             return json_encode([
                 'status' => 'success',
-                'html' => $html,
+                'data' => $notes,
                 'message' =>  __('Notes updated successfully')
             ]);
         }
