@@ -982,7 +982,6 @@ class ClientController extends Controller
         public function updateUnblockRequestStatus(Request $request){
 
          $validator = \Validator::make($request->all(), [
-                'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
                 'id' => 'required|exists:users,id',
                 'blocked_reason' => 'required',
                 'admin_action_status' => 'required',
