@@ -512,10 +512,10 @@ class AgencyController extends Controller
             ]);
         }
 
-        $user = Auth::user();
+        $user = \Auth::user();
 
         // ✅ Permission check
-        if (!$user->can('view Organization') && $user->type !== 'super admin') {
+        if (!$user->can('view organization') && $user->type !== 'super admin') {
             return response()->json([
                 'status' => false,
                 'message' => 'Permission Denied.',
