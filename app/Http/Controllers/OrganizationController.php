@@ -366,7 +366,7 @@ class OrganizationController extends Controller
         }
 
         $OrganizationId = $request->id;
-        $authId = Session::get('auth_type_id') ?? \Auth::id();
+        $authId = auth()->id();
 
         if (!empty($request->note_id)) {
             // Update existing note
