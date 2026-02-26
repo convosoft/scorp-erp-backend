@@ -405,11 +405,11 @@ class AgencyController extends Controller
         }
         $notes = $notesQuery->orderBy('created_at', 'DESC')->get();
 
-        $html = view('leads.getNotes', compact('notes'))->render();
+
 
         return json_encode([
             'status' => 'success',
-            'html' => $html,
+            'data' => $notes,
             'message' =>  __('Notes added successfully')
         ]);
 
