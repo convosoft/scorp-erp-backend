@@ -424,7 +424,7 @@ class OrganizationController extends Controller
             'organization_id' => 'required|exists:organizations,id',
         ]);
 
-        $user = Auth::user();
+        $user = \Auth::user();
 
         // ✅ Permission check
         if (!$user->can('view Organization') && $user->type !== 'super admin') {
