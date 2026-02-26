@@ -286,7 +286,7 @@ class AgencyController extends Controller
                 ]),
                 'module_id' => $org_data->id,
                 'module_type' => 'agency',
-                'notification_type' => 'Organization deleted',
+                'notification_type' => 'agency deleted',
             ];
             addLogActivity($data);
                 $org_data->delete();
@@ -314,7 +314,7 @@ class AgencyController extends Controller
             }
             return redirect()->route('agency.index')->with('success', 'Agency deleted successfully');
         } else {
-            return redirect()->route('agency.index')->with('error', 'Atleast select 1 organization.');
+            return redirect()->route('agency.index')->with('error', 'Atleast select 1 agency.');
         }
     }
 
@@ -386,7 +386,7 @@ class AgencyController extends Controller
 
 
         $data = [
-            'type' => 'info',
+            'type' => 'success',
             'note' => json_encode([
                 'title' => 'Notes created',
                 'message' => 'Noted created successfully'
@@ -448,6 +448,7 @@ class AgencyController extends Controller
             [
                 // 'title' => 'required',
                 'id' => 'required|exists:agency_notes,id',
+                'agency_id' => 'required|exists:agencies,id',
             ]
         );
 
@@ -471,12 +472,12 @@ class AgencyController extends Controller
 
 
         $data = [
-            'type' => 'info',
+            'type' => 'warning',
             'note' => json_encode([
                 'title' => 'Agency Notes Deleted',
                 'message' => 'Agency notes deleted successfully'
             ]),
-            'module_id' => $request->lead_id,
+            'module_id' => $request->agency_id,
             'module_type' => 'agency',
             'notification_type' => 'Agency Notes Deleted'
         ];
@@ -490,7 +491,7 @@ class AgencyController extends Controller
         ]);
     }
 
-    public function getAgencyNotes(Request $request)
+    public function getAgencyNotes_old(Request $request)
     {
 
 
@@ -512,8 +513,133 @@ class AgencyController extends Controller
 
         $user = \Auth::user();
 
+
+
+        // ✅ Fetch and format notes
+        $notes = AgencyNote::where('agency_id', $request->agency_id)
+            ->orderBy('created_at', 'DESC')
+            ->get() ;
+
+        // ✅ Return structured response
+        return response()->json([
+            'status'  => true,
+            'message' => 'Agency notes fetched successfully.',
+            'data'    => $notes,
+        ]);
+    }
+
+
+
+        public function DeleteAgencyNotes(Request $request)
+    {
+        $rules = [
+            'id' => 'required|integer|min:1',
+        ];
+        $validator = \Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+        $discussions = AgencyNote::find($request->id);
+        if (! empty($discussions)) {
+              addLogActivity([
+                'type' => 'warning',
+                'note' => json_encode([
+                    'title' => 'Agency Notes deleted',
+                    'message' => 'Agency notes deleted successfully',
+                ]),
+                'module_id' => $discussions->agency_id,
+                'module_type' => 'agency',
+                'notification_type' => 'Agency Notes deleted',
+            ]);
+            $discussions->delete();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Agency Note deleted!'),
+        ], 201);
+    }
+    public function agencyNotesStore(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|exists:agencies,id', // agency ID
+            'description' => 'required',
+            'note_id' => 'nullable|exists:agency_notes,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ]);
+        }
+
+        $agencyId = $request->id;
+        $authId = auth()->id();
+
+        if (!empty($request->note_id)) {
+            // Update existing note
+            $note = AgencyNote::where('id', $request->note_id)->first();
+            $note->description = $request->description;
+            $note->update();
+
+            addLogActivity([
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'agency Notes Updated',
+                    'message' => 'agency notes updated successfully',
+                ]),
+                'module_id' => $agencyId,
+                'module_type' => 'agency',
+                'notification_type' => 'agency Notes Updated',
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Notes updated successfully'),
+                'note' => $note,
+            ]);
+        }
+
+        // Create new note
+        $note = new AgencyNote();
+        $note->description = $request->description;
+        $note->created_by = $authId;
+        $note->agency_id = $agencyId;
+        $note->save();
+
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => 'Notes Created',
+                'message' => 'agency notes created successfully',
+            ]),
+            'module_id' => $agencyId,
+            'module_type' => 'agency',
+            'notification_type' => 'agency Notes Created',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Notes added successfully'),
+            'note' => $note,
+        ]);
+    }
+
+    public function getagencyNotes(Request $request)
+    {
+        // ✅ Validate required input
+        $request->validate([
+            'agency_id' => 'required|exists:agencies,id',
+        ]);
+
+        $user = \Auth::user();
+
         // ✅ Permission check
-        if (!$user->can('view organization') && $user->type !== 'super admin') {
+        if (!$user->can('view agency') && $user->type !== 'super admin') {
             return response()->json([
                 'status' => false,
                 'message' => 'Permission Denied.',
@@ -538,7 +664,7 @@ class AgencyController extends Controller
         // ✅ Return structured response
         return response()->json([
             'status'  => true,
-            'message' => 'Agency notes fetched successfully.',
+            'message' => 'agency notes fetched successfully.',
             'data'    => $notes,
         ]);
     }
