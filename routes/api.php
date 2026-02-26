@@ -493,9 +493,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateagency', [AgencyController::class, 'updateagency']);
     Route::post('/GetAgencyDetail', [AgencyController::class, 'GetAgencyDetail']);
     Route::post('/deleteAgency', [AgencyController::class, 'deleteAgency']);
-    Route::post('/notesStore', [AgencyController::class, 'notesStore']);
-    Route::post('/notesDelete', [AgencyController::class, 'notesDelete']);
-    Route::post('/getAgencyNotes', [AgencyController::class, 'getAgencyNotes']);
+    Route::post('/notesStore', [AgencyController::class, 'DeleteAgencyNotes']);
+    Route::post('/notesDelete', [AgencyController::class, 'DeleteAgencyNotes']);
+    Route::post('/getAgencyNotes', [AgencyController::class, 'getagencyNotes']);
 
     // Apraisals
     Route::post('/getGoalTrackings', [GoalTrackingController::class, 'getGoalTrackings']);
