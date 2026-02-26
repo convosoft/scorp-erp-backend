@@ -109,10 +109,14 @@ class ClientController extends Controller
             });
         }
 
+        if ($request->fetcttype == '') {
+                $query->where('users.blocked_status','=','0');
+            }
+
          if ($request->fetcttype == 'blocked') {
                 $query->where('users.blocked_status','=','1');
             }
-        if ($request->fetcttype == 'blocked') {
+        if ($request->fetcttype == 'active') {
                 $query->where('users.blocked_status','=','0');
             }
 
