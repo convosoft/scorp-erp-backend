@@ -1386,6 +1386,246 @@ class ApplicationsController extends Controller
         ]);
     }
 
+    public function application_request_save_deposite_applied(Request $request)
+{
+    // Get ID from request instead of route parameter
+    $id = $request->id;
+
+    if ($request->stage_id == 6) {
+        if (in_array($request->english_test, ['IELTS', 'OIDI (ELLT)', 'PTE', 'TOEFL'])) {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'disability' => 'required',
+                    'english_test' => 'required',
+                    'drive_link' => 'required',
+                    'Mode_of_Verification' => 'required',
+                    'Mode_of_Payment' => 'required',
+                    'username' => 'required',
+                    'password' => 'required',
+                    'email' => ['required','email',\Illuminate\Validation\Rule::unique('users')->ignore($request->clientUserID)],
+                    'CAS_Documents_Checklist' => 'required|array',
+                ]
+            );
+        } else {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'Mode_of_Verification' => 'required',
+                    'Mode_of_Payment' => 'required',
+                    'disability' => 'required',
+                    'english_test' => 'required',
+                    'drive_link' => 'required',
+                    'email' => ['required','email',\Illuminate\Validation\Rule::unique('users')->ignore($request->clientUserID)],
+                    'CAS_Documents_Checklist' => 'required|array',
+                ]
+            );
+        }
+    } else {
+        if (isset($request->DealTask)) {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'destination' => 'required',
+                    'Source' => 'required',
+                    'institution' => 'required',
+                    'Date_of_deposit' => 'required|date',
+                    'Amount_of_deposit' => 'required',
+                    'Mode_of_payment' => 'required',
+                    'Folder_link' => 'required',
+                    'Mode_of_verification' => 'required',
+                    'Reasons_for_resubmission' => 'required',
+                    'Declaration' => 'required|array',
+                ]
+            );
+        } else {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'destination' => 'required',
+                    'Source' => 'required',
+                    'institution' => 'required',
+                    'Date_of_deposit' => 'required|date',
+                    'Amount_of_deposit' => 'required',
+                    'Mode_of_payment' => 'required',
+                    'Folder_link' => 'required',
+                    'Mode_of_verification' => 'required',
+                    'Declaration' => 'required|array',
+                ]
+            );
+        }
+    }
+
+    if ($validator->fails()) {
+        $messages = $validator->getMessageBag();
+
+        return response()->json([
+            'status' => 'error',
+            'message' => $messages->first()
+        ], 422);
+    }
+
+    $client = User::find($request->clientUserID);
+    if (!empty($client)) {
+        $client->email = $request->email;
+        $client->phone = $request->mobile_number;
+        $client->address = $request->address;
+        $client->save();
+    }
+
+    $application = DealApplication::with('university')->findOrFail($id);
+
+    $currentStages = array_filter(explode(',', trim($application->request_stage, ',')));
+    $requestedStage = (string) $request->stage_id;
+
+    if ($requestedStage === '4') {
+        if (in_array('6', $currentStages)) {
+            $currentStages = array_diff($currentStages, ['5']);
+        }
+        $currentStages[] = '4';
+    } elseif ($requestedStage === '6') {
+        if (in_array('4', $currentStages)) {
+            if (!in_array('6', $currentStages)) {
+                $currentStages[] = '6';
+            }
+        } else {
+            $currentStages[] = '6';
+        }
+    }
+
+    $currentStages = array_unique($currentStages);
+    sort($currentStages);
+    $application->request_stage = ',' . implode(',', $currentStages);
+    $application->save();
+
+    $inputs = $request->except(['_token', '_method', 'submit']);
+    foreach ($inputs as $key => $value) {
+        if (is_array($value)) {
+            $value = json_encode($value);
+        }
+
+        \DB::table('meta')->updateOrInsert(
+            ['created_by' => \Auth::id(), 'parent_id' => $application->id, 'stage_id' => $request->stage_id, 'meta_key' => $key],
+            ['meta_value' => $value]
+        );
+    }
+
+    $ApplicationStage_new = optional(ApplicationStage::find($request->stage_id))->name;
+    $ApplicationStage_old = optional(ApplicationStage::find($application->stage_id))->name;
+
+    $client = \App\Models\User::join('client_deals', 'client_deals.client_id', '=', 'users.id')
+        ->where('client_deals.deal_id', $application->deal_id)
+        ->first();
+
+    $dealTask = \App\Models\DealTask::where('related_to', $id)
+        ->where('related_type', 'application')
+        ->where('tasks_type', 'Compliance')
+        ->first();
+
+    if (!empty($dealTask)) {
+        $dealTask->deal_id = $id;
+        $dealTask->related_to = $id;
+        $dealTask->related_type = 'application';
+        $dealTask->branch_id = 262;
+        $dealTask->region_id = 56;
+        $dealTask->brand_id = 3751;
+        $dealTask->created_by = \Auth::id();
+        $dealTask->assigned_to = 3751;
+        $dealTask->due_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->start_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->status = 0;
+        $dealTask->remainder_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->description = '';
+        $dealTask->visibility = '';
+        $dealTask->priority = 1;
+        $dealTask->tasks_type_status = '0';
+        $dealTask->time = \Carbon\Carbon::now()->toTimeString();
+        $dealTask->stage_request = $request->stage_id;
+
+        if ($request->stage_id == '1') {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Quality';
+        } else {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Compliance';
+        }
+        $dealTask->save();
+    } else {
+        $dealTask = new \App\Models\DealTask();
+        $dealTask->deal_id = $id;
+        $dealTask->related_to = $id;
+        $dealTask->related_type = 'application';
+        $dealTask->branch_id = 262;
+        $dealTask->region_id = 56;
+        $dealTask->brand_id = 3751;
+        $dealTask->created_by = \Auth::id();
+        $dealTask->assigned_to = 3751;
+        $dealTask->due_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->start_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->status = 0;
+        $dealTask->remainder_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->description = '';
+        $dealTask->visibility = '';
+        $dealTask->priority = 1;
+        $dealTask->time = \Carbon\Carbon::now()->toTimeString();
+        $dealTask->stage_request = $request->stage_id;
+
+        if ($request->stage_id == '1') {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Quality';
+        } else {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Compliance';
+        }
+        $dealTask->save();
+    }
+
+    // Add activity log (from the first API version)
+    $logData = [
+        'type' => 'info',
+        'note' => json_encode([
+            'title' => 'Application Updated',
+            'message' => 'Application stage request and deposit details were updated successfully.'
+        ]),
+        'module_id' => $id,
+        'module_type' => 'application',
+        'notification_type' => 'Application Updated'
+    ];
+    addLogActivity($logData);
+
+    return response()->json([
+        'status' => 'success',
+        'app_id' => $id,
+        'message' => 'Application updated successfully!'
+    ], 200);
+}
+
     public function saveApplicationDepositRequest(Request $request)
     {
         // ✅ Initial validation
