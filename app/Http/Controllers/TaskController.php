@@ -643,7 +643,7 @@ class TaskController extends Controller
         $dealTask->description = $request->description;
         $dealTask->visibility = $request->visibility;
         $dealTask->priority = 1;
-        $dealTask->time = $request->remainder_time ?? '';
+        $dealTask->time = $request->remainder_time ?? NULL;
         $dealTask->save();
 
         // Add log activity (optional)
