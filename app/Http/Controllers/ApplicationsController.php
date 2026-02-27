@@ -1423,8 +1423,8 @@ class ApplicationsController extends Controller
                     'drive_link' => 'required',
                     'Mode_of_Verification' => 'required',
                     'Mode_of_Payment' => 'required',
-                    // 'username' => 'required',
-                    // 'password' => 'required',
+                    'username' => 'required',
+                    'password' => 'required',
                     'email' => ['required', 'email', Rule::unique('users')->ignore($request->clientUserID)],
                     'CAS_Documents_Checklist' => 'required|array',
                 ];
