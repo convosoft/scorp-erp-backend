@@ -1022,7 +1022,7 @@ class ApplicationsController extends Controller
                     if ($current_stage > $stage_id) {
                             return response()->json([
                                 'status' => 'error',
-                                'message' => 'Stage ID cannot be decreased',
+                                'message' => 'Stage  cannot be decreased',
                             ], 200);
                     }
                 }
