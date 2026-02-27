@@ -1090,13 +1090,24 @@ class ApplicationsController extends Controller
         } elseif (in_array($stage_id, $final_stages)) {
             if ($stage_id < 12 && $current_stage !== 12) {
                 $request_stage = explode(',', trim($application->request_stage ?? '', ','));
-                if ((!in_array(6, $request_stage) || $tasksStatusInvalid) && $application->university_id==7 ) {
-                    $newStage = ApplicationStage::find($stage_id);
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => "Compliance Checks is mandatory before moving to stage " . $newStage->name ?? '',
-                    ], 200);
-                }
+                // if ((!in_array(6, $request_stage) || $tasksStatusInvalid) && $application->university_id==7 ) {
+                //     $newStage = ApplicationStage::find($stage_id);
+                //     return response()->json([
+                //         'status' => 'error',
+                //         'message' => "Compliance Checks is mandatory before moving to stage " . $newStage->name ?? '',
+                //     ], 200);
+                // }
+
+                $complianceInvalid =  empty($hasUncompletedTasksCompliance) ||
+                        $hasUncompletedTasksCompliance->tasks_type_status != '1';
+
+                    if ($application->university_id == 7 && $complianceInvalid) {
+                        $newStage = ApplicationStage::find($stage_id);
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => "Compliance Checks is mandatory before moving to stage " . ($newStage->name ?? ''),
+                        ], 200);
+                    }
                 if ($current_stage >= $stage_id) {
                     return response()->json([
                         'status' => 'error',
@@ -1122,7 +1133,7 @@ class ApplicationsController extends Controller
                         if ($current_stage > $stage_id) {
                             return response()->json([
                                 'status' => 'error',
-                                'message' => 'Stage ID cannot be decreased.',
+                                'message' => 'Stage  cannot be decreased.',
                             ], 200);
                         }
                     }
@@ -1461,7 +1472,7 @@ class ApplicationsController extends Controller
 
         return response()->json([
             'status' => 'error',
-            'message' => $messages->first()
+            'message' => $messages
         ], 422);
     }
 
