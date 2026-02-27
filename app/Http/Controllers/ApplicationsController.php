@@ -1120,9 +1120,12 @@ class ApplicationsController extends Controller
                     if (($stage_id < 11 && $stage_id === $current_stage + 1) || ($stage_id >= 11 && $current_stage >= 10)) {
                         $application->update(['stage_id' => $stage_id]);
                     } else {
+
+                         $newStagemove = ApplicationStage::find($stage_id);
+                         $oldStagemove = ApplicationStage::find(($current_stage + 1));
                         return response()->json([
                             'status' => 'error',
-                            'message' => "Stage " . ($current_stage + 1) . " is required before moving to stage $stage_id.",
+                            'message' => "Stage $oldStagemove->name is required before moving to stage $newStagemove->name.",
                         ], 200);
                     }
                 }
