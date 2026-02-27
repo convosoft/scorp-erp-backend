@@ -965,7 +965,8 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/application_request_save_deposite', [ApplicationsController::class, 'application_request_save_deposite']);
 
      Route::post('/applicationAppliedStage', [ApplicationsController::class, 'applicationAppliedStage']);
-     Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'saveApplicationDepositRequest']);
+     //Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'saveApplicationDepositRequest']);
+     Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'application_request_save_deposite']);
      Route::post('/applicationNotesStore', [ApplicationsController::class, 'applicationNotesStore']);
      Route::post('/getApplicationNotes', [ApplicationsController::class, 'getApplicationNotes']);
 
