@@ -1002,7 +1002,7 @@ class ApplicationsController extends Controller
             'related_type' => 'application',
         ])->where('tasks_type', 'Compliance')->latest()->first();
         // ......
-        $tasksStatusInvalid = isset($hasUncompletedTasks->tasks_type_status) && in_array($hasUncompletedTasks->tasks_type_status, ['1']);
+        $tasksStatusInvalid = isset($hasUncompletedTasks->tasks_type_status) && in_array($hasUncompletedTasks->tasks_type_status, ['2', '0']);
         $request_stage = explode(',', trim($application->request_stage ?? '', ','));
         $stages = [
             'initial' => [0, 1, 2, 3, 4, 5, 6],
@@ -1028,7 +1028,7 @@ class ApplicationsController extends Controller
                 }
                 $request_stage = explode(',', trim($application->request_stage ?? '', ','));
                 if (!in_array(1, $request_stage) || $tasksStatusInvalid) {
-                    if ($application->university_id != 7) {
+                    if ($application->university_id != 7 && $application->university_id != 380) {
                         if (!isset($hasUncompletedTasks->tasks_type_status)) {
                             $newStage = ApplicationStage::find($stage_id);
                             return response()->json([
@@ -1052,7 +1052,7 @@ class ApplicationsController extends Controller
             } else {
                 $request_stage = explode(',', trim($application->request_stage ?? '', ','));
                 if (!in_array(1, $request_stage) || $tasksStatusInvalid) {
-                    if ($application->university_id != 7) {
+                    if ($application->university_id != 7 && $application->university_id != 380) {
                         if (!isset($hasUncompletedTasks->tasks_type_status)) {
                             $newStage = ApplicationStage::find($stage_id);
                             return response()->json([

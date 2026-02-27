@@ -1508,7 +1508,7 @@ class TaskController extends Controller
 
         $id = $request->input('id');
         $dealTask = DealTask::find($id);
-        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator'])) {
+        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator','Product Coordinator Manager'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized or invalid task'
