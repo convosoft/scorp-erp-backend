@@ -400,15 +400,17 @@ class TaskController extends Controller
                 });
 
             // Search functionality
-            if (isset($_GET['ajaxCall']) && $_GET['ajaxCall'] == 'true' && isset($_GET['search']) && !empty($_GET['search'])) {
-                $search = $_GET['search'];
-                $finalQuery->where(function($q) use ($search) {
-                    $q->where('deal_tasks.name', 'like', "%{$search}%")
-                      ->orWhere('brandname.name', 'like', "%{$search}%")
-                      ->orWhere('users.name', 'like', "%{$search}%")
-                      ->orWhere('deal_tasks.due_date', 'like', "%{$search}%");
-                });
-            }
+            // if (isset($_GET['ajaxCall']) && $_GET['ajaxCall'] == 'true' && isset($_GET['search']) && !empty($_GET['search'])) {
+            //     $search = $_GET['search'];
+            //     $finalQuery->where(function($q) use ($search) {
+            //         $q->where('deal_tasks.name', 'like', "%{$search}%")
+            //           ->orWhere('brandname.name', 'like', "%{$search}%")
+            //           ->orWhere('users.name', 'like', "%{$search}%")
+            //           ->orWhere('deal_tasks.due_date', 'like', "%{$search}%");
+            //     });
+            // }
+
+            $_GET = $_POST;
 
 
               // Additional filters
