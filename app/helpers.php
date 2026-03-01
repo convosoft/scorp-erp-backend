@@ -852,24 +852,25 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
             // Super admins
             $admins = [];
             if ($branch->name == 'Admin') {
-                $admins = User::where('type', 'super admin')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $admins = User::where('type', 'super admin')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
             }
 
             // Product Coordinators
             $Product_Coordinator = [];
             if ($branch->name == 'Product') {
-                $Product_Coordinator = User::where('type', 'Product Coordinator')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $Product_Coordinator = User::where('type', 'Product Coordinator')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
             }
 
             // Marketing team
             $Marketing_team = [];
             if ($branch->name == 'Marketing') {
-                $Marketing_team = User::where('type', 'Marketing Officer')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $Marketing_team = User::where('type', 'Marketing Officer')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
             }
 
             // Project directors
             $project_directors = User::whereIn('type', ['Project Director', 'Project Manager'])
                 ->whereIn('brand_id', $brand_ids)
+                ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
                 ->toArray();
@@ -877,6 +878,7 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
             // Regional managers
             $regional_managers = User::where('type', 'Region Manager')
                 ->whereIn('region_id', $regions)
+                ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
                 ->toArray();
@@ -884,9 +886,11 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
             // Branch-specific users
             $users = User::whereNotIn('type', ['super admin', 'company', 'client', 'team'])
                 ->where('branch_id', $id)
+                ->where('is_active', 1)
                 ->orderBy('name', 'ASC')
                 ->pluck('name', 'id')
                 ->toArray();
+
 
             // Currently logged-in user
             $login_user = [\Auth::id() => \Auth::user()->name];

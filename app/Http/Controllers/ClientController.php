@@ -84,8 +84,14 @@ class ClientController extends Controller
         $page    = $request->input('page', 1);
 
         // Build query
-        $query = User::select('users.*')
-            ->where('users.type', 'client');
+        $query = User::where('users.type', 'client')
+            ->withCount('clientDeals')
+                ->addSelect([
+                    'client_applications_count' => \App\Models\Deal::selectRaw('COUNT(deal_applications.id)')
+                        ->join('deal_applications', 'deal_applications.deal_id', '=', 'deals.id')
+                        ->join('client_deals', 'client_deals.deal_id', '=', 'deals.id')
+                        ->whereColumn('client_deals.client_id', 'users.id')
+                ]);
 
         // Filters
         if ($request->filled('name')) {
@@ -102,6 +108,23 @@ class ClientController extends Controller
                     ->orWhere('users.passport_number', 'like', '%' . $request->search . '%');
             });
         }
+
+        if ($request->fetcttype == '') {
+                $query->where('users.blocked_status','=','0');
+            }
+
+         if ($request->fetcttype == 'blocked') {
+                $query->where('users.blocked_status','=','1');
+                 $query->where('users.unblock_status','!=','1');
+            }
+        if ($request->fetcttype == 'active') {
+                $query->where('users.blocked_status','=','0');
+            }
+
+         if ($request->fetcttype == 'unblockedrequest') {
+                $query->where('users.unblock_status','=','1');
+            }
+
 
         // Get paginated result
         $paginated = $query->orderBy('users.created_at', 'desc')
@@ -355,7 +378,7 @@ class ClientController extends Controller
             addLogActivity([
                 'type' => 'info',
                 'note' => json_encode([
-                    'title' => 'Client Updated',
+                    'title' =>  $client->name. '  contact Updated',
                     'message' => 'Fields updated successfully',
                     'changes' => $changes
                 ]),
@@ -373,14 +396,40 @@ class ClientController extends Controller
     }
 
 
-    public function destroy(User $client)
+    public function deleteClient(Request $request)
     {
+
+     // Validate request input
+        $validator = Validator::make($request->all(), [
+            'id'              => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        $client = User::where('id', $request->id)->first();
+
         $user = \Auth::user();
         if ($client->created_by == $user->creatorId()) {
-            $estimation = Estimation::where('client_id', '=', $client->id)->first();
+            $estimation = Estimation::where('client_id', '=', $request->id)->first();
             if (empty($estimation)) {
                 /*  ClientDeal::where('client_id', '=', $client->id)->delete();
                     ClientPermission::where('client_id', '=', $client->id)->delete();*/
+
+                    addLogActivity([
+                'type' => 'warning',
+                'note' => json_encode([
+                    'title' => $client->name. ' contact deleted',
+                    'message' =>  $client->name. '  contact deleted',
+                ]),
+                'module_id' => $client->id,
+                'module_type' => 'client',
+                'notification_type' => 'Client Updated'
+            ]);
                 $client->delete();
                 return redirect()->back()->with('success', __('Client Deleted Successfully!'));
             } else {
@@ -438,6 +487,7 @@ class ClientController extends Controller
             }
 
             $client = User::where('id', $request->id)->first();
+          $clienthistory =  HistoryRequest::where('student_id', $request->id)->orderBy('created_at', 'desc')->get();
 
             if (!$client) {
                 return response()->json(['status' => 'error', 'message' => 'Client not found.'], 404);
@@ -471,6 +521,7 @@ class ClientController extends Controller
                     'lead' => $lead,
                     'deals' => $deals,
                     'applications' => $applications,
+                    'clienthistory' => $clienthistory,
                     'stages' => $stages
                 ]
             ]);
@@ -792,4 +843,248 @@ class ClientController extends Controller
             'html' => $html
         ]);
     }
+        public function blockClient(Request $request){
+        if (\Auth::user()->can('edit deal')) {
+            $validator = \Validator::make($request->all(), [
+                'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
+                'id' => 'required|exists:users,id',
+                'deal_id' => 'required|exists:deals,id',
+                'blocked_reason' => 'required',
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->getMessageBag();
+                 return response()->json([
+                    'status' => 'error',
+                    'message' =>  $messages
+                ]);
+            }
+            $User = User::findOrFail($request->id);
+            if ($request->hasFile('block_attachments')) {
+                $blockAttachmentName = time() . '.' . $request->file('block_attachments')->extension();
+                $request->file('block_attachments')->move(public_path('block_attachments'), $blockAttachmentName);
+                $User->block_attachments = $blockAttachmentName; // Save the file path if needed
+            }
+            // HistoryRequest
+            $HistoryRequest = new \App\Models\HistoryRequest();
+            $HistoryRequest->type = 'Blocked';
+            $HistoryRequest->status = '1';
+            $HistoryRequest->start_date = date('Y-m-d');
+            $HistoryRequest->time = date('H:i:s');
+            $HistoryRequest->note = json_encode([
+                    'title' => 'Contact Updated',
+                    'message' => 'Contact Blocked Request'
+                ]);
+            $HistoryRequest->module_type = 'Blocked';
+            $HistoryRequest->student_id = $request->id;
+            $HistoryRequest->created_by = \Auth::user()->id;
+            $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+            $HistoryRequest->attachments = $blockAttachmentName ?? null;
+            $HistoryRequest->save();
+
+            $User->blocked_reason=$request->blocked_reason;
+            $User->blocked_status= '1';
+            $User->blocked_by= \Auth::id();
+            $User->save();
+
+            $data = [
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Client Blocked Request',
+                    'message' => 'Client Blocked Request'
+                ]),
+                'module_id' => $User->id,
+                'module_type' => 'client',
+                'notification_type' => 'Client Blocked Request Submit Successfully'
+            ];
+            addLogActivity($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Blocked User Successfully',
+                'id' => $request->deal_id,
+            ]);
+        } else {
+            return response()->json(['error' => __('Permission Denied.')], 401);
+        }
+    }
+
+       public function unBlockClient(Request $request){
+        if (\Auth::user()->can('edit deal')) {
+            $validator = \Validator::make($request->all(), [
+                'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
+                'id' => 'required|exists:users,id',
+                'blocked_reason' => 'required',
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->getMessageBag();
+                 return response()->json([
+                    'status' => 'error',
+                    'message' =>  $messages
+                ]);
+            }
+            $User = User::findOrFail($request->id);
+            if ($request->hasFile('block_attachments')) {
+                $blockAttachmentName = time() . '.' . $request->file('block_attachments')->extension();
+                $request->file('block_attachments')->move(public_path('unblock_attachments'), $blockAttachmentName);
+                $User->unblock_attachments = $blockAttachmentName; // Save the file path if needed
+            }
+            $User->unblock_reason=$request->blocked_reason;
+            $User->unblock_status= '1';
+
+
+
+            $HistoryRequest = new \App\Models\HistoryRequest();
+            $HistoryRequest->type = 'Unblocked';
+            $HistoryRequest->status = '2';
+            $HistoryRequest->start_date = date('Y-m-d');
+            $HistoryRequest->time = date('H:i:s');
+            $HistoryRequest->note = json_encode([
+            'title' => 'Contact Updated',
+            'message' => 'Contact Unblocked Request'
+            ]);
+            $HistoryRequest->module_type = 'Unblocked';
+            $HistoryRequest->student_id = $request->id;
+            $HistoryRequest->created_by = \Auth::user()->id;
+            $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+            $HistoryRequest->attachments = $blockAttachmentName ?? null;
+            $HistoryRequest->save();
+
+
+
+
+
+            $User->unblock_by= \Auth::id();
+            $User->save();
+
+            $data = [
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Client Unblock Request',
+                    'message' => 'Client Unblock Request'
+                ]),
+                'module_id' => $User->id,
+                'module_type' => 'client',
+                'notification_type' => 'Client Unblock Request Submit Successfully'
+            ];
+            addLogActivity($data);
+
+            return json_encode([
+                'status' => 'success',
+                'message' => 'Unlock Request Submit Successfully',
+                'deal_id' => $User->id,
+            ]);
+        } else {
+            return response()->json(['error' => __('Permission Denied.')], 401);
+        }
+    }
+
+
+        public function updateUnblockRequestStatus(Request $request){
+
+         $validator = \Validator::make($request->all(), [
+                'id' => 'required|exists:users,id',
+                'blocked_reason' => 'required',
+                'admin_action_status' => 'required',
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->getMessageBag();
+                 return response()->json([
+                    'status' => 'error',
+                    'message' =>  $messages
+                ]);
+            }
+        if (\Auth::user()->can('edit deal')) {
+            if($request->admin_action_status != null){
+                 if($request->admin_action_status == '1'){
+
+                    $User = User::findOrFail($request->id);
+
+                    $HistoryRequest = new \App\Models\HistoryRequest();
+                    $HistoryRequest->type = 'Approved';
+                    $HistoryRequest->status = '3';
+                    $HistoryRequest->start_date = date('Y-m-d');
+                    $HistoryRequest->time = date('H:i:s');
+                    $HistoryRequest->note = json_encode([
+                    'title' => 'Contact Updated',
+                    'message' => 'Contact Approved Unblock Request'
+                    ]);
+                    $HistoryRequest->module_type = 'Approved';
+                    $HistoryRequest->student_id = $request->id;
+                    $HistoryRequest->created_by = \Auth::user()->id;
+                    $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+                    $HistoryRequest->attachments = $blockAttachmentName ?? null;
+                    $HistoryRequest->save();
+
+                    $User->blocked_status = '0';
+                    $User->unblock_status = '0';
+
+                    $User->save();
+
+                    $data = [
+                        'type' => 'info',
+                        'note' => json_encode([
+                            'title' => 'Client Unblock Request',
+                            'message' => 'Client Unblock Request'
+                        ]),
+                        'module_id' => $User->id,
+                        'module_type' => 'client',
+                        'notification_type' => 'Client Unblock Request Submit Successfully'
+                    ];
+                    addLogActivity($data);
+
+                     return response()->json([
+                        'status' => 'success',
+                        'message' => 'Unlock Request Submit Successfully',
+                        'id' => $User->id,
+                    ],200);
+                 }else{
+
+                    $User = User::findOrFail($request->id);
+
+
+                    $User = User::findOrFail($request->id);
+
+                    $HistoryRequest = new \App\Models\HistoryRequest();
+                    $HistoryRequest->type = 'Rejected';
+                    $HistoryRequest->status = '4';
+                    $HistoryRequest->start_date = date('Y-m-d');
+                    $HistoryRequest->time = date('H:i:s');
+                    $HistoryRequest->note = json_encode([
+                    'title' => 'Contact Updated',
+                    'message' => 'Contact Rejected Unblock Request'
+                    ]);
+                    $HistoryRequest->module_type = 'Rejected';
+                    $HistoryRequest->student_id = $request->id;
+                    $HistoryRequest->created_by = \Auth::user()->id;
+                    $HistoryRequest->reason = $request->blocked_reason ?? 'No reason provided';
+                    $HistoryRequest->attachments = $blockAttachmentName ?? null;
+                    $HistoryRequest->save();
+
+                    $data = [
+                        'type' => 'info',
+                        'note' => json_encode([
+                            'title' => 'Rejected Client Unblocked Request',
+                            'message' => 'Rejected Client Unblocked Request'
+                        ]),
+                        'module_id' => $User->id,
+                        'module_type' => 'client',
+                        'notification_type' => 'Rejected Client Unblocked Request Submit Successfully'
+                    ];
+                    addLogActivity($data);
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Rejected Client Request Successfully',
+                        'id' => $request->id,
+                    ]);
+                 }
+            }else{
+
+            }
+        } else {
+            return response()->json(['error' => __('Permission Denied.')], 401);
+        }
+    }
+
+
+
 }

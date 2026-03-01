@@ -43,6 +43,7 @@ use App\Models\CompanyPermission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Models\ApplicationNote;
+use App\Models\AdmissionView;
 use App\Models\City;
 use App\Models\instalment;
 use App\Models\Institute;
@@ -209,6 +210,173 @@ class DealController extends Controller
             'per_page' => $deals->perPage()
         ]);
     }
+    public function getAdmissionByView(Request $request)
+{
+    $user = Auth::user();
+
+    if (!($user->can('view deal') || $user->can('manage deal') || in_array($user->type, ['super admin', 'company', 'Admin Team']))) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Permission Denied.',
+        ], 403);
+    }
+
+    $view = $request->input('view', 'list');
+    $perPage = $request->input('perPage', env("RESULTS_ON_PAGE", 50));
+    $page = $request->input('page', 1);
+
+    $query = AdmissionView::query();
+
+    // Permissions logic
+    if (!in_array($user->type, ['super admin', 'Admin Team']) && !$user->can('level 1')) {
+        if ($user->type == 'company') {
+            $query->where('brand_id', $user->id);
+        } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
+            $query->whereIn('brand_id', array_keys(FiltersBrands()));
+        } elseif ($user->type == 'Region Manager' && $user->region_id) {
+            $query->where('region_id', $user->region_id);
+        } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
+            $query->where('branch_id', $user->branch_id);
+        } elseif ($user->type == 'Agent') {
+            $query->where('agent_id', $user->agent_id);
+        } else {
+            $query->where('assigned_to', $user->id); // fallback
+        }
+    }
+
+    // Filters from request
+    $filters = $this->dealFilters();
+    foreach ($filters as $column => $value) {
+        if ($column === 'name') $query->where('name', 'like', "%{$value}%");
+        elseif ($column === 'stage_id') $query->where('stage_id', $value);
+        elseif ($column === 'users') $query->whereIn('created_by', $value);
+        elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
+        elseif ($column === 'brand') $query->where('brand_id', $value);
+        elseif ($column === 'region_id') $query->where('region_id', $value);
+        elseif ($column === 'branch_id') $query->where('branch_id', $value);
+        elseif ($column === 'deal_assigned_user') $query->where('assigned_to', $value);
+        elseif ($column === 'created_at_from') $query->whereDate('created_at', '>=', $value);
+        elseif ($column === 'created_at_to') $query->whereDate('created_at', '<=', $value);
+        elseif ($column === 'tag') $query->whereRaw('FIND_IN_SET(?, tag_ids)', [$value]);
+        elseif ($column === 'days_at_stage') {
+            if ($value === '30+') $query->where('days_at_stage', '>=', 30);
+            else $query->where('days_at_stage', '=', (int)$value);
+        }
+    }
+
+    // fetcttype filter
+    if ($request->filled('fetcttype')) {
+        $type = $request->fetcttype;
+        if ($type === 'youradmissions') $query->where('created_by', $user->id);
+        if ($type === 'assigntome') $query->where('assigned_to', $user->id);
+        if ($type === 'agentadmissions') $query->whereNotNull('agent_id');
+        else $query->whereNull('agent_id');
+    }
+
+    // Search filter
+    if ($request->filled('search')) {
+        $search = $request->get('search');
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('phone', 'like', "%{$search}%")
+              ->orWhere('price', 'like', "%{$search}%")
+              ->orWhere('passport_number', 'like', "%{$search}%")
+              ->orWhere('lead_name', 'like', "%{$search}%")
+              ->orWhere('lead_email', 'like', "%{$search}%")
+              ->orWhere('lead_phone', 'like', "%{$search}%");
+        });
+    }
+
+    // CSV Export
+    if ($request->input('download_csv')) {
+        $dealsCsv = $query->get();
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="admissions_'.time().'.csv"',
+        ];
+        $callback = function () use ($dealsCsv) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['ID','Name','Stage','Brand','Agent','Assigned','Client Passport','Lead Name','Lead Email','University','Price','Created At']);
+            foreach ($dealsCsv as $deal) {
+                fputcsv($file, [
+                    $deal->id,
+                    $deal->name,
+                    $deal->stage_name,
+                    $deal->brand_name,
+                    $deal->agent_name,
+                    $deal->assigned_user_name,
+                    $deal->passport_number,
+                    $deal->lead_name,
+                    $deal->lead_email,
+                    $deal->university_name,
+                    $deal->price,
+                    $deal->created_at,
+                ]);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // Kanban view
+    if ($view === 'kanban') {
+        $KANBAN_PER_PAGE = 1000;
+        $deals = $query->orderBy('created_at', 'desc')->limit($KANBAN_PER_PAGE)->get();
+
+        $stages = DB::table('stages')->select('id', 'name')->get();
+        $colors = [
+            1 => ['#4F46E5', '#eef2ff'],
+            2 => ['#F59E0B', '#fff7ed'],
+            3 => ['#22C55E', '#f0fdf4'],
+            4 => ['#EC928E', '#fef2f2'],
+            5 => ['#0EA5E9', '#e0f2fe'],
+            6 => ['#6B7280', '#f3f4f6'],
+        ];
+
+        $kanban = [];
+        foreach ($stages as $stage) {
+            $stageDeals = $deals->where('stage_id', $stage->id)->values();
+            $kanban[] = [
+                'stage_id' => $stage->id,
+                'title' => $stage->name,
+                'count' => $stageDeals->count(),
+                'color' => $colors[$stage->id][0] ?? '#000',
+                'bgColor' => $colors[$stage->id][1] ?? '#fff',
+                'deals' => $stageDeals->map(fn($deal) => [
+                    'id' => $deal->id,
+                    'name' => $deal->name,
+                    'phone' => $deal->phone,
+                    'price' => $deal->price,
+                    'assigned_to' => $deal->assigned_user_name,
+                    'brand' => $deal->brand_name,
+                    'agent' => $deal->agent_name,
+                    'client_passport' => $deal->passport_number,
+                    'lead_name' => $deal->lead_name,
+                ]),
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'view' => 'kanban',
+            'data' => $kanban,
+            'total_records' => $deals->count(),
+        ]);
+    }
+
+    // List view
+    $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $deals->items(),
+        'current_page' => $deals->currentPage(),
+        'last_page' => $deals->lastPage(),
+        'total_records' => $deals->total(),
+        'per_page' => $deals->perPage()
+    ]);
+}
+
     public function getAdmissionDetails(Request $request)
     {
 
@@ -242,7 +410,7 @@ class DealController extends Controller
 
             // $branches = Branch::pluck('name', 'id');
             // $users = allUsers();
-            $logActivities = getLogActivity($deal->id, 'deal');
+//$logActivities = getLogActivity($deal->id, 'deal');
 
             // Lead Stage History
             $stageHistories = StageHistory::where('type', 'deal')
@@ -256,7 +424,7 @@ class DealController extends Controller
             'status' => 'success',
             'data' => $deal,
             'stageHistories' => $stageHistories,
-            'logActivities' => $logActivities,
+           // 'logActivities' => $logActivities,
             'tasks' => $tasks,
             'stages' => $stages,
             'applications' => $applications,
@@ -538,4 +706,351 @@ class DealController extends Controller
             'data'   => $stage_histories,
         ], 200);
     }
+
+   public function updateAdmission(Request $request)
+{
+    $user = Auth::user();
+
+    // Permission check
+    if (!$user->can('edit deal') && $user->type != 'super admin') {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 200);
+    }
+
+    // Validation
+    $validator = Validator::make($request->all(), [
+        'id' => 'required|exists:deals,id',
+        'name' => 'required',
+        'intake_month' => 'required',
+        'intake_year' => 'required',
+        'brand_id' => 'required|gt:0',
+        'region_id' => 'required|gt:0',
+        'lead_branch' => 'required|gt:0',
+        'assigned_to' => 'required|exists:users,id',
+        'pipeline_id' => 'required',
+        'gender' => 'required',
+        'nationality' => 'required',
+        'date_of_birth' => 'required',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $validator->errors()
+        ], 422);
+    }
+
+    // Get Deal
+    $deal = Deal::findOrFail($request->id);
+    $originalData = $deal->toArray(); // before update
+
+    // Check ownership permission (same logic preserved)
+    if (!$user->can('edit deal') && $deal->created_by != $user->ownerId() && $user->type != 'super admin') {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 200);
+    }
+
+    // Get related user
+    $user_who_have_password = User::whereIn('id', function ($query) use ($request) {
+        $query->select('client_id')
+            ->from('client_deals')
+            ->where('deal_id', $request->id);
+    })->first();
+
+    // Passport validation (same logic preserved)
+    if ($user_who_have_password) {
+        $passportValidator = Validator::make($request->all(), [
+            'passport_number' => 'required|unique:users,passport_number,' . $user_who_have_password->id,
+        ]);
+
+        if ($passportValidator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $passportValidator->errors()->first()
+            ], 422);
+        }
+    }
+
+    // Update Deal
+    $deal->name  = $request->name;
+    $deal->category = $request->input('category');
+    $deal->university_id = $request->input('university_id');
+    $deal->organization_id = $request->input('organization_id');
+    $deal->phone = $request->input('lead_phone');
+    $deal->brand_id = $request->input('brand_id');
+    $deal->region_id = $request->input('region_id');
+    $deal->branch_id = $request->input('lead_branch');
+    $deal->assigned_to = $request->input('assigned_to');
+    $deal->intake_month = $request->input('intake_month');
+    $deal->intake_year = $request->input('intake_year');
+    $deal->price = 0;
+    $deal->pipeline_id = $request->input('pipeline_id');
+    $deal->description = $request->input('deal_description');
+    $deal->status = 'Active';
+    $deal->created_by = $deal->created_by;
+    $deal->save();
+
+    // Update User
+    if ($user_who_have_password) {
+        $user_who_have_password->passport_number = $request->passport_number;
+        $user_who_have_password->gender = $request->gender;
+        $user_who_have_password->nationality = $request->nationality;
+        $user_who_have_password->date_of_birth = $request->date_of_birth;
+        $user_who_have_password->save();
+    }
+
+    // Update or Create Lead
+    $lead = Lead::where('is_converted', $request->id)->first();
+
+    if (!empty($lead)) {
+
+        if (!empty($request->lead_email)) {
+            $lead->email = $request->lead_email;
+        }
+
+        if (!empty($request->lead_phone)) {
+            $lead->phone = $request->full_number;
+        }
+
+        $lead->save();
+
+    } else {
+
+        $lead = new Lead();
+        $lead->title = $request->name;
+        $lead->name = $request->name;
+        $lead->email = $request->lead_email;
+        $lead->phone = $request->full_number;
+        $lead->mobile_phone = $request->full_number;
+        $lead->branch_id = $request->lead_branch;
+        $lead->brand_id = $request->brand_id;
+        $lead->region_id = $request->region_id;
+        $lead->organization_id = "--";
+        $lead->organization_link = "--";
+        $lead->sources = "--";
+        $lead->referrer_email = $request->lead_email;
+        $lead->street = "--";
+        $lead->city = "--";
+        $lead->state = "--";
+        $lead->postal_code = "--";
+        $lead->country = "--";
+        $lead->keynotes = "--";
+        $lead->tags = "--";
+        $lead->stage_id = "1";
+        $lead->subject = $request->name;
+        $lead->user_id = $deal->assigned_to;
+        $lead->tag_ids = "";
+        $lead->pipeline_id = "1";
+        $lead->created_by = $deal->created_by;
+        $lead->date = date('Y-m-d');
+        $lead->drive_link = "";
+        $lead->is_converted = $deal->id;
+        $lead->save();
+    }
+
+    // change tracking here
+$changes = [];
+$updatedFields = [];
+
+foreach ($originalData as $field => $oldValue) {
+
+    if (in_array($field, ['created_at', 'updated_at'])) {
+        continue;
+    }
+
+    if ($deal->$field != $oldValue) {
+
+        $changes[$field] = [
+            'old' => $oldValue,
+            'new' => $deal->$field
+        ];
+
+        $updatedFields[] = $field;
+    }
+}
+
+if (!empty($changes)) {
+
+    addLogActivity([
+        'type' => 'info',
+        'note' => json_encode([
+            'title' => 'Deal updated: ' . $deal->name,
+            'message' => 'Fields updated: ' . implode(', ', $updatedFields),
+            'changes' => $changes
+        ]),
+        'module_id' => $deal->id,
+        'module_type' => 'deal',
+        'notification_type' => 'Deal Updated'
+    ]);
+
+}
+
+    return response()->json([
+        'status' => 'success',
+        'deal' => $deal,
+        'message' => __('Deal successfully updated!')
+    ]);
+}
+
+ public function GetadmissionNotes(Request $request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'deal_id' => 'required|exists:deals,id',
+            ]
+        );
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 400);
+        }
+        $deal_id = $request->deal_id;
+        $notesQuery = \App\Models\DealNote::with('author')->where('deal_id', $deal_id);
+        $userType = \Auth::user()->type;
+        if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+            // No additional filtering needed
+        } elseif ($userType === 'company') {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && ! empty(\Auth::user()->region_id)) {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } elseif ($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer', 'Careers Consultant']) || (\Auth::user()->can('level 4') && ! empty(\Auth::user()->branch_id))) {
+            $notesQuery->whereIn('created_by', getAllEmployees()->keys()->toArray());
+        } else {
+            $notesQuery->where('created_by', \Auth::user()->id); // Updated 'user_id' to 'created_by'
+        }
+
+        $notes = $notesQuery->orderBy('created_at', 'DESC')
+            ->get()->map(function ($discussion) {
+                return [
+                    'id' => $discussion->id,
+                    'text' => htmlspecialchars_decode($discussion->description),
+                    'author' => $discussion?->author?->name,
+                    'time' => $discussion->created_at->diffForHumans(),
+                    'pinned' => false, // Default value as per the requirement
+                    'timestamp' => $discussion->created_at->toISOString(),
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $notes,
+        ], 201);
+    }
+
+       public function deleteAdmission(Request $request)
+    {
+        // Validate the Request Data
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required|exists:deals,id',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+        // Check Permission
+        if (! \Auth::user()->can('delete deal') && \Auth::user()->type != 'super admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Permission Denied.'),
+            ], 403);
+        }
+
+        // Find the Lead
+        $deal = Deal::find($request->id);
+
+
+        $applications = DealApplication::where('deal_id', $request->id)
+                ->orderBy('stage_id', 'desc')
+                ->get();
+
+
+         if (count($applications) > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('The application created for this admission cannot be deleted.'),
+            ], 403);
+        }
+
+
+        // Log the deletion
+        $data = [
+            'type' => 'warning',
+            'note' => json_encode([
+                'title' => $deal->name .' admission Deleted',
+                'message' => $deal->name .' admission deleted successfully',
+            ]),
+            'module_id' => $deal->id,
+            'module_type' => 'deal',
+            'notification_type' => 'deal Deleted',
+        ];
+        addLogActivity($data);
+
+        // Delete the deal
+        $deal->delete();
+
+        // Return Success Response
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Admission successfully deleted!'),
+        ], 200);
+    }
+
+
+
+    public function addAdmissionTags(Request $request)
+    {
+
+      // Validate Input
+        $validator = \Validator::make($request->all(), [
+            'selectedIds' => 'required|string', // Expecting comma-separated IDs
+            'tagid' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+        $ids = explode(',', $request->selectedIds);
+        $Leads = Deal::whereIn('id', $ids)->get();
+        if (!empty($ids) && !empty($Leads) && $Leads->count() > 0) {
+            foreach ($Leads as $Lead) {
+                $Lead->tag_ids = $Lead->tag_ids ? $Lead->tag_ids . ',' . $request->tagid : $request->tagid;
+                $Lead->save();
+
+                addLogActivity([
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => $Lead->name. ' Tag Updated for admission',
+                        'message' => $Lead->name. " Tag Updated for admission",
+                    ]),
+                    'module_id' => $Lead->id,
+                    'module_type' => 'deal',
+                    'notification_type' => 'Tag Updated',
+                ]);
+            }
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Tag added successfully'
+            ]);
+        }
+    }
+
 }

@@ -320,6 +320,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/taskDelete', [TaskController::class, 'taskDelete']);
     Route::get('/downloadTasks', [TaskController::class, 'downloadTasks']);
     Route::post('/ApprovedTaskStatus', [TaskController::class, 'ApprovedTaskStatus']);
+    Route::post('/RejectTaskStatus', [TaskController::class, 'RejectTaskStatus']);
     Route::post('/GetTaskByRelatedToRelatedType', [TaskController::class, 'GetTaskByRelatedToRelatedType']);
 
 
@@ -489,9 +490,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // agency
     Route::post('/getagency', [AgencyController::class, 'index']);
-    Route::post('/storeagency', [AgencyController::class, 'storeagency']);
+    Route::post('/agencyCreate', [AgencyController::class, 'agencyCreate']);
     Route::post('/updateagency', [AgencyController::class, 'updateagency']);
     Route::post('/GetAgencyDetail', [AgencyController::class, 'GetAgencyDetail']);
+    Route::post('/deleteAgency', [AgencyController::class, 'deleteAgency']);
+    Route::post('/notesStore', [AgencyController::class, 'DeleteAgencyNotes']);
+    Route::post('/notesDelete', [AgencyController::class, 'DeleteAgencyNotes']);
+    Route::post('/getAgencyNotes', [AgencyController::class, 'getagencyNotes']);
 
     // Apraisals
     Route::post('/getGoalTrackings', [GoalTrackingController::class, 'getGoalTrackings']);
@@ -537,10 +542,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //organization
     Route::post('getorganization', [OrganizationController::class, 'getorganization']);
-    Route::post('organizationstore', [OrganizationController::class, 'organizationstore']);
+    Route::post('organizationCreate', [OrganizationController::class, 'organizationCreate']);
     Route::post('organizationupdate', [OrganizationController::class, 'organizationupdate']);
 
     Route::post('organizationshow', [OrganizationController::class, 'organizationshow']);
+    Route::post('organizationDetail', [OrganizationController::class, 'organizationshow']);
+    Route::post('organizationDelete', [OrganizationController::class, 'organizationDelete']);
+    Route::post('DeleteOrganizationNotes', [OrganizationController::class, 'DeleteOrganizationNotes']);
+    Route::post('OrganizationNotesStore', [OrganizationController::class, 'OrganizationNotesStore']);
+    Route::post('getOrganizationNotes', [OrganizationController::class, 'getOrganizationNotes']);
 
     // Branches
     Route::post('/getRegions', [RegionController::class, 'getRegions']);
@@ -883,7 +893,11 @@ Route::middleware('auth:sanctum')->group(function () {
      //     University Rules
      Route::post('/getClients', [ClientController::class, 'getClients']);
      Route::post('/clientDetail', [ClientController::class, 'clientDetail']);
+     Route::post('/deleteClient', [ClientController::class, 'deleteClient']);
      Route::post('/updateClient', [ClientController::class, 'updateClient']);
+     Route::post('/blockClient', [ClientController::class, 'blockClient']);
+     Route::post('/unBlockClient', [ClientController::class, 'unBlockClient']);
+     Route::post('/updateUnblockRequestStatus', [ClientController::class, 'updateUnblockRequestStatus']);
 
      //     University Rules
      Route::post('/addUniversityRule', [UniversityRuleController::class, 'addUniversityRule']);
@@ -917,9 +931,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
      //     adminission
      Route::post('/getAdmission', [DealController::class, 'getAdmission']);
+     Route::post('/getAdmissionByView', [DealController::class, 'getAdmissionByView']); // get by view
      Route::post('/getAdmissionDetails', [DealController::class, 'getAdmissionDetails']);
      Route::post('/getMoveApplicationPluck', [DealController::class, 'getMoveApplicationPluck']);
      Route::post('/moveApplicationsave', [DealController::class, 'moveApplicationsave']);
+     Route::post('/updateAdmission', [DealController::class, 'updateAdmission']);
+     Route::post('/GetadmissionNotes', [DealController::class, 'GetadmissionNotes']);
+     Route::post('/deleteAdmission', [DealController::class, 'deleteAdmission']);
+     Route::post('/assignTagsBulkadmissions', [DealController::class, 'addAdmissionTags']);
 
 
      //   Announcement Category
@@ -934,17 +953,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
      //     application
      Route::post('/getApplications', [ApplicationsController::class, 'getApplications']);
+     Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByView']);
      Route::post('/getDetailApplication', [ApplicationsController::class, 'getDetailApplication']);
      Route::post('/updateApplication', [ApplicationsController::class, 'updateApplication']);
      Route::post('/storeApplication', [ApplicationsController::class, 'storeApplication']);
      Route::post('/deleteApplication', [ApplicationsController::class, 'deleteApplication']);
      Route::post('/updateApplicationStage', [ApplicationsController::class, 'updateApplicationStage']);
      Route::post('/DeleteApplicationNotes', [ApplicationsController::class, 'DeleteApplicationNotes']);
+     Route::post('/addApplicationTags', [ApplicationsController::class, 'addApplicationTags']);
 
      Route::post('/application_request_save_deposite', [ApplicationsController::class, 'application_request_save_deposite']);
 
      Route::post('/applicationAppliedStage', [ApplicationsController::class, 'applicationAppliedStage']);
-     Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'saveApplicationDepositRequest']);
+     Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'application_request_save_deposite_applied']);
      Route::post('/applicationNotesStore', [ApplicationsController::class, 'applicationNotesStore']);
      Route::post('/getApplicationNotes', [ApplicationsController::class, 'getApplicationNotes']);
 

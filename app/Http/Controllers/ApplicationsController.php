@@ -26,7 +26,9 @@ use App\Models\DealApplication;
 use App\Models\DealTask;
 use App\Models\LeadTag;
 use App\Models\Region;
+use App\Models\ApplicationView;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Session;
 
 class ApplicationsController extends Controller
@@ -119,6 +121,174 @@ class ApplicationsController extends Controller
         ]);
     }
 
+    public function getApplicationsByView(Request $request)
+{
+    $usr = \Auth::user();
+
+    // Permission check
+    if (!($usr->can('view application') || in_array($usr->type, ['super admin', 'company', 'Admin Team']) || $usr->can('level 1'))) {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 403);
+    }
+
+    $perPage = (int) $request->input('num_results_on_page', env("RESULTS_ON_PAGE", 50));
+    $page = (int) $request->input('page', 1);
+
+    // Start query on the view
+    $query = ApplicationView::query();
+
+    // Role-based filtering
+    $userType = $usr->type;
+    if ($userType === 'company') {
+        $query->where('brand_id', $usr->id);
+    } elseif ($userType === 'Region Manager' && $usr->region_id) {
+        $query->where('region_id', $usr->region_id);
+    } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
+        $query->where('branch_id', $usr->branch_id);
+    } elseif ($userType === 'Agent') {
+        $query->where('agent_id', $usr->agent_id);
+    } elseif (!in_array($userType, ['super admin', 'Admin Team'])) {
+        $query->where('assigned_to', $usr->id); // fallback
+    }
+
+    // Filters from request
+    $filters = $this->ApplicationFilters($request); // your existing filter method
+    foreach ($filters as $column => $value) {
+        match ($column) {
+            'name' => $query->where('name', 'like', "%{$value}%"),
+            'stage_id' => $query->where('stage_id', $value),
+            'university_id' => $query->where('university_id', $value),
+            'created_by' => $query->where('created_by', $value),
+            'brand' => $query->where('brand_id', $value),
+            'region_id' => $query->where('region_id', $value),
+            'branch_id' => $query->where('branch_id', $value),
+            'assigned_to' => $query->where('assigned_to', $value),
+            'created_at_from' => $query->whereDate('created_at', '>=', $value),
+            'created_at_to' => $query->whereDate('created_at', '<=', $value),
+            'tag' => $query->whereRaw('FIND_IN_SET(?, tag_ids)', [$value]),
+            default => null,
+        };
+    }
+
+    // Search filter
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        if (strpos($search, 'APC') === 0) {
+            $numericId = preg_replace('/^[A-Z]+/', '', $search);
+            $query->where('id', $numericId);
+        } else {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('application_key', 'like', "%{$search}%")
+                  ->orWhere('course', 'like', "%{$search}%")
+                  ->orWhere('university_name', 'like', "%{$search}%");
+            });
+        }
+    }
+
+    // Fetcttype filter (your existing logic)
+    if ($request->filled('fetcttype')) {
+        $type = $request->fetcttype;
+        if ($type === 'yourapplications') $query->where('created_by', $usr->id);
+        if ($type === 'assigntome') $query->where('assigned_to', $usr->id);
+        if ($type === 'agentapplications') $query->whereNotNull('agent_id');
+        else $query->whereNull('agent_id');
+    }
+
+    // CSV Export
+    if ($request->input('download_csv')) {
+        $applicationsCsv = $query->get();
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="applications_'.time().'.csv"',
+        ];
+
+        $callback = function () use ($applicationsCsv) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'ID', 'Application Key', 'Name', 'University', 'Course', 'Brand', 'Branch', 'Assigned User', 'Stage', 'Created At'
+            ]);
+
+            foreach ($applicationsCsv as $app) {
+                fputcsv($file, [
+                    $app->id,
+                    $app->application_key,
+                    $app->name,
+                    $app->university_name,
+                    $app->course_name,
+                    $app->brand_name,
+                    $app->branch_name,
+                    $app->assigned_user_name,
+                    $app->stage_name,
+                    $app->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // Kanban view
+    if ($request->input('view') === 'kanban') {
+        $KANBAN_PER_PAGE = 1000;
+        $applications = $query->orderBy('created_at', 'desc')->limit($KANBAN_PER_PAGE)->get();
+
+        $stages = DB::table('application_stages')->select('id', 'name')->get();
+        $colors = [
+            1 => ['#4F46E5', '#eef2ff'],
+            2 => ['#F59E0B', '#fff7ed'],
+            3 => ['#22C55E', '#f0fdf4'],
+            4 => ['#EC928E', '#fef2f2'],
+            5 => ['#0EA5E9', '#e0f2fe'],
+            6 => ['#6B7280', '#f3f4f6'],
+        ];
+
+        $kanban = [];
+        foreach ($stages as $stage) {
+            $stageApps = $applications->where('stage_id', $stage->id)->values();
+            $kanban[] = [
+                'stage_id' => $stage->id,
+                'title' => $stage->name,
+                'count' => $stageApps->count(),
+                'color' => $colors[$stage->id][0] ?? '#000',
+                'bgColor' => $colors[$stage->id][1] ?? '#fff',
+                'applications' => $stageApps->map(fn($app) => [
+                    'id' => $app->id,
+                    'name' => $app->name,
+                    'course' => $app->course,
+                    'university' => $app->university_name,
+                    'assigned_to' => $app->assigned_user_name,
+                    'stage' => $app->stage_name,
+                ]),
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'view' => 'kanban',
+            'data' => $kanban,
+            'total_records' => $applications->count(),
+        ]);
+    }
+
+    // List view - simple pagination
+    $applications = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $applications->items(),
+        'current_page' => $applications->currentPage(),
+        'last_page' => $applications->lastPage(),
+        'total_records' => $applications->total(),
+        'per_page' => $applications->perPage(),
+    ]);
+}
+
+
     private function ApplicationFilters(Request $request)
     {
         $filters = [];
@@ -180,6 +350,7 @@ class ApplicationsController extends Controller
 
         $application = DealApplication::with([
             'city:id,name',
+            'coursedetail',
             'preinstitute:id,name',
             'country:country_code,name'
         ])->where('id', $id)->first();
@@ -396,7 +567,7 @@ class ApplicationsController extends Controller
         if (!$user_id || !User::find($user_id)) {
             return  response()->json([
                 'status' => 'error',
-                'message' => 'Client not found for this deal.'
+                'message' => 'Client not found for this admission.'
             ]);
         }
         $user = User::find($user_id); // Single object, not plural
@@ -418,13 +589,14 @@ class ApplicationsController extends Controller
             ],
             'status' => 'required',
             'intake_month' => 'required',
+            'tag_ids' => 'required|array',
         ]);
 
         if ($validator->fails()) {
             $messages = $validator->getMessageBag();
             return response()->json([
                 'status' => 'error',
-                'message' => $messages->first()
+                'errors' => $messages
             ]);
         }
 
@@ -444,19 +616,24 @@ class ApplicationsController extends Controller
                 )
             )->name;
             //
-            if (!empty($request->course)) {
-                $course = Course::find($request->course);
+            if (!empty($request->courses_id)) {
+                $course = Course::find($request->courses_id);
                 if (!empty($course)) {
                     $course_id = $course->id;
                     $courseName = $course->name . ' - ' . $course->campus . ' - ' . $course->intake_month . ' - ' . $course->intakeYear . ' (' . $course->duration . ')';
                 }
             } else {
                 $course_id = null;
-                $courseName = $request->course2;
+                $courseName = $request->CoursesName;
             }
 
+             $student_origin_country = $request->student_origin_country;
+            $student_origin_country = Country::where('country_code', $student_origin_country)->first();
+             $countryId = $request->countryId;
+            $countryId = Country::where('country_code', $countryId)->first();
+
             $new_app = DealApplication::create([
-                'student_origin_country' => $request->student_origin_country ?? null,
+                'student_origin_country' => $student_origin_country->id ?? null,
                 'student_origin_city' => $request->student_origin_city ?? null,
                 'student_previous_university' => $request->student_previous_university ?? null,
                 'application_key' => $userName . '-' . $passport_number . '-' . $university_name,
@@ -471,6 +648,9 @@ class ApplicationsController extends Controller
             ]);
             $new_app->tag_ids     = !empty($request->tag_ids) ? implode(',', $request->tag_ids) : '';
             $new_app->brand_id = $deal->brand_id;
+            $new_app->region_id = $deal->region_id;
+            $new_app->branch_id = $deal->branch_id;
+            $new_app->country_id = $countryId->id;
             $new_app->agent_id = $deal->agent_id;
             $new_app->campus = $request->campus;
             $new_app->intakeYear = $request->intakeYear;
@@ -842,13 +1022,13 @@ class ApplicationsController extends Controller
                     if ($current_stage > $stage_id) {
                             return response()->json([
                                 'status' => 'error',
-                                'message' => 'Stage ID cannot be decreased',
+                                'message' => 'Stage  cannot be decreased',
                             ], 200);
                     }
                 }
                 $request_stage = explode(',', trim($application->request_stage ?? '', ','));
                 if (!in_array(1, $request_stage) || $tasksStatusInvalid) {
-                    if ($application->university_id != 7) {
+                    if ($application->university_id != 7 && $application->university_id != 380) {
                         if (!isset($hasUncompletedTasks->tasks_type_status)) {
                             $newStage = ApplicationStage::find($stage_id);
                             return response()->json([
@@ -872,7 +1052,7 @@ class ApplicationsController extends Controller
             } else {
                 $request_stage = explode(',', trim($application->request_stage ?? '', ','));
                 if (!in_array(1, $request_stage) || $tasksStatusInvalid) {
-                    if ($application->university_id != 7) {
+                    if ($application->university_id != 7 && $application->university_id != 380) {
                         if (!isset($hasUncompletedTasks->tasks_type_status)) {
                             $newStage = ApplicationStage::find($stage_id);
                             return response()->json([
@@ -910,17 +1090,28 @@ class ApplicationsController extends Controller
         } elseif (in_array($stage_id, $final_stages)) {
             if ($stage_id < 12 && $current_stage !== 12) {
                 $request_stage = explode(',', trim($application->request_stage ?? '', ','));
-                if (!in_array(6, $request_stage) || $tasksStatusInvalid) {
-                    $newStage = ApplicationStage::find($stage_id);
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => "Compliance Checks is mandatory before moving to stage " . $newStage->name ?? '',
-                    ], 200);
-                }
+                // if ((!in_array(6, $request_stage) || $tasksStatusInvalid) && $application->university_id==7 ) {
+                //     $newStage = ApplicationStage::find($stage_id);
+                //     return response()->json([
+                //         'status' => 'error',
+                //         'message' => "Compliance Checks is mandatory before moving to stage " . $newStage->name ?? '',
+                //     ], 200);
+                // }
+
+                $complianceInvalid =  empty($hasUncompletedTasksCompliance) ||
+                        $hasUncompletedTasksCompliance->tasks_type_status != '1';
+
+                    if ($application->university_id == 7 && $complianceInvalid) {
+                        $newStage = ApplicationStage::find($stage_id);
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => "Compliance Checks is mandatory before moving to stage " . ($newStage->name ?? ''),
+                        ], 200);
+                    }
                 if ($current_stage >= $stage_id) {
                     return response()->json([
                         'status' => 'error',
-                        'message' => "Stage ID cannot be decreased.",
+                        'message' => "Stage  cannot be decreased.",
                     ], 200);
                 }
                 if ($application->university_id == 380) {
@@ -929,9 +1120,12 @@ class ApplicationsController extends Controller
                     if (($stage_id < 11 && $stage_id === $current_stage + 1) || ($stage_id >= 11 && $current_stage >= 10)) {
                         $application->update(['stage_id' => $stage_id]);
                     } else {
+
+                         $newStagemove = ApplicationStage::find($stage_id);
+                         $oldStagemove = ApplicationStage::find(($current_stage + 1));
                         return response()->json([
                             'status' => 'error',
-                            'message' => "Stage " . ($current_stage + 1) . " is required before moving to stage $stage_id.",
+                            'message' => "Stage $oldStagemove->name is required before moving to stage $newStagemove->name.",
                         ], 200);
                     }
                 }
@@ -942,7 +1136,7 @@ class ApplicationsController extends Controller
                         if ($current_stage > $stage_id) {
                             return response()->json([
                                 'status' => 'error',
-                                'message' => 'Stage ID cannot be decreased.',
+                                'message' => 'Stage  cannot be decreased.',
                             ], 200);
                         }
                     }
@@ -1206,6 +1400,246 @@ class ApplicationsController extends Controller
         ]);
     }
 
+    public function application_request_save_deposite_applied(Request $request)
+{
+    // Get ID from request instead of route parameter
+    $id = $request->id;
+
+    if ($request->stage_id == 6) {
+        if (in_array($request->english_test, ['IELTS', 'OIDI (ELLT)', 'PTE', 'TOEFL'])) {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'disability' => 'required',
+                    'english_test' => 'required',
+                    'drive_link' => 'required',
+                    'Mode_of_Verification' => 'required',
+                    'Mode_of_Payment' => 'required',
+                    'username' => 'required',
+                    'password' => 'required',
+                    'email' => ['required','email',\Illuminate\Validation\Rule::unique('users')->ignore($request->clientUserID)],
+                    'CAS_Documents_Checklist' => 'required|array',
+                ]
+            );
+        } else {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'Mode_of_Verification' => 'required',
+                    'Mode_of_Payment' => 'required',
+                    'disability' => 'required',
+                    'english_test' => 'required',
+                    'drive_link' => 'required',
+                    'email' => ['required','email',\Illuminate\Validation\Rule::unique('users')->ignore($request->clientUserID)],
+                    'CAS_Documents_Checklist' => 'required|array',
+                ]
+            );
+        }
+    } else {
+        if (isset($request->DealTask)) {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'destination' => 'required',
+                    'Source' => 'required',
+                    'institution' => 'required',
+                    'Date_of_deposit' => 'required|date',
+                    'Amount_of_deposit' => 'required',
+                    'Mode_of_payment' => 'required',
+                    'Folder_link' => 'required',
+                    'Mode_of_verification' => 'required',
+                    'Reasons_for_resubmission' => 'required',
+                    'Declaration' => 'required|array',
+                ]
+            );
+        } else {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'destination' => 'required',
+                    'Source' => 'required',
+                    'institution' => 'required',
+                    'Date_of_deposit' => 'required|date',
+                    'Amount_of_deposit' => 'required',
+                    'Mode_of_payment' => 'required',
+                    'Folder_link' => 'required',
+                    'Mode_of_verification' => 'required',
+                    'Declaration' => 'required|array',
+                ]
+            );
+        }
+    }
+
+    if ($validator->fails()) {
+        $messages = $validator->getMessageBag();
+
+        return response()->json([
+            'status' => 'error',
+            'message' => $messages
+        ], 422);
+    }
+
+    $client = User::find($request->clientUserID);
+    if (!empty($client)) {
+        $client->email = $request->email;
+        $client->phone = $request->mobile_number;
+        $client->address = $request->address;
+        $client->save();
+    }
+
+    $application = DealApplication::with('university')->findOrFail($id);
+
+    $currentStages = array_filter(explode(',', trim($application->request_stage, ',')));
+    $requestedStage = (string) $request->stage_id;
+
+    if ($requestedStage === '4') {
+        if (in_array('6', $currentStages)) {
+            $currentStages = array_diff($currentStages, ['5']);
+        }
+        $currentStages[] = '4';
+    } elseif ($requestedStage === '6') {
+        if (in_array('4', $currentStages)) {
+            if (!in_array('6', $currentStages)) {
+                $currentStages[] = '6';
+            }
+        } else {
+            $currentStages[] = '6';
+        }
+    }
+
+    $currentStages = array_unique($currentStages);
+    sort($currentStages);
+    $application->request_stage = ',' . implode(',', $currentStages);
+    $application->save();
+
+    $inputs = $request->except(['_token', '_method', 'submit']);
+    foreach ($inputs as $key => $value) {
+        if (is_array($value)) {
+            $value = json_encode($value);
+        }
+
+        \DB::table('meta')->updateOrInsert(
+            ['created_by' => \Auth::id(), 'parent_id' => $application->id, 'stage_id' => $request->stage_id, 'meta_key' => $key],
+            ['meta_value' => $value]
+        );
+    }
+
+    $ApplicationStage_new = optional(ApplicationStage::find($request->stage_id))->name;
+    $ApplicationStage_old = optional(ApplicationStage::find($application->stage_id))->name;
+
+    $client = \App\Models\User::join('client_deals', 'client_deals.client_id', '=', 'users.id')
+        ->where('client_deals.deal_id', $application->deal_id)
+        ->first();
+
+    $dealTask = \App\Models\DealTask::where('related_to', $id)
+        ->where('related_type', 'application')
+        ->where('tasks_type', 'Compliance')
+        ->first();
+
+    if (!empty($dealTask)) {
+        $dealTask->deal_id = $id;
+        $dealTask->related_to = $id;
+        $dealTask->related_type = 'application';
+        $dealTask->branch_id = 262;
+        $dealTask->region_id = 56;
+        $dealTask->brand_id = 3751;
+        $dealTask->created_by = \Auth::id();
+        $dealTask->assigned_to = 3751;
+        $dealTask->due_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->start_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->status = 0;
+        $dealTask->remainder_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->description = '';
+        $dealTask->visibility = '';
+        $dealTask->priority = 1;
+        $dealTask->tasks_type_status = '0';
+        $dealTask->time = \Carbon\Carbon::now()->toTimeString();
+        $dealTask->stage_request = $request->stage_id;
+
+        if ($request->stage_id == '1') {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Quality';
+        } else {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Compliance';
+        }
+        $dealTask->save();
+    } else {
+        $dealTask = new \App\Models\DealTask();
+        $dealTask->deal_id = $id;
+        $dealTask->related_to = $id;
+        $dealTask->related_type = 'application';
+        $dealTask->branch_id = 262;
+        $dealTask->region_id = 56;
+        $dealTask->brand_id = 3751;
+        $dealTask->created_by = \Auth::id();
+        $dealTask->assigned_to = 3751;
+        $dealTask->due_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->start_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->status = 0;
+        $dealTask->remainder_date = \Carbon\Carbon::now()->toDateString();
+        $dealTask->description = '';
+        $dealTask->visibility = '';
+        $dealTask->priority = 1;
+        $dealTask->time = \Carbon\Carbon::now()->toTimeString();
+        $dealTask->stage_request = $request->stage_id;
+
+        if ($request->stage_id == '1') {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Quality';
+        } else {
+            if ($client) {
+                $passport_number = $client->passport_number ?? '';
+                $dealTask->name = $passport_number . ' ' . $application->university->name ?? '';
+            } else {
+                $dealTask->name = 'APC' . $application->id . ' ' . $application->university->name ?? '';
+            }
+            $dealTask->stage_request = $request->stage_id;
+            $dealTask->tasks_type = 'Compliance';
+        }
+        $dealTask->save();
+    }
+
+    // Add activity log (from the first API version)
+    $logData = [
+        'type' => 'info',
+        'note' => json_encode([
+            'title' => 'Application Updated',
+            'message' => 'Application stage request and deposit details were updated successfully.'
+        ]),
+        'module_id' => $id,
+        'module_type' => 'application',
+        'notification_type' => 'Application Updated'
+    ];
+    addLogActivity($logData);
+
+    return response()->json([
+        'status' => 'success',
+        'app_id' => $id,
+        'message' => 'Application updated successfully!'
+    ], 200);
+}
+
     public function saveApplicationDepositRequest(Request $request)
     {
         // ✅ Initial validation
@@ -1402,6 +1836,16 @@ class ApplicationsController extends Controller
         }
         $discussions = ApplicationNote::find($request->id);
         if (! empty($discussions)) {
+              addLogActivity([
+                'type' => 'warning',
+                'note' => json_encode([
+                    'title' => 'Application Notes deleted',
+                    'message' => 'Application notes deleted successfully',
+                ]),
+                'module_id' => $discussions->application_id,
+                'module_type' => 'application',
+                'notification_type' => 'Application Notes deleted',
+            ]);
             $discussions->delete();
         }
 
@@ -1519,7 +1963,7 @@ class ApplicationsController extends Controller
 
     public function application_request_save_deposite(Request $request)
     {
-        $id=$request->appid;
+        $id=$request->application_id;
         $application = DealApplication::with('university')->find($id);
 
         $currentStages = array_filter(explode(',', trim($application->request_stage, ',')));
@@ -1640,5 +2084,46 @@ class ApplicationsController extends Controller
             'status' => 'success',
             'message' => 'Application updated successfully!',
         ], 200);
+    }
+
+    public function addApplicationTags(Request $request)
+    {
+
+      // Validate Input
+        $validator = \Validator::make($request->all(), [
+            'selectedIds' => 'required|string', // Expecting comma-separated IDs
+            'tagid' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+        $ids = explode(',', $request->selectedIds);
+        $Leads = DealApplication::whereIn('id', $ids)->get();
+        if (!empty($ids) && !empty($Leads) && $Leads->count() > 0) {
+            foreach ($Leads as $Lead) {
+                $Lead->tag_ids = $Lead->tag_ids ? $Lead->tag_ids . ',' . $request->tagid : $request->tagid;
+                $Lead->save();
+
+                addLogActivity([
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => $Lead->name. ' Tag Updated for application',
+                        'message' => $Lead->name. " Tag Updated for application",
+                    ]),
+                    'module_id' => $Lead->id,
+                    'module_type' => 'application',
+                    'notification_type' => 'Tag Updated',
+                ]);
+            }
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Tag added successfully'
+            ]);
+        }
     }
 }

@@ -232,6 +232,7 @@ class TaskController extends Controller
                 'deal_tasks.id',
                 'deal_tasks.due_date',
                 'deal_tasks.status',
+                'deal_tasks.created_by',
                 'deal_tasks.assigned_to'
             )
             ->join('users', 'users.id', '=', 'deal_tasks.assigned_to')
@@ -281,6 +282,7 @@ class TaskController extends Controller
                     $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
                 }
             }
+
 
             // Apply all filters
             $filters = $this->TasksFilter();
@@ -383,8 +385,10 @@ class TaskController extends Controller
                     'deal_tasks.due_date',
                     'deal_tasks.status',
                     'deal_tasks.assigned_to',
+                    'deal_tasks.created_by',
                     'brandname.name as brand_name',
                     'users.name as user_name',
+                    'users.name as assigned_to_name',
                     'deal_tasks.tag_ids',
                 )
                 ->join($tempTable, 'deal_tasks.id', '=', "{$tempTable}.id")
@@ -407,9 +411,40 @@ class TaskController extends Controller
             }
 
 
+              // Additional filters
+            if ($request->filled('fetcttype')) {
+                $fetcttype  =   $request->fetcttype;
+
+                if( $fetcttype=='yourtask'){
+                    $finalQuery->where('deal_tasks.created_by', \Auth::id());
+                }
+
+                if( $fetcttype=='assignedbyme'){
+                    $finalQuery->where('deal_tasks.assigned_to', \Auth::id());
+                }
+
+                if( $fetcttype=='Quality'){
+                    $finalQuery->where('deal_tasks.tasks_type', 'Quality');
+                }
+
+                if( $fetcttype=='Compliance'){
+                    $finalQuery->where('deal_tasks.tasks_type', 'Compliance');
+                }
+
+
+
+            }
+
+            if ($request->fetcttype == 'agenttask') {
+                $finalQuery->whereNotNull('deal_tasks.agent_id');
+            } else {
+                $finalQuery->whereNull('deal_tasks.agent_id');
+            }
+
+
 
             // Apply sorting
-            $status = $_GET['tasks_type'] ?? null;
+            $status =  $request->fetcttype ?? null;
             $user = \Auth::user();
 
             if ($status === 'Quality' || $status === 'Compliance') {
@@ -608,7 +643,7 @@ class TaskController extends Controller
         $dealTask->description = $request->description;
         $dealTask->visibility = $request->visibility;
         $dealTask->priority = 1;
-        $dealTask->time = $request->remainder_time ?? '';
+        $dealTask->time = $request->remainder_time ?? NULL;
         $dealTask->save();
 
         // Add log activity (optional)
@@ -619,7 +654,7 @@ class TaskController extends Controller
 
         if (isset($dealTask->deal_id) && in_array($dealTask->related_type, ['organization', 'lead', 'deal', 'application', 'toolkit', 'agency', 'task'])) {
             $logData = [
-                'type' => 'info',
+                'type' => 'success',
                 'note' => json_encode($remarks),
                 'module_id' => $dealTask->related_type == 'task' ? $dealTask->id : $dealTask->deal_id,
                 'module_type' => $dealTask->related_type,
@@ -1086,6 +1121,7 @@ class TaskController extends Controller
                 'FirstApp',
                 'CourseName',
                 'applied_meta_html',
+                'applied_meta',
             )
         ]);
     }
@@ -1472,7 +1508,7 @@ class TaskController extends Controller
 
         $id = $request->input('id');
         $dealTask = DealTask::find($id);
-        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator'])) {
+        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator','Product Coordinator Manager'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized or invalid task'

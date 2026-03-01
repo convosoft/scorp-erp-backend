@@ -186,6 +186,11 @@ class User extends Authenticatable
         return $this->hasOne('App\Models\User', 'id', 'created_by');
     }
 
+    public function organizationDetail()
+    {
+         return $this->belongsTo(Organization::class,  'id', 'user_id');
+    }
+
     public function companyPermissions()
     {
         //return CompanyPermission::where('permitted_company_id', '=', $this->creatorId())->first();
