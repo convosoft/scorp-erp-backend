@@ -817,7 +817,7 @@ class ApplicationsController extends Controller
         $application->deal_id = $application->deal_id;
         $application->university_id = $request->university;
         $application->course = $courseName;
-        $application->stage_id = $request->status;
+       // $application->stage_id = $request->status;
         $application->external_app_id = $request->application_key;
         $application->intake = $request->intake_month;
         $application->name = "{$deal->name}-{$courseName}-{$university_name}-{$request->application_key}";
@@ -831,7 +831,7 @@ class ApplicationsController extends Controller
         $application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
         $application->intakeYear = $request->intakeYear;
         $application->course_id = $request->courses_id ?? "0";
-        $application->course_id = $request->courses_id ?? "0";
+       // $application->course_id = $request->courses_id ?? "0";
         $application->save();
 
         if (!empty($changes)) {
