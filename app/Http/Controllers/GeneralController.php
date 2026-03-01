@@ -1290,7 +1290,8 @@ public function GetBranchByType()
     public function getCitiesOnid(Request $request)
     {
         $countryCode = $request->input('code');
-        $cities = City::where('country_id', $countryCode)->pluck('name', 'id')->toArray();
+        $country_code = Country::where('id', $countryCode)->first()?->country_code;
+        $cities = City::where('country_id', $country_code)->pluck('name', 'id')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $cities
