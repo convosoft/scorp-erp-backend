@@ -9,6 +9,8 @@ class AdmissionView extends Model
 
  protected $table = 'admission_view';
 
+ protected $appends = ['tags'];
+
 
     public function labels()
     {
