@@ -730,9 +730,9 @@ class DealController extends Controller
         'lead_branch' => 'required|gt:0',
         'assigned_to' => 'required|exists:users,id',
         'pipeline_id' => 'required',
-        'gender' => 'required',
-        'nationality' => 'required',
-        'date_of_birth' => 'required',
+        // 'gender' => 'required',
+        // 'nationality' => 'required',
+        // 'date_of_birth' => 'required',
     ]);
 
     if ($validator->fails()) {
