@@ -863,16 +863,16 @@ class ApplicationsController extends Controller
                 default => 0,
             };
         } else {
-            $deal->stage_id = 0;
+           // $deal->stage_id = 0;
         }
         $deal->save();
 
         // Add stage history
-        addLeadHistory([
-            'stage_id' => $request->status,
-            'type_id' => $application->id,
-            'type' => 'application',
-        ]);
+        // addLeadHistory([
+        //     'stage_id' => $request->status,
+        //     'type_id' => $application->id,
+        //     'type' => 'application',
+        // ]);
 
         return response()->json([
             'status' => "success",
