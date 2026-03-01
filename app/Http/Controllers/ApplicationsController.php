@@ -828,7 +828,7 @@ class ApplicationsController extends Controller
         $application->region_id = $deal->region_id;
         $application->assigned_to = $deal->assigned_to;
         $application->campus = $request->campus;
-        $application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
+        //$application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
         $application->intakeYear = $request->intakeYear;
         $application->course_id = $request->courses_id ?? "0";
        // $application->course_id = $request->courses_id ?? "0";
