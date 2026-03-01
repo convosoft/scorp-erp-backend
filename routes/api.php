@@ -1003,6 +1003,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/UpdateFilterSave', [GeneralController::class, 'UpdateFilterSave']);
     Route::post('/Country', [GeneralController::class, 'Country']);
     Route::post('/Country/by/code', [GeneralController::class, 'CountryByCode']);
+    Route::post('/Country/by/id', [GeneralController::class, 'CountryByID']);
     Route::post('/UniversityByCountryCode', [GeneralController::class, 'UniversityByCountryCode']);
     Route::post('/getLogActivity', [GeneralController::class, 'getLogActivity']);
     Route::get('/getDistinctModuleTypes', [GeneralController::class, 'getDistinctModuleTypes']);
@@ -1010,6 +1011,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/GetBranchByType', [GeneralController::class, 'GetBranchByType']);
     Route::post('/leadsrequireddata', [GeneralController::class, 'leadsrequireddata']);
     Route::post('/getCitiesOnCode', [GeneralController::class, 'getCitiesOnCode']);
+    Route::post('/getCitiesOnid', [GeneralController::class, 'getCitiesOnid']);
 
     Route::post('/DealTagPluck', [GeneralController::class, 'DealTagPluck']);
     Route::post('/DealStagPluck', [GeneralController::class, 'DealStagPluck']);

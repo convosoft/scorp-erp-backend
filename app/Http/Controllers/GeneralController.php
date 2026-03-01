@@ -909,6 +909,16 @@ class GeneralController extends Controller
         ], 200);
 
     }
+    public function CountryByID()
+    {
+        $Country = Country::orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $Country,
+        ], 200);
+
+    }
 
     public function getLogActivity_old(Request $request)
 {
@@ -1271,6 +1281,16 @@ public function GetBranchByType()
     {
         $countryCode = $request->input('code');
         $cities = City::where('country_code', $countryCode)->pluck('name', 'id')->toArray();
+        return response()->json([
+            'status' => 'success',
+            'data' => $cities
+        ]);
+    }
+
+    public function getCitiesOnid(Request $request)
+    {
+        $countryCode = $request->input('code');
+        $cities = City::where('coutry_id ', $countryCode)->pluck('name', 'id')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $cities
