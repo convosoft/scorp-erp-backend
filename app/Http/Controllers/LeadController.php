@@ -379,7 +379,7 @@ class LeadController extends Controller
     }
 
     if ($request->filled('tag')) {
-        $leadsQuery->whereRaw('FIND_IN_SET(?, tag_ids_list)', [$request->tag]);
+        $leadsQuery->whereRaw('FIND_IN_SET(?, tag_ids)', [$request->tag]);
     }
 
     if ($request->filled('lead_assigned_user')) {
