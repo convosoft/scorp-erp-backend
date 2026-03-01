@@ -1441,7 +1441,7 @@ class LeadController extends Controller
 
             // $branches = Branch::pluck('name', 'id');
             // $users = allUsers();
-            $logActivities = getLogActivity($lead->id, 'lead');
+           // $logActivities = getLogActivity($lead->id, 'lead');
 
             // Lead Stage History
             $stageHistories = StageHistory::where('type', 'lead')
@@ -1466,7 +1466,7 @@ class LeadController extends Controller
             }
 
             // Fetch Agencies
-            $agencies = Agency::pluck('organization_name', 'id');
+            //$agencies = Agency::pluck('organization_name', 'id');
 
             // Return JSON Response
             return response()->json([
@@ -1480,10 +1480,10 @@ class LeadController extends Controller
                     'tasks' => $tasks,
                     // 'branches' => $branches,
                     // 'users' => $users,
-                    'log_activities' => $logActivities,
+                    'log_activities' => [],
                     'stage_histories' => $stageHistories,
                     'tags' => $tags,
-                    'agencies' => $agencies,
+                    'agencies' => [],
                 ],
             ], 200);
         }
