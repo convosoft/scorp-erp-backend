@@ -463,29 +463,73 @@ public function getApplicationsByViewNew(Request $request)
     }
 
     // KANBAN VIEW
+    // if ($request->input('view') === 'kanban') {
+
+    //     $applications = $app_query
+    //         ->get();
+
+    //     $stages = DB::table('application_stages')
+    //         ->select('id', 'name')
+    //         ->orderBy('order', 'ASC')
+    //         ->get();
+
+    //     $kanban = [];
+
+    //     foreach ($stages as $stage) {
+
+    //         $stageApps = $applications
+    //             ->where('stage_id', $stage->id)
+    //             ->values();
+
+    //         $kanban[] = [
+    //             'stage_id' => $stage->id,
+    //             'title' => $stage->name,
+    //             'count' => $stageApps->count(),
+    //             'applications' => $stageApps
+    //         ];
+    //     }
+
+    //     return response()->json([
+    //         'status' => 'success',
+    //         'view' => 'kanban',
+    //         'data' => $kanban,
+    //         'total_records' => $applications->count(),
+    //     ]);
+    // }
+
+
+    // Kanban view
     if ($request->input('view') === 'kanban') {
+        $KANBAN_PER_PAGE = 1000;
+        $applications = $app_query->orderBy('created_at', 'desc')->limit($KANBAN_PER_PAGE)->get();
 
-        $applications = $app_query
-            ->get();
-
-        $stages = DB::table('application_stages')
-            ->select('id', 'name')
-            ->orderBy('order', 'ASC')
-            ->get();
+        $stages = DB::table('application_stages')->select('id', 'name')->get();
+        $colors = [
+            1 => ['#4F46E5', '#eef2ff'],
+            2 => ['#F59E0B', '#fff7ed'],
+            3 => ['#22C55E', '#f0fdf4'],
+            4 => ['#EC928E', '#fef2f2'],
+            5 => ['#0EA5E9', '#e0f2fe'],
+            6 => ['#6B7280', '#f3f4f6'],
+        ];
 
         $kanban = [];
-
         foreach ($stages as $stage) {
-
-            $stageApps = $applications
-                ->where('stage_id', $stage->id)
-                ->values();
-
+            $stageApps = $applications->where('stage_id', $stage->id)->values();
             $kanban[] = [
                 'stage_id' => $stage->id,
                 'title' => $stage->name,
                 'count' => $stageApps->count(),
-                'applications' => $stageApps
+                'color' => $colors[$stage->id][0] ?? '#000',
+                'bgColor' => $colors[$stage->id][1] ?? '#fff',
+                'applications' => $stageApps->map(fn($app) => [
+                    'id' => $app->id,
+                    'name' => $app->name,
+                    'course' => $app->course,
+                    'university' => $app->university_name,
+                    'assigned_to' => $app->assigned_user_name,
+                    'stage' => $app->stage_name,
+                ]),
             ];
         }
 
