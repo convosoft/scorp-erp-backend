@@ -313,7 +313,8 @@ public function getApplicationsByViewNew(Request $request)
         's.name as stage_name',
         'au.name as assigned_user_name',
         'b.name as brand_name',
-        'br.name as branch_name'
+        'br.name as branch_name',
+        DB::raw('DATEDIFF(CURDATE(), da.created_at) as applicationAge')
     )
     ->join('deals as d', 'd.id', '=', 'da.deal_id')
 
@@ -529,6 +530,7 @@ public function getApplicationsByViewNew(Request $request)
                     'university' => $app->university_name,
                     'assigned_to' => $app->assigned_user_name,
                     'stage' => $app->stage_name,
+                    'applicationAge' => $app->applicationAge,
                 ]),
             ];
         }
