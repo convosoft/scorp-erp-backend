@@ -716,7 +716,7 @@ class DealController extends Controller
         return response()->json([
             'status' => 'error',
             'message' => __('Permission Denied.')
-        ], 200);
+        ], 422);
     }
 
     // Validation
