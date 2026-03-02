@@ -711,13 +711,15 @@ class DealController extends Controller
 {
     $user = Auth::user();
 
-    // Permission check
-    if (!$user->can('edit deal') && $user->type != 'super admin') {
-        return response()->json([
-            'status' => 'error',
-            'message' => __('Permission Denied.')
-        ], 422);
-    }
+            // Permission check
+        if (!$user->can('edit deal') && $user->type != 'super admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => [
+                    'permission' => [__('Permission Denied.')]
+                ]
+            ], 422);
+        }
 
     // Validation
     $validator = Validator::make($request->all(), [
