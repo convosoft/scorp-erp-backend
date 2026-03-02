@@ -578,7 +578,7 @@ class TaskController extends Controller
                           ->where('deal_tasks.tasks_type_status', "0");
             }
 
-
+            //  get tasks
             // Paginate results
             $paginatedTasks = $finalQuery->paginate($perPage);
 
