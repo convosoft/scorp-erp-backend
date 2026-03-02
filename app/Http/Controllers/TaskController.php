@@ -351,7 +351,7 @@ class TaskController extends Controller
                 } else {
                     $tasksQuery->where('deal_tasks.tasks_type_status', "0");
                 }
-            } elseif ($column === 'tag_id') {
+            }  if ($request->filled('tag_id') ) {
                     if (is_array($value) && count($value) > 0) {
 
                                 $tasksQuery->where(function ($q) use ($value) {
@@ -372,6 +372,19 @@ class TaskController extends Controller
 
             if ($request->filled('assigned_by_me') && $request->assigned_by_me == true) {
                 $tasksQuery->where('deal_tasks.created_by', \Auth::id());
+            }
+
+              // Filter by origin country if provided
+            if ($request->filled('country')) {
+                $country =  $request->country;
+
+                // Fetch country details
+                $country_code = Country::where('country_code', $country)->first();
+
+                if ($country_code) {
+                    $tasksQuery->where('uni_status', '0')
+                               ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+                }
             }
 
             // Get Scorp tasks and merge with main tasks
@@ -577,6 +590,8 @@ class TaskController extends Controller
                 $finalQuery->where('deal_tasks.status', 0)
                           ->where('deal_tasks.tasks_type_status', "0");
             }
+
+
 
             //  get tasks
             // Paginate results
