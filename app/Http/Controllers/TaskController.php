@@ -754,7 +754,10 @@ class TaskController extends Controller
         $is_status_change = $dealTask->status !== $request->status;
 
         // Update Task Details
-        $dealTask->related_to = $request->related_to ?? $dealTask->related_to;
+            if ($request->filled('related_to')) {
+                $dealTask->related_to = $request->related_to;
+            }
+
         $dealTask->related_type = $request->related_type ?? $dealTask->related_type;
         $dealTask->name = $request->task_name ?? $dealTask->task_name;
         $dealTask->branch_id = $request->branch_id ?? $dealTask->branch_id;
