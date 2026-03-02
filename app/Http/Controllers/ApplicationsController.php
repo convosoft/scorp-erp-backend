@@ -306,11 +306,24 @@ public function getApplicationsByViewNew(Request $request)
     $start = ($page - 1) * $perPage;
 
     // BASE QUERY (same as plain)
-    $app_query = DB::table('deal_applications')
-        ->select('deal_applications.*')
-        ->join('deals', 'deals.id', '=', 'deal_applications.deal_id')
-        ->leftJoin('leads', 'leads.is_converted', '=', 'deal_applications.deal_id')
-        ->orderBy('deal_applications.created_at', 'desc');
+    $app_query = DB::table('deal_applications as da')
+    ->select(
+        'da.*',
+        'u.name as university_name',
+        's.name as stage_name',
+        'au.name as assigned_user_name',
+        'b.name as brand_name',
+        'br.name as branch_name'
+    )
+    ->join('deals as d', 'd.id', '=', 'da.deal_id')
+
+    ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
+    ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
+    ->leftJoin('users as au', 'au.id', '=', 'da.assigned_to')
+    ->leftJoin('users as b', 'b.id', '=', 'da.brand_id')
+    ->leftJoin('branches as br', 'br.id', '=', 'da.branch_id')
+
+    ->orderBy('da.created_at', 'desc');
 
     // ROLE FILTERING (same as plain)
     if ($usr->type == 'super admin' || $usr->type == 'Admin Team' || $usr->can('level 1')) {
