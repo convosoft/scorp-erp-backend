@@ -754,7 +754,7 @@ class TaskController extends Controller
         $is_status_change = $dealTask->status !== $request->status;
 
         // Update Task Details
-            if ($request->filled('related_to')) {
+            if ($request->filled('related_to') && $request->related_to!='null') {
                 $dealTask->related_to = $request->related_to;
             }
 
