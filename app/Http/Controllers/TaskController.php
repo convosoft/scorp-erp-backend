@@ -482,7 +482,11 @@ class TaskController extends Controller
                 } elseif ($column === 'region_id') {
                     $finalQuery->where('deal_tasks.region_id', $value);
                 } elseif ($column === 'university_id') {
-                    $finalQuery->whereIn('deal_applications.university_id', $value);
+                    if (is_array($value) && count($value) > 0) {
+                            $finalQuery->whereIn('deal_applications.university_id', $value);
+                        } elseif (!empty($value)) {
+                            $finalQuery->where('deal_applications.university_id', $value);
+                        }
                 } elseif ($column === 'branch_id') {
                     $finalQuery->where('deal_tasks.branch_id', $value);
                 } elseif ($column === 'due_date') {
