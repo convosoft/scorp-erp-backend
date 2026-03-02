@@ -816,7 +816,7 @@ public function getApplicationsByViewNew(Request $request)
             ],
             'status' => 'required',
             'intake_month' => 'required',
-            'tag_ids' => 'required|array',
+            //'tag_ids' => 'required|array',
         ]);
 
         if ($validator->fails()) {
