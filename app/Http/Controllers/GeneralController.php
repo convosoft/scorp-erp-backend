@@ -1131,7 +1131,7 @@ public function UniversityByCountryCode(Request $request)
                     ->toArray();
                 $universities = $universities;
             } else {
-                $universities = [''];
+                $universities = [];
             }
             return response()->json([
                 'status' => "success",

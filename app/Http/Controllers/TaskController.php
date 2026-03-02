@@ -1757,4 +1757,64 @@ class TaskController extends Controller
         ], 200);
     }
 
+
+    public function TaskStatusChange(Request $request)
+    {
+
+        $rules = [
+            'id' => 'required|integer|min:1',
+        ];
+
+        // Validation
+        $validator = \Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+        $id = $request->input('id');
+
+        if ($id) {
+            $dealTask = DealTask::findOrFail($id);
+
+            if ($dealTask->created_by !== (int)$dealTask->assigned_to && \Auth::id() == (int)$dealTask->assigned_to) {
+
+                $html = '<p class="mb-0">
+                <span class="fw-bold">
+                    <span style="cursor:pointer;font-weight:bold;color:#1770b4 !important"
+                        onclick="openSidebar(\'/get-task-detail?task_id=' . $dealTask->id . '\')"
+                        data-task-id="' . $dealTask->id . '">' .$dealTask->name . '</span>
+                </span>
+                Task Completed By <span style="cursor:pointer;font-weight:bold;color:#1770b4 !important"
+                    onclick="openSidebar(\'/users/' . \Auth::id() . '/user_detail\')">
+                    ' . User::find(\Auth::id())->name ?? '' . ' </span>
+            </p>';
+
+                addNotifications([
+                    'type' => 'Tasks',
+                    'data_type' => 'Task_Completed',
+                    'sender_id' => \Auth::id(),
+                    'receiver_id' => $dealTask->created_by,
+                    'data' => $html,
+                    'is_read' => 0,
+                    'related_id' => $dealTask->id,
+                    'created_by' => \Auth::id(),
+                    'created_at' => \Carbon\Carbon::now()
+                ]);
+            }
+            $dealTask->update(['status' => '1']);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Update User Tasks Successfully'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'ID is required'
+        ], 400);
+    }
+
+
 }
