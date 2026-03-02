@@ -50,6 +50,7 @@ use App\Models\JobCategory;
 use App\Models\LeadTag;
 use App\Models\LeadStage;
 use App\Models\LogActivity;
+use App\Models\TaskTag;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -616,6 +617,22 @@ class GeneralController extends Controller
             } else {
                 $tags = LeadTag::where('branch_id', $user->branch_id)->pluck('tag', 'id')->toArray();
             }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $tags,
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 'false',
+            'message' => 'Unauthorized',
+        ], 401);
+    }
+    public function TaskTag(Request $request)
+    {
+        if (Auth::check()) {
+             $tags = TaskTag::pluck('id', 'tag')->toArray();
 
             return response()->json([
                 'status' => 'success',
