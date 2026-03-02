@@ -62,6 +62,10 @@ class TaskController extends Controller
             $filters['subjects'] = $_POST['subjects'];
         }
 
+         if (isset($_POST['tag_id']) && !empty($_POST['tag_id'])) {
+            $filters['tag_id'] = $_POST['tag_id'];
+        }
+
         if (isset($_POST['assigned_to']) && !empty($_POST['assigned_to'])) {
             $filters['assigned_to'] = $_POST['assigned_to'];
         }
