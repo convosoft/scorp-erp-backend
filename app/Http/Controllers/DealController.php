@@ -418,7 +418,7 @@ class DealController extends Controller
                 ->pluck('stage_id')
                 ->toArray();
 
-            $applications = DealApplication::where('deal_id', $deal->id)->get();
+            $applications = DealApplication::where('deal_id', $request->deal_id)->get();
 
         return response()->json([
             'status' => 'success',
