@@ -351,7 +351,21 @@ class TaskController extends Controller
                 } else {
                     $tasksQuery->where('deal_tasks.tasks_type_status', "0");
                 }
-            } elseif (!$request->has('status')) {
+            } elseif ($column === 'tag_id') {
+                    if (is_array($value) && count($value) > 0) {
+
+                                $tasksQuery->where(function ($q) use ($value) {
+                                    foreach ($value as $tag) {
+                                        $q->orWhereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$tag]);
+                                    }
+                                });
+
+                            } elseif (!empty($value)) {
+
+                                $tasksQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$value]);
+
+                            }
+                                        } elseif (!$request->has('status')) {
                 $tasksQuery->where('deal_tasks.status', 0)
                           ->where('deal_tasks.tasks_type_status', "0");
             }
