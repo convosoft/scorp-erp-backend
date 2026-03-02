@@ -18,6 +18,7 @@ class DealTask extends Model
         0 => 'On Going',
         1 => 'Completed'
     ];
+     protected $appends = ['tags'];
 
     public function user_deals()
     {
