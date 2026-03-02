@@ -492,8 +492,20 @@ class TaskController extends Controller
                 } elseif ($column === 'due_date') {
                     $finalQuery->whereDate('deal_tasks.due_date', $value);
                 } elseif ($column === 'tag_id') {
-                    $finalQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', $value);
-                } elseif ($column === 'status') {
+                    if (is_array($value) && count($value) > 0) {
+
+                                $finalQuery->where(function ($q) use ($value) {
+                                    foreach ($value as $tag) {
+                                        $q->orWhereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$tag]);
+                                    }
+                                });
+
+                            } elseif (!empty($value)) {
+
+                                $finalQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$value]);
+
+                            }
+                                        } elseif ($column === 'status') {
                     if (is_array($value)) {
                         if (in_array(2, $value)) {
                             $finalQuery->where('deal_tasks.status', 0)
