@@ -418,7 +418,7 @@ public function getApplicationsByViewNew(Request $request)
     // CSV DOWNLOAD
     if ($request->input('download_csv')) {
 
-        $applications = $app_query->groupBy('deal_applications.id')->get();
+        $applications = $app_query ->get();
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -453,7 +453,6 @@ public function getApplicationsByViewNew(Request $request)
     if ($request->input('view') === 'kanban') {
 
         $applications = $app_query
-            ->groupBy('deal_applications.id')
             ->get();
 
         $stages = DB::table('application_stages')
@@ -489,7 +488,6 @@ public function getApplicationsByViewNew(Request $request)
     $total_records = $app_query->count();
 
     $applications = $app_query
-        ->groupBy('deal_applications.id')
         ->skip($start)
         ->limit($perPage)
         ->get();
