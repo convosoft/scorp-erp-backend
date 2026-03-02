@@ -28,4 +28,9 @@ class DealTask extends Model
     {
         return $this->hasMany(DealTask::class);
     }
+     public function getTagsAttribute()
+    {
+        return LeadTag::whereRaw("FIND_IN_SET(id, ?)", [$this->tag_ids])->get();
+    }
+
 }
