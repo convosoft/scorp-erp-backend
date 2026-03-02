@@ -492,7 +492,7 @@ class TaskController extends Controller
                 } elseif ($column === 'due_date') {
                     $finalQuery->whereDate('deal_tasks.due_date', $value);
                 } elseif ($column === 'tag_id') {
-                    $finalQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$value]);
+                    $finalQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', $value);
                 } elseif ($column === 'status') {
                     if (is_array($value)) {
                         if (in_array(2, $value)) {
