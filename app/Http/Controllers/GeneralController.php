@@ -565,7 +565,7 @@ class GeneralController extends Controller
 
     public function getapplicationStagesPluck()
     {
-         $stages = ApplicationStage::orderBy('id')->pluck('name', 'id')->toArray();
+         $stages = ApplicationStage::orderBy('id')->pluck('id', 'name')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $stages,
