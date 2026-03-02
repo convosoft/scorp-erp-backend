@@ -408,7 +408,7 @@ public function getApplicationsByViewNew(Request $request)
         } elseif ($column === 'created_at_to') {
             $app_query->whereDate('da.created_at', '<=', $value);
 
-        } elseif ($column === 'tag') {
+        } elseif ($column === 'tag_id') {
             $app_query->whereRaw('FIND_IN_SET(?, da.tag_ids)', [$value]);
         }
     }
@@ -587,8 +587,8 @@ private function getTagsForApplication($tagIds)
             $filters['name'] = $request->input('applications');
         }
 
-        if ($request->filled('stages')) {
-            $filters['stage_id'] = $request->input('stages');
+        if ($request->filled('stage_id')) {
+            $filters['stage_id'] = $request->input('stage_id');
         }
 
         if ($request->filled('created_by')) {
@@ -623,8 +623,8 @@ private function getTagsForApplication($tagIds)
             $filters['assigned_to'] = $request->input('lead_assigned_user');
         }
 
-        if ($request->filled('tag')) {
-            $filters['tag'] = $request->input('tag');
+        if ($request->filled('tag_id')) {
+            $filters['tag_id'] = $request->input('tag_id');
         }
 
         return $filters;
