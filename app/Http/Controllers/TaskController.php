@@ -754,21 +754,21 @@ class TaskController extends Controller
         $is_status_change = $dealTask->status !== $request->status;
 
         // Update Task Details
-        $dealTask->related_to = $request->related_to;
-        $dealTask->related_type = $request->related_type;
-        $dealTask->name = $request->task_name;
+        $dealTask->related_to = $request->related_to ?? $dealTask->related_to;
+        $dealTask->related_type = $request->related_type ?? $dealTask->related_type;
+        $dealTask->name = $request->task_name ?? $dealTask->task_name;
         $dealTask->branch_id = $request->branch_id ?? $dealTask->branch_id;
         $dealTask->assigned_to = $request->assigned_to ?? $dealTask->assigned_to;
         $dealTask->brand_id = $request->brand_id ?? $dealTask->brand_id;
-        $dealTask->assigned_type = $request->assign_type;
+        $dealTask->assigned_type = $request->assign_type ?? $dealTask->assign_type;
         $dealTask->region_id = $request->region_id ?? $dealTask->region_id;
-        $dealTask->due_date = $request->due_date;
-        $dealTask->start_date = $request->start_date;
-        $dealTask->date = $request->start_date;
+        $dealTask->due_date = $request->due_date ?? $dealTask->due_date;
+        $dealTask->start_date = $request->start_date ?? $dealTask->start_date;
+        $dealTask->date = $request->start_date ?? $dealTask->start_date;
         $dealTask->status = $request->status ?? $dealTask->status;
-        $dealTask->remainder_date = $request->remainder_date;
-        $dealTask->description = $request->description;
-        $dealTask->visibility = $request->visibility;
+        $dealTask->remainder_date = $request->remainder_date ?? $dealTask->remainder_date;
+        $dealTask->description = $request->description ?? $dealTask->description;
+        $dealTask->visibility = $request->visibility ?? $dealTask->visibility;
         $dealTask->priority = 1;
         $dealTask->time = $request->remainder_time ?? $dealTask->time;
 
