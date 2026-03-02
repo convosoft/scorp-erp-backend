@@ -288,6 +288,222 @@ class ApplicationsController extends Controller
     ]);
 }
 
+public function getApplicationsByViewNew(Request $request)
+{
+    $usr = \Auth::user();
+
+    if (!($usr->can('view application') ||
+        in_array($usr->type, ['super admin', 'company', 'Admin Team']) ||
+        $usr->can('level 1'))) {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 403);
+    }
+
+    $perPage = (int) $request->input('num_results_on_page', env("RESULTS_ON_PAGE", 50));
+    $page = (int) $request->input('page', 1);
+    $start = ($page - 1) * $perPage;
+
+    // BASE QUERY (same as plain)
+    $app_query = DB::table('deal_applications')
+        ->select('deal_applications.*')
+        ->join('deals', 'deals.id', '=', 'deal_applications.deal_id')
+        ->leftJoin('leads', 'leads.is_converted', '=', 'deal_applications.deal_id')
+        ->orderBy('deal_applications.created_at', 'desc');
+
+    // ROLE FILTERING (same as plain)
+    if ($usr->type == 'super admin' || $usr->type == 'Admin Team' || $usr->can('level 1')) {
+
+    } elseif ($usr->type == 'company') {
+        $app_query->where('deals.brand_id', $usr->id);
+
+    } elseif ($usr->type == 'Project Director' || $usr->type == 'Project Manager' || $usr->can('level 2')) {
+        $brand_ids = array_keys(FiltersBrands());
+        $app_query->whereIn('deals.brand_id', $brand_ids);
+
+    } elseif ($usr->type == 'Region Manager' || ($usr->can('level 3') && !empty($usr->region_id))) {
+        $app_query->where('deals.region_id', $usr->region_id);
+
+    } elseif (
+        $usr->type == 'Branch Manager' ||
+        $usr->type == 'Admissions Officer' ||
+        $usr->type == 'Careers Consultant' ||
+        $usr->type == 'Admissions Manager' ||
+        $usr->type == 'Marketing Officer' ||
+        ($usr->can('level 4') && !empty($usr->branch_id))
+    ) {
+        $app_query->where('deals.branch_id', $usr->branch_id);
+
+    } elseif ($usr->type === 'Agent') {
+        $app_query->where(function ($q) use ($usr) {
+            $q->where('deals.assigned_to', $usr->id)
+              ->orWhere('deals.created_by', $usr->id);
+        });
+
+    } else {
+        $app_query->where('deals.assigned_to', $usr->id);
+    }
+
+    // fetcttype (FIXED LOGIC)
+    if ($request->filled('fetcttype')) {
+
+        if ($request->fetcttype === 'yourapplications') {
+            $app_query->where('deal_applications.created_by', $usr->id);
+
+        } elseif ($request->fetcttype === 'assigntome') {
+            $app_query->where('deals.assigned_to', $usr->id);
+
+        } elseif ($request->fetcttype === 'agentapplications') {
+            $app_query->whereNotNull('deal_applications.agent_id');
+        }
+    }
+
+    // Filters
+    $filters = $this->ApplicationFilters($request);
+
+    foreach ($filters as $column => $value) {
+
+        if ($column === 'name') {
+            $app_query->whereIn('deal_applications.name', (array)$value);
+
+        } elseif ($column === 'stage_id') {
+            $app_query->whereIn('deal_applications.stage_id', (array)$value);
+
+        } elseif ($column === 'university_id') {
+            $app_query->whereIn('deal_applications.university_id', (array)$value);
+
+        } elseif ($column === 'created_by') {
+            $app_query->whereIn('deal_applications.created_by', (array)$value);
+
+        } elseif ($column === 'brand') {
+            $app_query->where('deals.brand_id', $value);
+
+        } elseif ($column === 'region_id') {
+            $app_query->where('deals.region_id', $value);
+
+        } elseif ($column === 'branch_id') {
+            $app_query->where('deals.branch_id', $value);
+
+        } elseif ($column === 'assigned_to') {
+            $app_query->where('deals.assigned_to', $value);
+
+        } elseif ($column === 'created_at_from') {
+            $app_query->whereDate('deal_applications.created_at', '>=', $value);
+
+        } elseif ($column === 'created_at_to') {
+            $app_query->whereDate('deal_applications.created_at', '<=', $value);
+
+        } elseif ($column === 'tag') {
+            $app_query->whereRaw('FIND_IN_SET(?, deal_applications.tag_ids)', [$value]);
+        }
+    }
+
+    // Search
+    if ($request->filled('search')) {
+        $g_search = $request->input('search');
+
+        if (strpos($g_search, 'APC') === 0) {
+            $numericId = preg_replace('/^[A-Z]+/', '', $g_search);
+            $app_query->where('deal_applications.id', $numericId);
+        } else {
+            $app_query->where(function ($query) use ($g_search) {
+                $query->where('deal_applications.name', 'like', "%{$g_search}%")
+                    ->orWhere('deal_applications.application_key', 'like', "%{$g_search}%")
+                    ->orWhere('deal_applications.course', 'like', "%{$g_search}%");
+            });
+        }
+    }
+
+    // CSV DOWNLOAD
+    if ($request->input('download_csv')) {
+
+        $applications = $app_query->groupBy('deal_applications.id')->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="applications_' . time() . '.csv"',
+        ];
+
+        $callback = function () use ($applications) {
+            $file = fopen('php://output', 'w');
+
+            fputcsv($file, [
+                'ID', 'Application Key', 'Name', 'Course', 'Stage', 'Created At'
+            ]);
+
+            foreach ($applications as $app) {
+                fputcsv($file, [
+                    $app->id,
+                    $app->application_key,
+                    $app->name,
+                    $app->course,
+                    $app->stage_id,
+                    $app->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // KANBAN VIEW
+    if ($request->input('view') === 'kanban') {
+
+        $applications = $app_query
+            ->groupBy('deal_applications.id')
+            ->get();
+
+        $stages = DB::table('application_stages')
+            ->select('id', 'name')
+            ->orderBy('order', 'ASC')
+            ->get();
+
+        $kanban = [];
+
+        foreach ($stages as $stage) {
+
+            $stageApps = $applications
+                ->where('stage_id', $stage->id)
+                ->values();
+
+            $kanban[] = [
+                'stage_id' => $stage->id,
+                'title' => $stage->name,
+                'count' => $stageApps->count(),
+                'applications' => $stageApps
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'view' => 'kanban',
+            'data' => $kanban,
+            'total_records' => $applications->count(),
+        ]);
+    }
+
+    // NORMAL LIST VIEW
+    $total_records = $app_query->count();
+
+    $applications = $app_query
+        ->groupBy('deal_applications.id')
+        ->skip($start)
+        ->limit($perPage)
+        ->get();
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $applications,
+        'current_page' => $page,
+        'last_page' => ceil($total_records / $perPage),
+        'total_records' => $total_records,
+        'per_page' => $perPage,
+    ]);
+}
+
 
     private function ApplicationFilters(Request $request)
     {
