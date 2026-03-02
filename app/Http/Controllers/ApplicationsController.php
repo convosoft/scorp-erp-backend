@@ -329,14 +329,14 @@ public function getApplicationsByViewNew(Request $request)
     if ($usr->type == 'super admin' || $usr->type == 'Admin Team' || $usr->can('level 1')) {
 
     } elseif ($usr->type == 'company') {
-        $app_query->where('deals.brand_id', $usr->id);
+        $app_query->where('d.brand_id', $usr->id);
 
     } elseif ($usr->type == 'Project Director' || $usr->type == 'Project Manager' || $usr->can('level 2')) {
         $brand_ids = array_keys(FiltersBrands());
-        $app_query->whereIn('deals.brand_id', $brand_ids);
+        $app_query->whereIn('d.brand_id', $brand_ids);
 
     } elseif ($usr->type == 'Region Manager' || ($usr->can('level 3') && !empty($usr->region_id))) {
-        $app_query->where('deals.region_id', $usr->region_id);
+        $app_query->where('d.region_id', $usr->region_id);
 
     } elseif (
         $usr->type == 'Branch Manager' ||
@@ -346,29 +346,29 @@ public function getApplicationsByViewNew(Request $request)
         $usr->type == 'Marketing Officer' ||
         ($usr->can('level 4') && !empty($usr->branch_id))
     ) {
-        $app_query->where('deals.branch_id', $usr->branch_id);
+        $app_query->where('d.branch_id', $usr->branch_id);
 
     } elseif ($usr->type === 'Agent') {
         $app_query->where(function ($q) use ($usr) {
-            $q->where('deals.assigned_to', $usr->id)
-              ->orWhere('deals.created_by', $usr->id);
+            $q->where('d.assigned_to', $usr->id)
+              ->orWhere('d.created_by', $usr->id);
         });
 
     } else {
-        $app_query->where('deals.assigned_to', $usr->id);
+        $app_query->where('d.assigned_to', $usr->id);
     }
 
     // fetcttype (FIXED LOGIC)
     if ($request->filled('fetcttype')) {
 
         if ($request->fetcttype === 'yourapplications') {
-            $app_query->where('deal_applications.created_by', $usr->id);
+            $app_query->where('da.created_by', $usr->id);
 
         } elseif ($request->fetcttype === 'assigntome') {
-            $app_query->where('deals.assigned_to', $usr->id);
+            $app_query->where('da.assigned_to', $usr->id);
 
         } elseif ($request->fetcttype === 'agentapplications') {
-            $app_query->whereNotNull('deal_applications.agent_id');
+            $app_query->whereNotNull('da.agent_id');
         }
     }
 
@@ -378,37 +378,37 @@ public function getApplicationsByViewNew(Request $request)
     foreach ($filters as $column => $value) {
 
         if ($column === 'name') {
-            $app_query->whereIn('deal_applications.name', (array)$value);
+            $app_query->whereIn('da.name', (array)$value);
 
         } elseif ($column === 'stage_id') {
-            $app_query->whereIn('deal_applications.stage_id', (array)$value);
+            $app_query->whereIn('da.stage_id', (array)$value);
 
         } elseif ($column === 'university_id') {
-            $app_query->whereIn('deal_applications.university_id', (array)$value);
+            $app_query->whereIn('da.university_id', (array)$value);
 
         } elseif ($column === 'created_by') {
-            $app_query->whereIn('deal_applications.created_by', (array)$value);
+            $app_query->whereIn('da.created_by', (array)$value);
 
         } elseif ($column === 'brand') {
-            $app_query->where('deals.brand_id', $value);
+            $app_query->where('d.brand_id', $value);
 
         } elseif ($column === 'region_id') {
-            $app_query->where('deals.region_id', $value);
+            $app_query->where('d.region_id', $value);
 
         } elseif ($column === 'branch_id') {
-            $app_query->where('deals.branch_id', $value);
+            $app_query->where('d.branch_id', $value);
 
         } elseif ($column === 'assigned_to') {
-            $app_query->where('deals.assigned_to', $value);
+            $app_query->where('da.assigned_to', $value);
 
         } elseif ($column === 'created_at_from') {
-            $app_query->whereDate('deal_applications.created_at', '>=', $value);
+            $app_query->whereDate('da.created_at', '>=', $value);
 
         } elseif ($column === 'created_at_to') {
-            $app_query->whereDate('deal_applications.created_at', '<=', $value);
+            $app_query->whereDate('da.created_at', '<=', $value);
 
         } elseif ($column === 'tag') {
-            $app_query->whereRaw('FIND_IN_SET(?, deal_applications.tag_ids)', [$value]);
+            $app_query->whereRaw('FIND_IN_SET(?, da.tag_ids)', [$value]);
         }
     }
 
@@ -421,9 +421,9 @@ public function getApplicationsByViewNew(Request $request)
             $app_query->where('deal_applications.id', $numericId);
         } else {
             $app_query->where(function ($query) use ($g_search) {
-                $query->where('deal_applications.name', 'like', "%{$g_search}%")
-                    ->orWhere('deal_applications.application_key', 'like', "%{$g_search}%")
-                    ->orWhere('deal_applications.course', 'like', "%{$g_search}%");
+                $query->where('da.name', 'like', "%{$g_search}%")
+                    ->orWhere('da.application_key', 'like', "%{$g_search}%")
+                    ->orWhere('da.course', 'like', "%{$g_search}%");
             });
         }
     }
