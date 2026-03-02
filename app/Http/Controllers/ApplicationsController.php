@@ -551,14 +551,31 @@ public function getApplicationsByViewNew(Request $request)
         ->limit($perPage)
         ->get();
 
+        $applicationsWithTags = $applications->map(function($app) {
+    $appArray = (array) $app; // Convert stdClass to array
+    $appArray['tags'] = $this->getTagsForApplication($app->tag_ids ?? '');
+    return $appArray;
+});
+
     return response()->json([
         'status' => 'success',
-        'data' => $applications,
+        'data' => $applicationsWithTags,
         'current_page' => $page,
         'last_page' => ceil($total_records / $perPage),
         'total_records' => $total_records,
         'per_page' => $perPage,
     ]);
+}
+
+private function getTagsForApplication($tagIds)
+{
+    if (empty($tagIds)) {
+        return [];
+    }
+
+    return LeadTag::whereRaw("FIND_IN_SET(id, ?)", [$tagIds])
+        ->get()
+        ->toArray();
 }
 
 
