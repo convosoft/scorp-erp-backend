@@ -128,6 +128,15 @@ class GeneralController extends Controller
             // Fetch regions based on the brand ID
             $regions = Region::where('brands', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
+            $regions = Region::where('brands', $id)
+                    ->orderBy('name', 'ASC')
+                    ->pluck('name', 'id')
+                    ->toArray();
+
+                if (count($regions) === 1) {
+                    $regions = ['' => 'Please Select'] + $regions;
+                }
+
             // Return JSON response with regions
             return response()->json([
                 'status' => 'success',
