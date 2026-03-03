@@ -314,7 +314,7 @@ class BranchController extends Controller
             'start_time'         => $startTimeUtc,  // ✅ saved in UTC
             'end_time'           => $endTimeUtc,    // ✅ saved in UTC
             'is_sat_off'         => $request->is_sat_off,
-            'is_b2b'         => $request->is_b2b,
+            'is_b2b'             => $request->is_b2b ??  $branch->is_b2b,
             'shift_time'         => $decimalHours,
         ]);
 
