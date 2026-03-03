@@ -2288,7 +2288,7 @@ private function getTagsForApplication($tagIds)
 
         $dealTask = \App\Models\DealTask::where('related_to', $id)
             ->where('related_type', 'application')
-            ->where('tasks_type', 'Compliance')
+            ->where('tasks_type', 'Quality')
             ->first();
         if (!empty($dealTask)) {
             // dd(2);
@@ -2375,6 +2375,17 @@ private function getTagsForApplication($tagIds)
             $dealTask->tasks_type = 'Quality';
             $dealTask->save();
         }
+           $inputs = $request->except(['_token', '_method', 'submit']);
+            foreach ($inputs as $key => $value) {
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                }
+
+                \DB::table('meta')->updateOrInsert(
+                    ['created_by' => \Auth::id(), 'parent_id' => $application->id, 'stage_id' => $request->stage_id, 'meta_key' => $key],
+                    ['meta_value' => $value]
+                );
+            }
         return response()->json([
             'status' => 'success',
             'message' => 'Application updated successfully!',
