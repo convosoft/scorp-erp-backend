@@ -824,6 +824,9 @@ class TaskController extends Controller
         $dealTask->visibility = $request->visibility ?? $dealTask->visibility;
         $dealTask->priority = 1;
         $dealTask->time = $request->remainder_time ?? $dealTask->time;
+        if ($request->filled('status')) {
+            $dealTask->drive_link = $request->input('status');
+        }
 
         $dealTask->save();
 
