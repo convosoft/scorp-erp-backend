@@ -1866,6 +1866,7 @@ private function getTagsForApplication($tagIds)
             $dealTask->stage_request = $request->stage_id;
             $dealTask->tasks_type = 'Compliance';
         }
+         $dealTask->tasks_type = 'Compliance';
         $dealTask->save();
     } else {
         $dealTask = new \App\Models\DealTask();
@@ -1907,6 +1908,7 @@ private function getTagsForApplication($tagIds)
             $dealTask->stage_request = $request->stage_id;
             $dealTask->tasks_type = 'Compliance';
         }
+         $dealTask->tasks_type = 'Compliance';
         $dealTask->save();
     }
 
