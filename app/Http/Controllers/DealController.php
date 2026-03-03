@@ -732,6 +732,7 @@ class DealController extends Controller
         'lead_branch' => 'required|gt:0',
         'assigned_to' => 'required|exists:users,id',
         'pipeline_id' => 'required',
+       // 'drive_link' => 'required',
         // 'gender' => 'required',
         // 'nationality' => 'required',
         // 'date_of_birth' => 'required',
@@ -792,6 +793,7 @@ class DealController extends Controller
     $deal->price = 0;
     $deal->pipeline_id = $request->input('pipeline_id');
     $deal->description = $request->input('deal_description');
+    $deal->drive_link = $request->input('drive_link');
     $deal->status = 'Active';
     $deal->created_by = $deal->created_by;
     $deal->save();
