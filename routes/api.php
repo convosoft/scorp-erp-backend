@@ -1008,6 +1008,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/Country/by/code', [GeneralController::class, 'CountryByCode']);
     Route::post('/Country/by/id', [GeneralController::class, 'CountryByID']);
     Route::post('/UniversityByCountryCode', [GeneralController::class, 'UniversityByCountryCode']);
+    Route::post('/UniversityByCountryid', [GeneralController::class, 'UniversityByCountryid']);
     Route::post('/getLogActivity', [GeneralController::class, 'getLogActivity']);
     Route::get('/getDistinctModuleTypes', [GeneralController::class, 'getDistinctModuleTypes']);
     Route::post('/DeleteSavedFilter', [GeneralController::class, 'DeleteSavedFilter']);

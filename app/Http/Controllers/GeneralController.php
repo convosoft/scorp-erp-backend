@@ -1170,6 +1170,34 @@ public function UniversityByCountryCode(Request $request)
         }
 }
 
+public function UniversityByCountryid(Request $request)
+{
+        $request->validate([
+            'country' => 'required|string',
+        ]);
+        try {
+            $country = $request->get('country');
+            $country_code = Country::where('id', $country)->first();
+            if ($country_code) {
+                $universities = University::where('uni_status', '0') ;
+                $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                $universities = $universities->pluck('name', 'id')->toArray();
+            } else {
+                $universities = [];
+            }
+            return response()->json([
+                'status' => "success",
+                'data' => $universities,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => "success",
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+}
+
 public function GetBranchByType()
 {
     ini_set('memory_limit', '256M');
