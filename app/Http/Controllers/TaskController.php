@@ -1074,7 +1074,6 @@ class TaskController extends Controller
             $applied_meta = \DB::table('meta')
             ->select('meta_key', 'meta_value')
             ->where('parent_id', $task->related_to)
-            ->where('stage_id', 6)
             ->get()
             ->map(function ($item) {
                 return (array) $item;

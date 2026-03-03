@@ -2328,6 +2328,7 @@ private function getTagsForApplication($tagIds)
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
+            $dealTask->tasks_type = 'Quality';
             $dealTask->save();
         } else {
             $dealTask = new \App\Models\DealTask();
@@ -2358,7 +2359,8 @@ private function getTagsForApplication($tagIds)
                 }
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Quality';
-            } else {
+            }
+            else {
                 if ($client) {
                     $passport_number = $client->passport_number ?? '';
                     $dealTask->name = $passport_number . ' ' . $application->university->name ?? ''; // Fixed the concatenation
@@ -2368,6 +2370,7 @@ private function getTagsForApplication($tagIds)
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
+            $dealTask->tasks_type = 'Quality';
             $dealTask->save();
         }
         return response()->json([
