@@ -1285,7 +1285,7 @@ public function GetBranchByType()
                 }
             }
 
-             $tasktags = TaskTag::pluck('id', 'tag')->toArray();
+             $tasktags = TaskTag::pluck('tag', 'id')->toArray();
 
         // Fetch countries
         $countries = countries();
