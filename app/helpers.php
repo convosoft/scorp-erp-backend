@@ -1313,6 +1313,19 @@ if (!function_exists('BrandsRegionsBranches')) {
                 }
             }
 
+             if (count($brands) === 1) {
+                $brands = ['' => 'Please Select'] + $brands;
+            }
+             if (count($regions) === 1) {
+                $regions = ['' => 'Please Select'] + $regions;
+            }
+             if (count($branches) === 1) {
+                $branches = ['' => 'Please Select'] + $branches;
+            }
+             if (count($employees) === 1) {
+                $employees = ['' => 'Please Select'] + $employees;
+            }
+
             return [
                 'brands' =>   $brands,
                 'regions' =>   $regions,
