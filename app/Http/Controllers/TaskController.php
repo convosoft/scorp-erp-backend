@@ -1144,6 +1144,7 @@ class TaskController extends Controller
                     ->select(
                         'deals.id',
                         'deals.name',
+                        'deals.drive_link',
                         'clientUser.name as clientUserName',
                         'sources.name as sourceName',
                         'clientUser.id as clientUserID',
