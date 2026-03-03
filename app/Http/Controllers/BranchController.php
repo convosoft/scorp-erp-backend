@@ -34,9 +34,9 @@ class BranchController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $Branch,
-            'encrpted_brand_id' => encryptData($Branch->brands), 
-            'encrpted_region_id' => encryptData($Branch->region_id), 
-            'encrpted_branch_id' => encryptData($Branch->id), 
+            'encrpted_brand_id' => encryptData($Branch->brands),
+            'encrpted_region_id' => encryptData($Branch->region_id),
+            'encrpted_branch_id' => encryptData($Branch->id),
         ], 200);
     }
 
@@ -262,6 +262,7 @@ class BranchController extends Controller
             'social_media_link' => 'required|url',
             'shift_time' => 'required|string',
            'is_sat_off' => 'required|boolean',
+           'is_b2b' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -313,6 +314,7 @@ class BranchController extends Controller
             'start_time'         => $startTimeUtc,  // ✅ saved in UTC
             'end_time'           => $endTimeUtc,    // ✅ saved in UTC
             'is_sat_off'         => $request->is_sat_off,
+            'is_b2b'         => $request->is_b2b,
             'shift_time'         => $decimalHours,
         ]);
 
@@ -331,9 +333,9 @@ class BranchController extends Controller
                 ];
                 $updatedFields[] = $field;
             }
-        } 
+        }
          $typeoflog = 'branch';
-           
+
         if (!empty($changes)) {
                 addLogActivity([
                     'type' => 'info',
@@ -348,7 +350,7 @@ class BranchController extends Controller
                 ]);
             }
 
-       
+
         return response()->json([
             'status' => 'success',
             'branch' => $branch,
@@ -391,15 +393,15 @@ class BranchController extends Controller
                     'message' => __("there are ($employees) employees found. Branch cannot be deleted as it is associated with employees.")
                 ], 200);
             }
-             
 
-        
+
+
             $typeoflog = 'branch';
                 addLogActivity([
                     'type' => 'warning',
                     'note' => json_encode([
                         'title' => $branch->name .  ' '.$typeoflog.'  deleted ',
-                        'message' => $branch->name .  ' '.$typeoflog.'  deleted ' 
+                        'message' => $branch->name .  ' '.$typeoflog.'  deleted '
                     ]),
                     'module_id' => $branch->id,
                     'module_type' => 'branch',
