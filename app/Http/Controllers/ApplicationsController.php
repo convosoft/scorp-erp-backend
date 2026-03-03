@@ -1925,6 +1925,19 @@ private function getTagsForApplication($tagIds)
     ];
     addLogActivity($logData);
 
+     // Add activity log (from the first API version)
+    $logData = [
+        'type' => 'succes',
+        'note' => json_encode([
+            'title' => 'Compliance Task created',
+            'message' => 'Compliance Task created'
+        ]),
+        'module_id' => $dealTask->id,
+        'module_type' => 'task',
+        'notification_type' => 'task created'
+    ];
+    addLogActivity($logData);
+
     return response()->json([
         'status' => 'success',
         'app_id' => $id,
@@ -2386,6 +2399,31 @@ private function getTagsForApplication($tagIds)
                     ['meta_value' => $value]
                 );
             }
+            // Add activity log (from the first API version)
+    $logData = [
+        'type' => 'info',
+        'note' => json_encode([
+            'title' => 'Application Updated',
+            'message' => 'Application stage request and deposit details were updated successfully.'
+        ]),
+        'module_id' => $id,
+        'module_type' => 'application',
+        'notification_type' => 'Application Updated'
+    ];
+    addLogActivity($logData);
+
+     // Add activity log (from the first API version)
+    $logData = [
+        'type' => 'succes',
+        'note' => json_encode([
+            'title' => 'Compliance Task created',
+            'message' => 'Compliance Task created'
+        ]),
+        'module_id' => $dealTask->id,
+        'module_type' => 'task',
+        'notification_type' => 'task created'
+    ];
+    addLogActivity($logData);
         return response()->json([
             'status' => 'success',
             'message' => 'Application updated successfully!',
