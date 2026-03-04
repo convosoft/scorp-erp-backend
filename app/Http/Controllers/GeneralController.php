@@ -193,6 +193,182 @@ class GeneralController extends Controller
         }
     }
 
+    public function getRegionBrandsByRole(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'id' => 'required|integer',
+        'type' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    $id   = $request->input('id');
+    $type = $request->input('type');
+    $user = \Auth::user();
+    $userType = $user->type;
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRANCH USERS
+    |--------------------------------------------------------------------------
+    */
+    if ($type == 'branch') {
+
+        // Restrict branch access for non-admin users
+        if (!in_array($userType, ['super admin','Admin Team','HR']) && !$user->can('level 1')) {
+
+            if ($user->branch_id != $id) {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Unauthorized access to branch.'
+                ]);
+            }
+        }
+
+        return FiltersBranchUsersFORTASK($id);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRAND → REGIONS
+    |--------------------------------------------------------------------------
+    */
+    elseif ($type == 'brand') {
+
+        $query = Region::query()->orderBy('name', 'ASC');
+
+        // Super Admin & HR
+        if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
+            $query->where('brands', $id);
+        }
+
+        // Company user
+        elseif ($userType == 'company') {
+            $query->where('brands', $user->id);
+        }
+
+        // Region Manager
+        elseif ($userType == 'Region Manager' || $user->can('level 3')) {
+            $query->where('id', $user->region_id);
+        }
+
+        // Branch Level Users
+        else {
+            $query->where('id', $user->region_id);
+        }
+
+        $regions = $query->pluck('name', 'id')->toArray();
+
+        if (count($regions) === 1) {
+            $regions = ['' => 'Please Select'] + $regions;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'regions' => $regions,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REGION → BRANCHES
+    |--------------------------------------------------------------------------
+    */
+    elseif ($type == 'region') {
+
+        $query = Branch::query()->orderBy('name', 'ASC');
+
+        if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
+            $query->where('region_id', $id);
+        } elseif ($userType == 'Region Manager' || $user->can('level 3')) {
+            $query->where('region_id', $user->region_id);
+        } else {
+            $query->where('id', $user->branch_id);
+        }
+
+        $branches = $query->pluck('name', 'id')->toArray();
+
+        if (count($branches) === 1) {
+            $branches = ['' => 'Please Select'] + $branches;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'branches' => $branches,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSTITUTE
+    |--------------------------------------------------------------------------
+    */
+    elseif ($type == 'institute') {
+
+        $institute = University::where('id', $id)->first();
+
+        if (!$institute) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Institute not found.'
+            ]);
+        }
+
+        $intake_months = $institute->intake_months
+            ? explode(',', $institute->intake_months)
+            : [];
+
+        return response()->json([
+            'status' => 'success',
+            'intake_months' => $intake_months,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REGION → BRANDS
+    |--------------------------------------------------------------------------
+    */
+    else {
+
+        $region = Region::find($id);
+
+        if (!$region) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Region not found.'
+            ]);
+        }
+
+        $brandIds = explode(',', $region->brands);
+
+        // Restrict brand access for non-admin users
+        if (!in_array($userType, ['super admin','Admin Team','HR']) && !$user->can('level 1')) {
+            $brandIds = array_intersect($brandIds, [$user->brand_id]);
+        }
+
+        $brands = User::whereIn('id', $brandIds)
+            ->where('type', 'company')
+            ->orderBy('name', 'ASC')
+            ->pluck('name', 'id')
+            ->toArray();
+
+        if (count($brands) === 1) {
+            $brands = ['' => 'Please Select'] + $brands;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'brands' => $brands,
+        ]);
+    }
+}
+
 
 
 
