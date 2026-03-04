@@ -1148,21 +1148,18 @@ public function UniversityByCountryCode(Request $request)
             'country' => 'required|string',
         ]);
         try {
-           $country = $request->get('country');
+          $country = $request->get('country');
 $country_code = Country::where('country_code', $country)->first();
 
 if ($country_code) {
 
-
-
     $universities = University::where('uni_status', 0)
         ->where(function ($query) use ($country_code) {
-             $idarray =  [$country_code->id];
-            $query->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
-                  ->whereIn('country', $idarray);
+            $query->whereRaw("FIND_IN_SET(?, country)", [$country_code->id])
+                  ->orWhereRaw("FIND_IN_SET(?, country)", [$country_code->name]);
         });
 
-    dd($universities->toRawSql()); // Laravel 9+
+    dd($universities->toRawSql());
 
     $universities = $universities->pluck('name', 'id')->toArray();
 
