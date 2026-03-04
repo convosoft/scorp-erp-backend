@@ -1154,7 +1154,17 @@ public function UniversityByCountryCode(Request $request)
                 $universities = University::where('uni_status', '0') ;
                 $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
 
-                     dd( $universities->toSql());
+                  $query = $universities->toSql();
+$bindings = $universities->getBindings();
+
+$fullSql = vsprintf(
+    str_replace('?', '%s', $query),
+    array_map(function ($binding) {
+        return is_numeric($binding) ? $binding : "'{$binding}'";
+    }, $bindings)
+);
+
+dd($fullSql);
 
                 $universities = $universities->pluck('name', 'id')->toArray();
             } else {
