@@ -1154,6 +1154,8 @@ public function UniversityByCountryCode(Request $request)
                 $universities = University::where('uni_status', '0') ;
                 $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
 
+                     dd( $universities->toSql());
+
                 $universities = $universities->pluck('name', 'id')->toArray();
             } else {
                 $universities = [];
@@ -1181,6 +1183,8 @@ public function UniversityByCountryid(Request $request)
             if ($country_code) {
                 $universities = University::where('uni_status', '0') ;
                 $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+
 
                 $universities = $universities->pluck('name', 'id')->toArray();
             } else {
