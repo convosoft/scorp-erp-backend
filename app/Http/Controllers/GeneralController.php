@@ -1196,10 +1196,28 @@ public function UniversityByCountryid(Request $request)
             $country = $request->get('country');
             $country_code = Country::where('id', $country)->first();
             if ($country_code) {
-                $universities = University::where('uni_status', '0') ;
-                $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+                // $universities = University::where('uni_status', '0') ;
+                // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
 
-                $universities = $universities->pluck('name', 'id')->toArray();
+                // $universities = $universities->pluck('name', 'id')->toArray();
+
+                 $alluniversities = University::where('uni_status', '0') ;
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                $alluniversities = $alluniversities->get();
+
+                // $alluniversities = University::where('uni_status', '0')
+                //     ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                //     ->orWhere('country', $country_code->id)
+                //     ->get(); // get collection first
+
+                $universities = [];
+
+                foreach ($alluniversities as $uni) {
+                    if ($uni->uni_status == 0) {
+                        $universities[$uni->id] = $uni->name;
+                    }
+                }
             } else {
                 $universities = [];
             }
