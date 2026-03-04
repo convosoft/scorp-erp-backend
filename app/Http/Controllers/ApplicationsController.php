@@ -706,12 +706,15 @@ private function getTagsForApplication($tagIds)
             ['stage_id', '=', 5]
         ])->get();
 
+        $deal_details = Deal::where('id',  $application->deal_id)->first();
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'OneTask' => $OneTask,
                 'SixTask' => $SixTask,
                 'application' => $application,
+                'deal_details' => $deal_details,
                 'country' => $country,
                 'stages' => $stages,
                 'tags' => $tags,
