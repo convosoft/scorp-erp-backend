@@ -1169,7 +1169,7 @@ public function UniversityByCountryCode(Request $request)
 
                 foreach ($alluniversities as $uni) {
                     if ($uni->uni_status == 0) {
-                        $universities[] = $uni;
+                        $universities[$uni->id] = $uni->name;
                     }
                 }
             } else {
