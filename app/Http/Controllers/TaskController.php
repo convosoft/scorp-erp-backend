@@ -843,7 +843,7 @@ class TaskController extends Controller
         $dealTask->priority = 1;
         $dealTask->time = $request->remainder_time ?? $dealTask->time;
         if ($request->filled('status')) {
-            $dealTask->drive_link = $request->input('status');
+            $dealTask->status = $request->input('status');
         }
 
         $dealTask->save();
