@@ -1148,28 +1148,24 @@ public function UniversityByCountryCode(Request $request)
             'country' => 'required|string',
         ]);
         try {
-            $country = $request->get('country');
-            $country_code = Country::where('country_code', $country)->first();
-            if ($country_code) {
-                $universities = University::where('uni_status', '0') ;
-                $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+           $country = $request->get('country');
+$country_code = Country::where('country_code', $country)->first();
 
-                  $query = $universities->toSql();
-$bindings = $universities->getBindings();
+if ($country_code) {
 
-$fullSql = vsprintf(
-    str_replace('?', '%s', $query),
-    array_map(function ($binding) {
-        return is_numeric($binding) ? $binding : "'{$binding}'";
-    }, $bindings)
-);
+    $universities = University::where('uni_status', 0)
+        ->where(function ($query) use ($country_code) {
+            $query->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                  ->orWhere('country', $country_code->id);
+        });
 
-dd($fullSql);
+    dd($universities->toRawSql()); // Laravel 9+
 
-                $universities = $universities->pluck('name', 'id')->toArray();
-            } else {
-                $universities = [];
-            }
+    $universities = $universities->pluck('name', 'id')->toArray();
+
+} else {
+    $universities = [];
+}
             return response()->json([
                 'status' => "success",
                 'data' => $universities,
