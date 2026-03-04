@@ -375,7 +375,9 @@ class LeadController extends Controller
     }
 
     if ($request->filled('stage_id')) {
-        $leadsQuery->where('stage_id', $request->stage_id);
+        $leadsQuery->whereIn('stage_id', $request->stage_id);
+    }else{
+          $leadsQuery->whereNotIn('stage_id',[6,7]);
     }
 
     if ($request->filled('tag')) {
