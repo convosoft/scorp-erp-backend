@@ -1153,10 +1153,11 @@ $country_code = Country::where('country_code', $country)->first();
 
 if ($country_code) {
 
-    $idarray =  [$country_code->id];
+
 
     $universities = University::where('uni_status', 0)
         ->where(function ($query) use ($country_code) {
+             $idarray =  [$country_code->id];
             $query->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
                   ->whereIn('country', $idarray);
         });
