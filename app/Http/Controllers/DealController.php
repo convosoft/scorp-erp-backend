@@ -248,7 +248,7 @@ class DealController extends Controller
     $filters = $this->dealFilters();
     foreach ($filters as $column => $value) {
         if ($column === 'name') $query->where('name', 'like', "%{$value}%");
-        elseif ($column === 'stage_id') $query->where('stage_id', $value);
+        elseif ($column === 'stage_id') $query->whereIn('stage_id', $value);
         elseif ($column === 'users') $query->whereIn('created_by', $value);
         elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
         elseif ($column === 'brand') $query->where('brand_id', $value);
