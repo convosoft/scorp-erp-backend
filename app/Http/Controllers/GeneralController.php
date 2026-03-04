@@ -1156,7 +1156,7 @@ if ($country_code) {
     $universities = University::where('uni_status', 0)
         ->where(function ($query) use ($country_code) {
             $query->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
-                  ->orWhere('country', $country_code->id);
+                  ->whereIn('country', $country_code->id);
         });
 
    // dd($universities->toRawSql()); // Laravel 9+
