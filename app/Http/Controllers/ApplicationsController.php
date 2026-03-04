@@ -708,6 +708,13 @@ private function getTagsForApplication($tagIds)
 
         $deal_details = Deal::where('id',  $application->deal_id)->first();
 
+         $course = Course::find($application->courses_id);
+                if (!empty($course)) {
+                    $coursedetail = $course;
+                    }else{
+                    $coursedetail = [];
+                    }
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -715,6 +722,7 @@ private function getTagsForApplication($tagIds)
                 'SixTask' => $SixTask,
                 'application' => $application,
                 'deal_details' => $deal_details,
+                'coursedetail' => $coursedetail,
                 'country' => $country,
                 'stages' => $stages,
                 'tags' => $tags,
