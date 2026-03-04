@@ -1159,7 +1159,7 @@ if ($country_code) {
                   ->orWhere('country', $country_code->id);
         });
 
-    dd($universities->toRawSql()); // Laravel 9+
+   // dd($universities->toRawSql()); // Laravel 9+
 
     $universities = $universities->pluck('name', 'id')->toArray();
 
