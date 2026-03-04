@@ -1155,11 +1155,15 @@ public function UniversityByCountryCode(Request $request)
                 // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
 
                 // $universities = $universities->pluck('name', 'id')->toArray();
+                 $alluniversities = University::where('uni_status', '0') ;
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
 
-                $alluniversities = University::where('uni_status', '0')
-                    ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
-                    ->orWhere('country', $country_code->id)
-                    ->get(); // get collection first
+                $alluniversities = $alluniversities->get();
+
+                // $alluniversities = University::where('uni_status', '0')
+                //     ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                //     ->orWhere('country', $country_code->id)
+                //     ->get(); // get collection first
 
                 $universities = [];
 
