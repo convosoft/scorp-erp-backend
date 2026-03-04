@@ -1148,26 +1148,29 @@ public function UniversityByCountryCode(Request $request)
             'country' => 'required|string',
         ]);
         try {
-          $country = $request->get('country');
-$country_code = Country::where('country_code', $country)->first();
+            $country = $request->get('country');
+            $country_code = Country::where('country_code', $country)->first();
+            if ($country_code) {
+                // $universities = University::where('uni_status', '0') ;
+                // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
 
-if ($country_code) {
+                // $universities = $universities->pluck('name', 'id')->toArray();
 
-dd($country_code);
+                $alluniversities = University::where('uni_status', '0')
+                    ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                    ->orWhere('country', $country_code->id)
+                    ->get(); // get collection first
 
-    $universities = University::where('uni_status', 0)
-        ->where(function ($query) use ($country_code) {
-            $query->whereRaw("FIND_IN_SET(?, country)", [$country_code->id])
-                  ->orWhereRaw("FIND_IN_SET(?, country)", [$country_code->name]);
-        });
+                $universities = [];
 
-    dd($universities->toRawSql());
-
-    $universities = $universities->pluck('name', 'id')->toArray();
-
-} else {
-    $universities = [];
-}
+                foreach ($alluniversities as $uni) {
+                    if ($uni->uni_status == 0) {
+                        $universities[] = $uni;
+                    }
+                }
+            } else {
+                $universities = [];
+            }
             return response()->json([
                 'status' => "success",
                 'data' => $universities,
@@ -1191,8 +1194,6 @@ public function UniversityByCountryid(Request $request)
             if ($country_code) {
                 $universities = University::where('uni_status', '0') ;
                 $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
-
-
 
                 $universities = $universities->pluck('name', 'id')->toArray();
             } else {
