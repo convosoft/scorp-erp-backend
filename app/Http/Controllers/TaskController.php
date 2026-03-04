@@ -302,7 +302,13 @@ class TaskController extends Controller
                         });
                     }
                 } elseif ($column === 'assigned_to') {
-                    $tasksQuery->where('deal_tasks.assigned_to', $value);
+                   // $tasksQuery->where('deal_tasks.assigned_to', $value);
+                        if (is_array($value)) {
+                            $tasksQuery->whereIn('deal_tasks.assigned_to', $value);
+
+                        } else {
+                            $tasksQuery->where('deal_tasks.assigned_to', $value);
+                        }
                 } elseif ($column === 'brand_id') {
                     $tasksQuery->where('deal_tasks.brand_id', $value);
                 } elseif ($column === 'region_id') {
@@ -503,7 +509,14 @@ class TaskController extends Controller
                     // $filteredValues = array_filter($value, function ($val) {
                     //     return !empty($val);
                     // });
-                    $finalQuery->where('deal_tasks.assigned_to', $value);
+                    //$finalQuery->where('deal_tasks.assigned_to', $value);
+
+                     if (is_array($value)) {
+                            $finalQuery->whereIn('deal_tasks.assigned_to', $value);
+
+                        } else {
+                            $finalQuery->where('deal_tasks.assigned_to', $value);
+                        }
                 } elseif ($column === 'brand_id') {
                     $finalQuery->where('deal_tasks.brand_id', $value);
                 } elseif ($column === 'region_id') {
