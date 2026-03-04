@@ -219,6 +219,7 @@ class TaskController extends Controller
     }
     public function userTasksGet(Request $request)
     {
+         ini_set('memory_limit', '4G');
         // Pagination setup
         $perPage = $request->input('perPage', env("RESULTS_ON_PAGE", 50));
         $page = $request->input('page', 1);
