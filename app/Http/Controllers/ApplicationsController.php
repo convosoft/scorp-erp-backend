@@ -320,9 +320,9 @@ public function getApplicationsByViewNew(Request $request)
 
     ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
     ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
-    ->leftJoin('users as au', 'au.id', '=', 'da.assigned_to')
-    ->leftJoin('users as b', 'b.id', '=', 'da.brand_id')
-    ->leftJoin('branches as br', 'br.id', '=', 'da.branch_id')
+    ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
+    ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
+    ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id')
 
     ->orderBy('da.created_at', 'desc');
 
