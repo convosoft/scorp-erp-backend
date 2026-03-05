@@ -289,7 +289,7 @@ class GeneralController extends Controller
         if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
             $query->where('region_id', $id);
         } elseif ($userType == 'Project Manager' || $user->can('level 2')) {
-            $query->where('region_id', $user->region_id);
+            $query->where('region_id', $id);
         }  elseif ($userType == 'Region Manager' || $user->can('level 3')) {
             $query->where('region_id', $user->region_id);
         } else {
