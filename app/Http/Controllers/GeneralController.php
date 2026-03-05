@@ -147,7 +147,7 @@ class GeneralController extends Controller
             $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
              if (count($branches) === 1) {
-                    $branches = ['' => 'Please Select'] + $branches;
+                    $branches = ['0' => 'Please Select'] + $branches;
                 }
 
             // Return JSON response with branches
