@@ -873,6 +873,7 @@ private function getTagsForApplication($tagIds)
         }
         $user = User::find($user_id); // Single object, not plural
         $university = University::select('name')->where('id', (int)$request->university)->first(); // Fixed missing semicolon
+        $universitydetails = University::where('id', (int)$request->university)->first(); // Fixed missing semicolon
         // Validation rules
         $validator = \Validator::make($request->all(), [
             'university' => [
@@ -890,6 +891,14 @@ private function getTagsForApplication($tagIds)
             ],
             'status' => 'required',
             'intake_month' => 'required',
+            'student_origin_country' => 'required',
+            'student_origin_city' => 'required',
+            'student_previous_university' => 'required',
+            'intakeYear' => 'required',
+
+            // Conditional fields
+            'course_id' => $universitydetails && $universitydetails->status == 1 ? 'required' : 'nullable',
+            'CoursesName' => $universitydetails && $universitydetails->status != 1 ? 'required' : 'nullable',
             //'tag_ids' => 'required|array',
         ]);
 
