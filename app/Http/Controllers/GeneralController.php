@@ -146,6 +146,10 @@ class GeneralController extends Controller
             // Fetch branches based on the region ID
             $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
+             if (count($branches) === 1) {
+                    $branches = ['' => 'Please Select'] + $branches;
+                }
+
             // Return JSON response with branches
             return response()->json([
                 'status' => 'success',
