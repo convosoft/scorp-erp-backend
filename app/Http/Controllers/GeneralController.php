@@ -246,6 +246,9 @@ class GeneralController extends Controller
         if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
             $query->where('brands', $id);
         }
+        elseif ($userType == 'Project Manager' || $user->can('level 2')) {
+            $query->where('brands', $user->brand_id);
+        }
 
         // Company user
         elseif ($userType == 'company') {
