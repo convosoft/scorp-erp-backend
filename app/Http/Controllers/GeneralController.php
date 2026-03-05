@@ -290,6 +290,7 @@ class GeneralController extends Controller
             $query->where('region_id', $id);
         } elseif ($userType == 'Project Manager' || $user->can('level 2')) {
             $query->where('region_id', $id);
+             $query->where('brands', $user->brand_id);
         }  elseif ($userType == 'Region Manager' || $user->can('level 3')) {
             $query->where('region_id', $user->region_id);
         } else {
