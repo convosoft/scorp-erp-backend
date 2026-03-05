@@ -1222,6 +1222,14 @@ private function getTagsForApplication($tagIds)
             ], 404);
         }
 
+        // Prevent deletion if stage_id is between 5 and 11
+            if ($dealApplication->stage_id >= 5 && $dealApplication->stage_id <= 11) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Application cannot be deleted after deposited stage.')
+                ], 403);
+            }
+
         $dealId = $dealApplication->deal_id;
 
         // Delete application
