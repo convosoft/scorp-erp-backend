@@ -1227,7 +1227,7 @@ private function getTagsForApplication($tagIds)
                 return response()->json([
                     'status' => 'error',
                     'message' => __('Application cannot be deleted after deposited stage.')
-                ], 403);
+                ], 404);
             }
 
         $dealId = $dealApplication->deal_id;
