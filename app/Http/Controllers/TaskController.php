@@ -398,6 +398,36 @@ class TaskController extends Controller
                 }
             }
 
+              // Additional filters
+            if ($request->filled('fetcttype')) {
+                $fetcttype  =   $request->fetcttype;
+
+                if( $fetcttype=='assignedbyme'){
+                    $tasksQuery->where('deal_tasks.created_by', \Auth::id());
+                }
+
+                if( $fetcttype=='yourtask'){
+                    $tasksQuery->where('deal_tasks.assigned_to', \Auth::id());
+                }
+
+                if( $fetcttype=='Quality'){
+                    $tasksQuery->where('deal_tasks.tasks_type', 'Quality');
+                }
+
+                if( $fetcttype=='Compliance'){
+                    $tasksQuery->where('deal_tasks.tasks_type', 'Compliance');
+                }
+
+
+
+            }
+
+            if ($request->fetcttype == 'agenttask') {
+                $tasksQuery->whereNotNull('deal_tasks.agent_id');
+            } else {
+                $tasksQuery->whereNull('deal_tasks.agent_id');
+            }
+
             // Get Scorp tasks and merge with main tasks
             $scorpTasks = $this->GetScorpTasks();
             $mainTasks = $tasksQuery->pluck('deal_tasks.id')->toArray();
