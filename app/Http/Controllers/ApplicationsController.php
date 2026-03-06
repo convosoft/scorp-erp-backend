@@ -385,9 +385,9 @@ public function getApplicationsByViewNew(Request $request)
             $app_query->whereIn('da.stage_id', (array)$value);
 
         } elseif ($column === 'university_id') {
-            $app_query->whereIn('da.university_id', (array)$value);
+           // $app_query->whereIn('da.university_id', (array)$value);
 
-          // $app_query->where('da.university_id', $value);
+           $app_query->where('da.university_id', $value);
 
         } elseif ($column === 'created_by') {
             $app_query->whereIn('da.created_by', (array)$value);
