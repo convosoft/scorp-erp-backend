@@ -92,6 +92,8 @@ use App\Models\AttendanceEmployee;
 use Carbon\Carbon;
 use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
+use App\Http\Controllers\TaskTagController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -801,6 +803,12 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/updateLeadTag', [LeadTagController::class, 'updateLeadTag']);
      Route::post('/deleteLeadTag', [LeadTagController::class, 'deleteLeadTag']);
      Route::post('/deleteBulkLeadTags', [LeadTagController::class, 'deleteBulkLeadTags']);
+     //   task tag
+     Route::post('/addTaskTag', [TaskTagController::class, 'addTaskTag']);
+     Route::post('/getTaskTags', [TaskTagController::class, 'getTaskTags']);
+     Route::post('/updateTaskTag', [TaskTagController::class, 'updateTaskTag']);
+     Route::post('/deleteTaskTag', [TaskTagController::class, 'deleteTaskTag']);
+     Route::post('/deleteBulkTaskTags', [TaskTagController::class, 'deleteBulkTaskTags']);
 
        //   Designation
      Route::post('/addDesignation', [DesignationController::class, 'addDesignation']);
