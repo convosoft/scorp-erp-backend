@@ -54,7 +54,7 @@ class LeadTagController extends Controller
         )
         ->leftJoin('users', 'users.id', '=', 'lead_tags.brand_id')
         ->leftJoin('branches', 'branches.id', '=', 'lead_tags.branch_id')
-        ->leftJoin('regions', 'regions.id', '=', 'branches.region_id')
+        ->leftJoin('regions', 'regions.id', '=', 'lead_tags.region_id')
         ->where('lead_tags.tag','!=','');
 
         /**
@@ -86,7 +86,7 @@ class LeadTagController extends Controller
         }
 
         if ($request->filled('region_id')) {
-            $query->where('branches.region_id',$request->region_id);
+            $query->where('lead_tags.region_id',$request->region_id);
         }
 
         if ($request->filled('branch_id')) {
