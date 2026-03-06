@@ -899,8 +899,8 @@ private function getTagsForApplication($tagIds)
             'intakeYear' => 'required',
 
             // Conditional fields
-            'course_id' => $universitydetails && $universitydetails->status == 1 ? 'required' : 'nullable',
-            'CoursesName' => $universitydetails && $universitydetails->status != 1 ? 'required' : 'nullable',
+            'course_id' => $universitydetails && $universitydetails->status == '1' ? 'required' : 'nullable',
+            'CoursesName' => $universitydetails && $universitydetails->status != '1' ? 'required' : 'nullable',
             //'tag_ids' => 'required|array',
         ]);
 
