@@ -96,7 +96,7 @@ class LeadTagController extends Controller
         $totalRecords = $query->count();
 
         $tags = $query
-            ->orderBy('lead_tags.tag','DESC')
+            ->orderBy('lead_tags.id','DESC')
             ->paginate($perPage,['*'],'page',$page);
 
         return response()->json([
