@@ -377,8 +377,7 @@ class TaskController extends Controller
 
                             }
                                         } elseif (!$request->has('status')) {
-                $tasksQuery->where('deal_tasks.status', 0)
-                          ->where('deal_tasks.tasks_type_status', "0");
+                $tasksQuery->where('deal_tasks.status', 0) ;
             }
 
             if ($request->filled('assigned_by_me') && $request->assigned_by_me == true) {
