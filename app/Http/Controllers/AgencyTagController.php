@@ -46,22 +46,22 @@ class AgencyTagController extends Controller
         $user = Auth::user();
 
         $query = AgencyTag::select(
-            'Agency_tags.id',
-            'Agency_tags.tag',
+            'agency_tags.id',
+            'agency_tags.tag',
             'users.name as brand',
             'branches.name as branch',
             'regions.name as region'
         )
-        ->leftJoin('users', 'users.id', '=', 'Agency_tags.brand_id')
-        ->leftJoin('branches', 'branches.id', '=', 'Agency_tags.branch_id')
-        ->leftJoin('regions', 'regions.id', '=', 'Agency_tags.region_id')
-        ->where('Agency_tags.tag','!=','');
+        ->leftJoin('users', 'users.id', '=', 'agency_tags.brand_id')
+        ->leftJoin('branches', 'branches.id', '=', 'agency_tags.branch_id')
+        ->leftJoin('regions', 'regions.id', '=', 'agency_tags.region_id')
+        ->where('agency_tags.tag','!=','');
 
         /**
          * Permission based filtering
          */
         if (!in_array($user->type,['super admin','Admin Team'])) {
-            $query->where('Agency_tags.brand_id',$user->brand_id);
+            $query->where('agency_tags.brand_id',$user->brand_id);
         }
 
         /**
@@ -72,7 +72,7 @@ class AgencyTagController extends Controller
             $search = $request->search;
 
             $query->where(function($q) use ($search){
-                $q->where('Agency_tags.tag','like',"%$search%")
+                $q->where('agency_tags.tag','like',"%$search%")
                 ->orWhere('users.name','like',"%$search%")
                 ->orWhere('branches.name','like',"%$search%");
             });
@@ -82,21 +82,21 @@ class AgencyTagController extends Controller
          * Filters
          */
         if ($request->filled('brand_id')) {
-            $query->where('Agency_tags.brand_id',$request->brand_id);
+            $query->where('agency_tags.brand_id',$request->brand_id);
         }
 
         if ($request->filled('region_id')) {
-            $query->where('Agency_tags.region_id',$request->region_id);
+            $query->where('agency_tags.region_id',$request->region_id);
         }
 
         if ($request->filled('branch_id')) {
-            $query->where('Agency_tags.branch_id',$request->branch_id);
+            $query->where('agency_tags.branch_id',$request->branch_id);
         }
 
         $totalRecords = $query->count();
 
         $tags = $query
-            ->orderBy('Agency_tags.id','DESC')
+            ->orderBy('agency_tags.id','DESC')
             ->paginate($perPage,['*'],'page',$page);
 
         return response()->json([
@@ -189,7 +189,7 @@ class AgencyTagController extends Controller
         }
 
         $validator = Validator::make($request->all(),[
-            'id'=>'required|integer|exists:Agency_tags,id',
+            'id'=>'required|integer|exists:agency_tags,id',
             'name'=>'required|max:20',
             'brand'=>'required|integer',
             'region_id'=>'required|integer',
@@ -285,7 +285,7 @@ class AgencyTagController extends Controller
         }
 
         $validator = Validator::make($request->all(),[
-            'id'=>'required|integer|exists:Agency_tags,id'
+            'id'=>'required|integer|exists:agency_tags,id'
         ]);
 
         if ($validator->fails()) {
@@ -333,7 +333,7 @@ class AgencyTagController extends Controller
 
         $validator = Validator::make($request->all(), [
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'integer|exists:Agency_tags,id'
+                'ids.*' => 'integer|exists:agency_tags,id'
             ]);
 
             if ($validator->fails()) {
@@ -378,7 +378,7 @@ class AgencyTagController extends Controller
     {
 
         $validator = Validator::make($request->all(),[
-            'id'=>'required|integer|exists:Agency_tags,id'
+            'id'=>'required|integer|exists:agency_tags,id'
         ]);
 
         if($validator->fails()){
