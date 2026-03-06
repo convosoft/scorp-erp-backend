@@ -797,7 +797,6 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/deleteTag', [TagController::class, 'deleteTag']);
      //   lead tag
      Route::post('/addLeadTag', [LeadTagController::class, 'addLeadTag']);
-     Route::post('/getTagPluck', [LeadTagController::class, 'getTagPluck']);
      Route::get('/getLeadTags', [LeadTagController::class, 'getLeadTags']);
      Route::post('/updateLeadTag', [LeadTagController::class, 'updateLeadTag']);
      Route::post('/deleteLeadTag', [LeadTagController::class, 'deleteLeadTag']);
