@@ -331,16 +331,21 @@ class LeadTagController extends Controller
             ],403);
         }
 
-        if(!$request->ids){
-            return response()->json([
-                'status'=>'error',
-                'message'=>'At least select 1 LeadTag.'
-            ],422);
-        }
+        $validator = Validator::make($request->all(), [
+                'ids' => 'required|array|min:1',
+                'ids.*' => 'integer|exists:lead_tags,id'
+            ]);
 
-        $ids = explode(',',$request->ids);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        $tags = LeadTag::whereIn('id',$ids)->get();
+            $ids = $request->ids;
+
+            $tags = LeadTag::whereIn('id', $ids)->get();
 
         foreach($tags as $tag){
 
