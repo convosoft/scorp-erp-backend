@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\AgencyTagController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginRegisterController;
@@ -809,6 +810,12 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/updateTaskTag', [TaskTagController::class, 'updateTaskTag']);
      Route::post('/deleteTaskTag', [TaskTagController::class, 'deleteTaskTag']);
      Route::post('/deleteBulkTaskTags', [TaskTagController::class, 'deleteBulkTaskTags']);
+     //   Agency tag
+     Route::post('/addAgencyTag', [AgencyTagController::class, 'addAgencyTag']);
+     Route::post('/getAgencyTags', [AgencyTagController::class, 'getAgencyTags']);
+     Route::post('/updateAgencyTag', [AgencyTagController::class, 'updateAgencyTag']);
+     Route::post('/deleteAgencyTag', [AgencyTagController::class, 'deleteAgencyTag']);
+     Route::post('/deleteBulkAgencyTags', [AgencyTagController::class, 'deleteBulkAgencyTags']);
 
        //   Designation
      Route::post('/addDesignation', [DesignationController::class, 'addDesignation']);
