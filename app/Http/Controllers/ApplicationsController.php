@@ -597,8 +597,8 @@ private function getTagsForApplication($tagIds)
             $filters['created_by'] = $request->input('created_by');
         }
 
-        if ($request->filled('universities')) {
-            $filters['university_id'] = $request->input('universities');
+        if ($request->filled('university_id')) {
+            $filters['university_id'] = $request->input('university_id');
         }
 
         if ($request->filled('brand')) {
