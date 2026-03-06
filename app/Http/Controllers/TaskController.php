@@ -619,25 +619,24 @@ class TaskController extends Controller
                     $finalQuery->where('deal_tasks.tasks_type_status', "0");
                 }
             } elseif (!isset($_GET['status'])) {
-                $finalQuery->where('deal_tasks.status', 0)
-                          ->where('deal_tasks.tasks_type_status', "0");
+                $finalQuery->where('deal_tasks.status', 0) ;
             }
 
             // Apply sorting
-            if (!empty($_GET['tasks_type_status'])) {
-                $status = $_GET['tasks_type_status'];
-                if ($status == '1') {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "1")
-                              ;
-                } elseif ($status == '2') {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "2");
-                } else {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "0");
-                }
-            } elseif (!isset($_GET['status'])) {
-                $finalQuery->where('deal_tasks.status', 0)
-                          ->where('deal_tasks.tasks_type_status', "0");
-            }
+            // if (!empty($_GET['tasks_type_status'])) {
+            //     $status = $_GET['tasks_type_status'];
+            //     if ($status == '1') {
+            //         $finalQuery->where('deal_tasks.tasks_type_status', "1")
+            //                   ;
+            //     } elseif ($status == '2') {
+            //         $finalQuery->where('deal_tasks.tasks_type_status', "2");
+            //     } else {
+            //         $finalQuery->where('deal_tasks.tasks_type_status', "0");
+            //     }
+            // } elseif (!isset($_GET['status'])) {
+            //     $finalQuery->where('deal_tasks.status', 0)
+            //               ->where('deal_tasks.tasks_type_status', "0");
+            // }
 
 
 
