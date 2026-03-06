@@ -46,8 +46,7 @@ class LeadTagController extends Controller
         $user = Auth::user();
 
         $query = LeadTag::select(
-            'lead_tags.id',
-            'lead_tags.tag',
+            'lead_tags.*',
             'users.name as brand',
             'branches.name as branch',
             'regions.name as region'

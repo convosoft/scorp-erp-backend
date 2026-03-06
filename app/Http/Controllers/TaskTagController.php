@@ -46,8 +46,7 @@ class TaskTagController extends Controller
         $user = Auth::user();
 
         $query = TaskTag::select(
-            'task_tags.id',
-            'task_tags.tag',
+            'task_tags.*',
             'users.name as brand',
             'branches.name as branch',
             'regions.name as region'
