@@ -207,13 +207,21 @@ class LeadTagController extends Controller
 
         $originalData = $tag->toArray();
 
-        $tag->update([
-            'tag'=>$request->name,
-            'brand_id'=>$request->brand,
-            'region_id'=>$request->region_id,
-            'branch_id'=>$request->branch_id,
-            'created_by'=>Auth::user()->ownerId()
-        ]);
+        // $tag->update([
+        //     'tag'=>$request->name,
+        //     'brand_id'=>$request->brand,
+        //     'region_id'=>$request->region_id,
+        //     'branch_id'=>$request->branch_id,
+        //     'created_by'=>Auth::user()->ownerId()
+        // ]);
+
+
+            $tag->tag       = $request->name;
+            $tag->brand_id       = $request->brand;
+            $tag->region_id       = $request->region_id;
+            $tag->branch_id       = $request->branch_id;
+            $tag->created_by = \Auth::user()->ownerId();
+            $tag->save();
 
         /**
          * Track Changes
