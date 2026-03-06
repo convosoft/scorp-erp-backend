@@ -1640,6 +1640,7 @@ class TaskController extends Controller
             ];
             addLogActivity($data);
             $stageRequest->tasks_type_status = '1';
+             $dealTask->status = 1;
         } else {
             $data = [
                 'type' => 'info',
