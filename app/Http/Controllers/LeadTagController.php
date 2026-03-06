@@ -158,17 +158,17 @@ class LeadTagController extends Controller
         addLogActivity([
             'type'=>'success',
             'note'=>json_encode([
-                'title'=>$tag->tag.' LeadTag created',
-                'message'=>$tag->tag.' LeadTag created'
+                'title'=>$tag->tag.' Lead Tag created',
+                'message'=>$tag->tag.' Lead Tag created'
             ]),
             'module_id'=>$tag->id,
             'module_type'=>'LeadTag',
-            'notification_type'=>'LeadTag Created'
+            'notification_type'=>'Lead Tag Created'
         ]);
 
         return response()->json([
             'status'=>'success',
-            'message'=>__('LeadTag created successfully.'),
+            'message'=>__('Lead Tag created successfully.'),
             'data'=>$tag
         ],201);
 
@@ -251,20 +251,20 @@ class LeadTagController extends Controller
             addLogActivity([
                 'type'=>'info',
                 'note'=>json_encode([
-                    'title'=>$tag->tag.' LeadTag updated',
+                    'title'=>$tag->tag.' Lead Tag updated',
                     'message'=>'Fields updated: '.implode(', ',$updatedFields),
                     'changes'=>$changes
                 ]),
                 'module_id'=>$tag->id,
                 'module_type'=>'LeadTag',
-                'notification_type'=>'LeadTag Updated'
+                'notification_type'=>'Lead Tag Updated'
             ]);
 
         }
 
         return response()->json([
             'status'=>'success',
-            'message'=>__('LeadTag updated successfully.'),
+            'message'=>__('Lead Tag updated successfully.'),
             'data'=>$tag
         ],200);
 
@@ -300,19 +300,19 @@ class LeadTagController extends Controller
         addLogActivity([
             'type'=>'warning',
             'note'=>json_encode([
-                'title'=>$tag->tag.' LeadTag deleted',
-                'message'=>$tag->tag.' LeadTag deleted'
+                'title'=>$tag->tag.' Lead Tag deleted',
+                'message'=>$tag->tag.' Lead Tag deleted'
             ]),
             'module_id'=>$tag->id,
             'module_type'=>'LeadTag',
-            'notification_type'=>'LeadTag Deleted'
+            'notification_type'=>'Lead Tag Deleted'
         ]);
 
         $tag->delete();
 
         return response()->json([
             'status'=>'success',
-            'message'=>__('LeadTag deleted successfully.')
+            'message'=>__('Lead Tag deleted successfully.')
         ],200);
 
     }
@@ -352,12 +352,12 @@ class LeadTagController extends Controller
             addLogActivity([
                 'type'=>'warning',
                 'note'=>json_encode([
-                    'title'=>$tag->tag.' LeadTag deleted',
-                    'message'=>$tag->tag.' LeadTag deleted'
+                    'title'=>$tag->tag.' Lead Tag deleted',
+                    'message'=>$tag->tag.' Lead Tag deleted'
                 ]),
                 'module_id'=>$tag->id,
                 'module_type'=>'LeadTag',
-                'notification_type'=>'LeadTag Deleted'
+                'notification_type'=>'Lead Tag Deleted'
             ]);
 
             $tag->delete();
@@ -365,7 +365,7 @@ class LeadTagController extends Controller
 
         return response()->json([
             'status'=>'success',
-            'message'=>'LeadTags deleted successfully'
+            'message'=>'Lead Tags deleted successfully'
         ],200);
 
     }
