@@ -80,8 +80,8 @@ class LeadTagController extends Controller
         /**
          * Filters
          */
-        if ($request->filled('brand_id')) {
-            $query->where('lead_tags.brand_id',$request->brand_id);
+        if ($request->filled('brand')) {
+            $query->where('lead_tags.brand_id',$request->brand);
         }
 
         if ($request->filled('region_id')) {
