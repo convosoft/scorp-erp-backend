@@ -81,6 +81,7 @@ use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
+use App\Http\Controllers\LeadTagController;
 use App\Models\InterviewSchedule;
 use App\Models\JobCategory;
 use App\Models\TaskFile;
@@ -788,12 +789,19 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/deleteAnnouncement', [AnnouncementController::class, 'deleteAnnouncement']);
      Route::post('/announcementDetail', [AnnouncementController::class, 'announcementDetail']);
 
-     //   Institute Category
+     //   tag
      Route::post('/addTag', [TagController::class, 'addTag']);
      Route::post('/getTagPluck', [TagController::class, 'getTagPluck']);
      Route::get('/getTagsbytype', [TagController::class, 'getTags']);
      Route::post('/updateTag', [TagController::class, 'updateTag']);
      Route::post('/deleteTag', [TagController::class, 'deleteTag']);
+     //   lead tag
+     Route::post('/addLeadTag', [LeadTagController::class, 'addLeadTag']);
+     Route::post('/getTagPluck', [LeadTagController::class, 'getTagPluck']);
+     Route::get('/getLeadTags', [LeadTagController::class, 'getLeadTags']);
+     Route::post('/updateLeadTag', [LeadTagController::class, 'updateLeadTag']);
+     Route::post('/deleteLeadTag', [LeadTagController::class, 'deleteLeadTag']);
+     Route::post('/deleteBulkLeadTags', [LeadTagController::class, 'deleteBulkLeadTags']);
 
        //   Designation
      Route::post('/addDesignation', [DesignationController::class, 'addDesignation']);
