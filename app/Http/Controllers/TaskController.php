@@ -430,6 +430,11 @@ class TaskController extends Controller
                 $tasksQuery->whereNull('deal_tasks.agent_id');
             }
 
+            $sql = str_replace('?', "'%s'", $tasksQuery->toSql());
+            $sql = vsprintf($sql, $tasksQuery->getBindings());
+
+
+
             // Get Scorp tasks and merge with main tasks
             $scorpTasks = $this->GetScorpTasks();
             $mainTasks = $tasksQuery->pluck('deal_tasks.id')->toArray();
@@ -642,7 +647,10 @@ class TaskController extends Controller
             //               ->where('deal_tasks.tasks_type_status', "0");
             // }
 
+             $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
+            $sql2 = vsprintf($sql, $finalQuery->getBindings());
 
+            dd($sql,$sql2);
 
             //  get tasks
             // Paginate results
