@@ -627,8 +627,12 @@ class TaskController extends Controller
                 }
             }
 
-            if (!isset($_GET['status']) && !empty($_GET['tasks_type_status'])) {
-                dd('ooo');
+            // if (!isset($_GET['status']) && !empty($_GET['tasks_type_status'])) {
+            //     dd('ooo');
+            //     $finalQuery->where('deal_tasks.status', 0) ;
+            // }
+
+              if (!$request->has('status') && !$request->filled('tasks_type_status')) {
                 $finalQuery->where('deal_tasks.status', 0) ;
             }
 
