@@ -355,14 +355,16 @@ class TaskController extends Controller
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
                 if ($status == '1') {
-                    $tasksQuery->where('deal_tasks.tasks_type_status', "1")
-                              ->where('deal_tasks.status', 1);
+                    $tasksQuery->where('deal_tasks.tasks_type_status', "1");
+                            //  ->where('deal_tasks.status', 1);
                 } elseif ($status == '2') {
                     $tasksQuery->where('deal_tasks.tasks_type_status', "2");
                 } else {
                     $tasksQuery->where('deal_tasks.tasks_type_status', "0");
                 }
-            }  if ($request->filled('tag_id') ) {
+            }
+
+            if ($request->filled('tag_id') ) {
                     if (is_array($value) && count($value) > 0) {
 
                                 $tasksQuery->where(function ($q) use ($value) {
@@ -376,7 +378,8 @@ class TaskController extends Controller
                                 $tasksQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$value]);
 
                             }
-                                        } elseif (!$request->has('status')) {
+                                        }
+            if (!$request->has('status')) {
                 $tasksQuery->where('deal_tasks.status', 0) ;
             }
 
@@ -617,7 +620,9 @@ class TaskController extends Controller
                 } else {
                     $finalQuery->where('deal_tasks.tasks_type_status', "0");
                 }
-            } elseif (!isset($_GET['status'])) {
+            }
+
+            if (!isset($_GET['status'])) {
                 $finalQuery->where('deal_tasks.status', 0) ;
             }
 
