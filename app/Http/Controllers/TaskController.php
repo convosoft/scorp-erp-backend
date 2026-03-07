@@ -355,8 +355,8 @@ class TaskController extends Controller
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
                 if ($status == '1') {
-                    $tasksQuery->where('deal_tasks.tasks_type_status', "1")
-                              ->where('deal_tasks.status', 1);
+                    $tasksQuery->where('deal_tasks.tasks_type_status', "1");
+                            //  ->where('deal_tasks.status', 1);
                 } elseif ($status == '2') {
                     $tasksQuery->where('deal_tasks.tasks_type_status', "2");
                 } else {
@@ -379,7 +379,7 @@ class TaskController extends Controller
 
                             }
                                         }
-            if (!$request->has('status')) {
+            if (!$request->has('status') && !$request->filled('tasks_type_status')) {
                 $tasksQuery->where('deal_tasks.status', 0) ;
             }
 
@@ -627,7 +627,7 @@ class TaskController extends Controller
                 }
             }
 
-            if (!isset($_GET['status'])) {
+            if (!isset($_GET['status']) && !empty($_GET['tasks_type_status'])) {
                 $finalQuery->where('deal_tasks.status', 0) ;
             }
 
