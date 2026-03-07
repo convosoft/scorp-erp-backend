@@ -628,6 +628,7 @@ class TaskController extends Controller
             }
 
             if (!isset($_GET['status']) && !empty($_GET['tasks_type_status'])) {
+                dd('ooo');
                 $finalQuery->where('deal_tasks.status', 0) ;
             }
 
@@ -649,10 +650,10 @@ class TaskController extends Controller
 
              $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
             $sql2 = vsprintf($sql2, $finalQuery->getBindings());
-            echo $sql;
+            // echo $sql;
 
-            echo "==========";
-            echo $sql2;
+            // echo "==========";
+            // echo $sql2;
             dd($sql,$sql2 ,$_GET);
 
             //  get tasks
