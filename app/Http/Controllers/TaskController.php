@@ -1824,6 +1824,7 @@ class TaskController extends Controller
                 'users.name as AssignedTo',
                 'deal_tasks.name as TaskName',
                 'deal_tasks.id',
+                'deal_tasks.tasks_type',
                 'deal_tasks.created_at',
                 'deal_tasks.status',
                 'createdByUser.name as CreatedByUsers'
