@@ -67,6 +67,9 @@ class DealController extends Controller
         if (isset($_POST['brand_id']) && !empty($_POST['brand_id'])) {
             $filters['brand_id'] = $_POST['brand_id'];
         }
+        if (isset($_POST['created_by']) && !empty($_POST['created_by'])) {
+            $filters['created_by'] = $_POST['created_by'];
+        }
 
         if (isset($_POST['region_id']) && !empty($_POST['region_id'])) {
             $filters['region_id'] = $_POST['region_id'];
@@ -254,6 +257,7 @@ class DealController extends Controller
         elseif ($column === 'brand') $query->where('brand_id', $value);
         elseif ($column === 'region_id') $query->where('region_id', $value);
         elseif ($column === 'branch_id') $query->where('branch_id', $value);
+        elseif ($column === 'created_by') $query->where('created_by', $value);
         elseif ($column === 'deal_assigned_user') $query->where('assigned_to', $value);
         elseif ($column === 'created_at_from') $query->whereDate('created_at', '>=', $value);
         elseif ($column === 'created_at_to') $query->whereDate('created_at', '<=', $value);
