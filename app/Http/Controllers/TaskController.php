@@ -1863,6 +1863,11 @@ class TaskController extends Controller
             }
         }
 
+        $sql = str_replace('?', "'%s'", $tasksQuery->toSql());
+        $sql = vsprintf($sql, $tasksQuery->getBindings());
+
+        dd($sql);
+
         // Fetch tasks and transform them
         $tasks = $tasksQuery->get()->map(function ($task) {
             return [
