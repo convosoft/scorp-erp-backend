@@ -923,6 +923,96 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
         ]);
     }
 }
+if (!function_exists('AllUserFiltersBranchUsersFORTASK')) {
+    function AllUserFiltersBranchUsersFORTASK($id)
+    {
+        $branch = Branch::find($id);
+        if (!empty($branch)) {
+            // Fetch regions
+            $regions = Region::select(['regions.id'])
+                ->join('branches', 'branches.region_id', '=', 'regions.id')
+                ->where('branches.id', $id)
+                ->pluck('id')
+                ->toArray();
+
+            // Fetch brand IDs
+            $brand_ids = Region::select(['regions.brands'])
+                ->join('branches', 'branches.region_id', '=', 'regions.id')
+                ->where('branches.id', $id)
+                ->pluck('brands')
+                ->toArray();
+
+            // Super admins
+            $admins = [];
+            if ($branch->name == 'Admin') {
+                $admins = User::where('type', 'super admin')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
+            }
+
+            // Product Coordinators
+            $Product_Coordinator = [];
+            if ($branch->name == 'Product') {
+                $Product_Coordinator = User::where('type', 'Product Coordinator')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
+            }
+
+            // Marketing team
+            $Marketing_team = [];
+            if ($branch->name == 'Marketing') {
+                $Marketing_team = User::where('type', 'Marketing Officer')->orderBy('name', 'ASC')->pluck('name', 'id')->where('is_active', 1)->toArray();
+            }
+
+            // Project directors
+            $project_directors = User::whereIn('type', ['Project Director', 'Project Manager'])
+                ->whereIn('brand_id', $brand_ids)
+                ->orderBy('name', 'ASC')
+                ->pluck('name', 'id')
+                ->toArray();
+
+            // Regional managers
+            $regional_managers = User::where('type', 'Region Manager')
+                ->whereIn('region_id', $regions)
+                ->orderBy('name', 'ASC')
+                ->pluck('name', 'id')
+                ->toArray();
+
+            // Branch-specific users
+            $users = User::whereNotIn('type', ['super admin', 'company', 'client', 'team'])
+                ->where('branch_id', $id)
+                ->orderBy('name', 'ASC')
+                ->pluck('name', 'id')
+                ->toArray();
+
+
+            // Currently logged-in user
+            $login_user = [\Auth::id() => \Auth::user()->name];
+
+            // Merge all user lists
+            $unique_users = [];
+            $users_lists = [$admins, $project_directors, $regional_managers, $users, $Product_Coordinator, $Marketing_team, $login_user];
+            foreach ($users_lists as $user_group) {
+                foreach ($user_group as $key => $user) {
+                    if (!isset($unique_users[$key]) && $key > 0) {
+                        $unique_users[$key] = $user;
+                    }
+                }
+            }
+
+            // Sort unique users alphabetically by name
+            asort($unique_users);
+
+            // Return JSON response with sorted users
+            return response()->json([
+                'status' => 'success',
+                'employees' => $unique_users,
+            ]);
+        }
+
+        // Return error if branch not found
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Branch not found',
+        ]);
+    }
+}
 
 
 if (!function_exists('FiltersBranchUsersFORTASK_FORM_EDIT')) {

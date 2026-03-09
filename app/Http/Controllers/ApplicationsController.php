@@ -2332,6 +2332,7 @@ private function getTagsForApplication($tagIds)
         $dealTask = \App\Models\DealTask::where('related_to', $id)
             ->where('related_type', 'application')
             ->where('tasks_type', 'Quality')
+            ->latest('id')
             ->first();
         if (!empty($dealTask)) {
             // dd(2);

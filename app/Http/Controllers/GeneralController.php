@@ -196,6 +196,97 @@ class GeneralController extends Controller
             }
         }
     }
+   public function getRegionBrandsAllUser(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer',
+            'type' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        $id = $request->input('id');
+        $type = $request->input('type');
+
+        if ($type == 'branch') {
+            return  AllUserFiltersBranchUsersFORTASK($id);
+        } elseif ($type == 'brand') {
+            // Fetch regions based on the brand ID
+            $regions = Region::where('brands', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+            $regions = Region::where('brands', $id)
+                    ->orderBy('name', 'ASC')
+                    ->pluck('name', 'id')
+                    ->toArray();
+
+                if (count($regions) === 1) {
+                    $regions = ['' => 'Please Select'] + $regions;
+                }
+
+            // Return JSON response with regions
+            return response()->json([
+                'status' => 'success',
+                'regions' => $regions,
+            ]);
+        } elseif ($type == 'region') {
+            // Fetch branches based on the region ID
+            $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+             if (count($branches) === 1) {
+                    $branches = ['0' => 'Please Select'] + $branches;
+                }
+
+            // Return JSON response with branches
+            return response()->json([
+                'status' => 'success',
+                'branches' => $branches,
+            ]);
+        } elseif ($type == 'institute') {
+            // Fetch institute details based on the ID
+            $institute = University::where('id', $id)->first();
+
+            // If institute exists, get the intake months
+            if ($institute) {
+                $intake_months = $institute->intake_months ?? '';
+                $intake_months = explode(',', $intake_months);
+
+                return response()->json([
+                    'status' => 'success',
+                    'intake_months' => $intake_months,
+                ]);
+            } else {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Institute not found.',
+                ]);
+            }
+        } else {
+            // Fetch region details based on the ID
+            $region = Region::where('id', $id)->first();
+            $brands = [];
+
+            if ($region) {
+                $ids = explode(',', $region->brands);
+                $brands = User::whereIn('id', $ids)->where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+                // Return JSON response with brands
+                return response()->json([
+                    'status' => 'success',
+                    'brands' => $brands,
+                ]);
+            } else {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Region not found.',
+                ]);
+            }
+        }
+    }
 
     public function getRegionBrandsByRole(Request $request)
 {

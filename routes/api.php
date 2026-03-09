@@ -1010,6 +1010,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getDefaultFiltersData', [GeneralController::class, 'getDefaultFiltersData']);
     Route::get('/getAllProjectDirectors', [GeneralController::class, 'getAllProjectDirectors']);
     Route::post('/getRegionBrands', [GeneralController::class, 'getRegionBrands']);
+    Route::post('/getRegionBrandsAllUser', [GeneralController::class, 'getRegionBrandsAllUser']);
     Route::post('/getRegionBrandsByRole', [GeneralController::class, 'getRegionBrandsByRole']);
     Route::post('/agentTeamPluck', [GeneralController::class, 'agentTeamPluck']);
     Route::post('/getMultiRegionBrands', [GeneralController::class, 'getMultiRegionBrands']);
