@@ -1839,31 +1839,31 @@ class TaskController extends Controller
             ->leftJoin('universities', 'universities.id', '=', 'deal_applications.university_id');
 
         // Add filters based on user roles
-        $FiltersBrands = array_keys(FiltersBrands());
+        // $FiltersBrands = array_keys(FiltersBrands());
 
-        if (\Auth::user()->type !== 'HR') {
-            if (\Auth::user()->type === 'super admin' || \Auth::user()->can('level 1')) {
-                $FiltersBrands[] = '3751';
-                $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
-            } elseif (\Auth::user()->type === 'company') {
-                $tasksQuery->where('deal_tasks.brand_id', \Auth::user()->id);
-            } elseif (\Auth::user()->type === 'Project Director' || \Auth::user()->type === 'Project Manager' || \Auth::user()->can('level 2')) {
-                $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
-            } elseif (\Auth::user()->type === 'Region Manager' || (\Auth::user()->can('level 3') && !empty(\Auth::user()->region_id))) {
-                $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
-            } elseif (\Auth::user()->type === 'Branch Manager' || \Auth::user()->type === 'Admissions Officer' ||
-                    \Auth::user()->type === 'Careers Consultant' || \Auth::user()->type === 'Admissions Manager' ||
-                    \Auth::user()->type === 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
-                $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
-            } elseif (\Auth::user()->type === 'Agent') {
-                $tasksQuery->where(function ($query) {
-                    $query->where('deal_tasks.assigned_to', \Auth::user()->id)
-                        ->orWhere('deal_tasks.created_by', \Auth::user()->id);
-                });
-            } else {
-                $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
-            }
-        }
+        // if (\Auth::user()->type !== 'HR') {
+        //     if (\Auth::user()->type === 'super admin' || \Auth::user()->can('level 1')) {
+        //         $FiltersBrands[] = '3751';
+        //         $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
+        //     } elseif (\Auth::user()->type === 'company') {
+        //         $tasksQuery->where('deal_tasks.brand_id', \Auth::user()->id);
+        //     } elseif (\Auth::user()->type === 'Project Director' || \Auth::user()->type === 'Project Manager' || \Auth::user()->can('level 2')) {
+        //         $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
+        //     } elseif (\Auth::user()->type === 'Region Manager' || (\Auth::user()->can('level 3') && !empty(\Auth::user()->region_id))) {
+        //         $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
+        //     } elseif (\Auth::user()->type === 'Branch Manager' || \Auth::user()->type === 'Admissions Officer' ||
+        //             \Auth::user()->type === 'Careers Consultant' || \Auth::user()->type === 'Admissions Manager' ||
+        //             \Auth::user()->type === 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
+        //         $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
+        //     } elseif (\Auth::user()->type === 'Agent') {
+        //         $tasksQuery->where(function ($query) {
+        //             $query->where('deal_tasks.assigned_to', \Auth::user()->id)
+        //                 ->orWhere('deal_tasks.created_by', \Auth::user()->id);
+        //         });
+        //     } else {
+        //         $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
+        //     }
+        // }
 
         // $sql = str_replace('?', "'%s'", $tasksQuery->toSql());
         // $sql = vsprintf($sql, $tasksQuery->getBindings());
