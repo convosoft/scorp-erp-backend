@@ -1825,6 +1825,7 @@ class TaskController extends Controller
                 'deal_tasks.name as TaskName',
                 'deal_tasks.id',
                 'deal_tasks.tasks_type',
+                'deal_tasks.created_by',
                 'deal_tasks.created_at',
                 'deal_tasks.status',
                 'createdByUser.name as CreatedByUsers'
@@ -1874,6 +1875,7 @@ class TaskController extends Controller
             return [
                 'id' => $task->id,
                 'tasks_type' => $task->tasks_type,
+                'created_by' => $task->created_by,
                 'text' => htmlspecialchars_decode($task->TaskName),
                 'author' => $task->CreatedByUsers,
                 'time' => $task->created_at->diffForHumans(),
