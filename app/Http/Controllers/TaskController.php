@@ -1872,6 +1872,7 @@ class TaskController extends Controller
         $tasks = $tasksQuery->get()->map(function ($task) {
             return [
                 'id' => $task->id,
+                'tasks_type' => $task->tasks_type,
                 'text' => htmlspecialchars_decode($task->TaskName),
                 'author' => $task->CreatedByUsers,
                 'time' => $task->created_at->diffForHumans(),
