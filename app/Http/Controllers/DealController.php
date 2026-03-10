@@ -797,6 +797,7 @@ class DealController extends Controller
     $deal->price = 0;
     $deal->pipeline_id = $request->input('pipeline_id');
     $deal->description = $request->input('deal_description');
+    $deal->tag_ids = $request->tag_ids ?? '';
     //$deal->drive_link = $request->input('drive_link');
     if ($request->filled('drive_link')) {
             $deal->drive_link = $request->input('drive_link');
