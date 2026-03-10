@@ -254,7 +254,9 @@ class LoginRegisterController extends Controller
     }
 
     // Check email existence
-    $user = User::where('email', $request->email)->first();
+    $user = User::whereEmail($request->email)
+            ->where('type', '!=', 'client')
+            ->first();
 
     // Handle case where user is not found
     if(!$user) {

@@ -784,6 +784,16 @@ class TaskController extends Controller
                 'notification_type' => 'Task created'
             ];
             addLogActivity($logData);
+
+            if ($dealTask->related_type != 'task') {
+                    addLogActivity([
+                        'type' => 'success',
+                        'note' => json_encode($remarks),
+                        'module_id' => $dealTask->id,
+                        'module_type' => 'task',
+                        'notification_type' => 'Task created'
+                    ]);
+                }
         }
 
 
