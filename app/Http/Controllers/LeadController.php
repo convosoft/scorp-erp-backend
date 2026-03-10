@@ -445,6 +445,10 @@ class LeadController extends Controller
     // }
 
     // Apply user type-based filtering
+     // Initialize variables
+            $companies = FiltersBrands();
+            $brand_ids = array_keys($companies);
+
             $userType = \Auth::user()->type;
             if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
                 // No additional filtering needed
