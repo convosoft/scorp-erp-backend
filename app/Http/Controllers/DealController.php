@@ -231,11 +231,13 @@ class DealController extends Controller
     $query = AdmissionView::query();
 
     // Permissions logic
+    $companies = FiltersBrands();
+            $brand_ids = array_keys($companies);
     if (!in_array($user->type, ['super admin', 'Admin Team']) && !$user->can('level 1')) {
         if ($user->type == 'company') {
             $query->where('brand_id', $user->id);
         } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
-            $query->whereIn('brand_id', array_keys(FiltersBrands()));
+            $query->whereIn('brand_id',  $brand_ids);
         } elseif ($user->type == 'Region Manager' && $user->region_id) {
             $query->where('region_id', $user->region_id);
         } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
