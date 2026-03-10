@@ -560,6 +560,14 @@ class LeadController extends Controller
         ]);
     }
 
+    $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
+            $sql2 = vsprintf($sql2, $leadsQuery->getBindings());
+            // echo $sql;
+
+            // echo "==========";
+            // echo $sql2;
+            dd($sql );
+
     // ✅ List View - Simple pagination
     $leads = $leadsQuery
         ->where('is_converted', 0)
