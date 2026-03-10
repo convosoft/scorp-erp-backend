@@ -377,7 +377,7 @@ class DealController extends Controller
 
             // echo "==========";
             // echo $sql2;
-            dd($sql , $brand_ids,$user);
+           // dd($sql , $brand_ids,$user);
     // List view
     $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
