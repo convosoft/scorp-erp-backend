@@ -368,6 +368,14 @@ class DealController extends Controller
         ]);
     }
 
+
+      $sql = str_replace('?', "'%s'", $query->toSql());
+            $sql = vsprintf($sql, $query->getBindings());
+            // echo $sql;
+
+            // echo "==========";
+            // echo $sql2;
+            dd($sql );
     // List view
     $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
