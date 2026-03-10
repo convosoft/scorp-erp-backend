@@ -566,7 +566,7 @@ class LeadController extends Controller
 
             // echo "==========";
             // echo $sql2;
-            dd($sql );
+           // dd($sql );
 
     // ✅ List View - Simple pagination
     $leads = $leadsQuery
