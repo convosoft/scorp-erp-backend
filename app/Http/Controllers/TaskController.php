@@ -277,7 +277,11 @@ class TaskController extends Controller
                 } elseif (\Auth::user()->type == 'Branch Manager' || \Auth::user()->type == 'Admissions Officer' ||
                          \Auth::user()->type == 'Career Consultant' || \Auth::user()->type == 'Admissions Manager' ||
                          \Auth::user()->type == 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
-                    $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
+                    if($request->brand!=3751){
+                         $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
+                    }
+
+
                 } elseif (\Auth::user()->type === 'Agent') {
                     $tasksQuery->where(function($q) {
                         $q->where('deal_tasks.assigned_to', \Auth::user()->id)
