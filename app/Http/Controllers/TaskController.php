@@ -662,7 +662,7 @@ class TaskController extends Controller
 
             // echo "==========";
             // echo $sql2;
-            dd($sql,$sql2 );
+           // dd($sql,$sql2 );
 
             //  get tasks
             // Paginate results
