@@ -618,12 +618,12 @@ class TaskController extends Controller
             }
 
             // Additional filters
-            if (!empty($_GET['task_type'])) {
-                $finalQuery->where('deal_tasks.tasks_type', $_GET['task_type']);
+            if (  $request->filled('task_type')) {
+                $finalQuery->where('deal_tasks.tasks_type', $request->task_type);
             }
 
-            if (!empty($_GET['tasks_type_status'])) {
-                $status = $_GET['tasks_type_status'];
+            if ($request->filled('tasks_type_status')) {
+                $status = $request->tasks_type_status;
                 if ($status == '1') {
                     $finalQuery->where('deal_tasks.tasks_type_status', "1")
                               ;
