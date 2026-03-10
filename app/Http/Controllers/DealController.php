@@ -254,7 +254,7 @@ class DealController extends Controller
         elseif ($column === 'stage_id') $query->whereIn('stage_id', $value);
         elseif ($column === 'users') $query->whereIn('created_by', $value);
         elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
-        elseif ($column === 'brand') $query->where('brand_id', $value);
+        elseif ($column === 'brand_id') $query->where('brand_id', $value);
         elseif ($column === 'region_id') $query->where('region_id', $value);
         elseif ($column === 'branch_id') $query->where('branch_id', $value);
         elseif ($column === 'created_by') $query->where('created_by', $value);
@@ -375,7 +375,7 @@ class DealController extends Controller
 
             // echo "==========";
             // echo $sql2;
-            dd($sql );
+           // dd($sql );
     // List view
     $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
