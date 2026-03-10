@@ -561,7 +561,7 @@ class LeadController extends Controller
     }
 
     $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
-            $sql2 = vsprintf($sql, $leadsQuery->getBindings());
+            $sql = vsprintf($sql, $leadsQuery->getBindings());
             // echo $sql;
 
             // echo "==========";
