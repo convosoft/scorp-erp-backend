@@ -112,8 +112,8 @@ class SendQueuedEmailsController extends Controller
         $email->related_type = $request->related_type;
         $email->related_id = $request->related_id;
 
-        $email->is_send = 0;
-        $email->status = 0;
+        $email->is_send = '0';
+        $email->status = '1';
 
 
         /* Attachment Upload */
