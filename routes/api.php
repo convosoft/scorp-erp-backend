@@ -21,6 +21,7 @@ use App\Http\Controllers\LeadController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CommissionsController;
+use App\Http\Controllers\CompanyPermissionController;
 use App\Http\Controllers\CompetenciesController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\JobController;
@@ -1025,5 +1026,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Reassign
 
     Route::post('/reassignUserData', [UserReassignController::class, 'reassignUserData']);
+
+    Route::get('/company-permissions', [CompanyPermissionController::class, 'index']);
+    Route::post('/company-permission-update', [CompanyPermissionController::class, 'updatePermission']);
 
 });
