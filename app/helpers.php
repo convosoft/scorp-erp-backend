@@ -1282,6 +1282,8 @@ if (!function_exists('BrandsRegionsBranches')) {
            $employees = User::where('branch_id', $_GET['branch_id'])->whereNotIn('type', ['client', 'company', 'super admin','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
         }
 
+        dd($type,\Auth::user()->can('level 2'));
+
         if ($type == 'super admin' || $type == 'Admin Team' || $type == 'HR' || \Auth::user()->can('level 1')) {
             $brands = User::where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
            $employees = User::whereNotIn('type', ['company', 'client', 'team','organization', 'super admin'])->where('branch_id', $user->branch_id)->pluck('name', 'id')->toArray();
