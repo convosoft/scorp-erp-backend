@@ -19,6 +19,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+    'queue_mail_from' => env('QUEUE_MAIL_FROM', 'no-reply@convosoftmail.com'),
 
     /*
     |--------------------------------------------------------------------------
