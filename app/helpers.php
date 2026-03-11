@@ -1282,7 +1282,7 @@ if (!function_exists('BrandsRegionsBranches')) {
            $employees = User::where('branch_id', $_GET['branch_id'])->whereNotIn('type', ['client', 'company', 'super admin','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
         }
 
-        dd($type,\Auth::user()->can('level 2'));
+
 
         if ($type == 'super admin' || $type == 'Admin Team' || $type == 'HR' || \Auth::user()->can('level 1')) {
             $brands = User::where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
@@ -1294,6 +1294,7 @@ if (!function_exists('BrandsRegionsBranches')) {
             $companies = FiltersBrands();
             $brand_ids = array_keys($companies);
             $brands = User::where('type', 'company')->whereIn('id', $brand_ids)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+             dd($type,$brands);
         } else if ($type == 'Region Manager' || \Auth::user()->can('level 3')) {
             $brands = User::where('type', 'company')->where('id', $user->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             $regions = Region::where('id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
