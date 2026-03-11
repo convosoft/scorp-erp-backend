@@ -1294,7 +1294,7 @@ if (!function_exists('BrandsRegionsBranches')) {
             $companies = FiltersBrands();
             $brand_ids = array_keys($companies);
             $brands = User::where('type', 'company')->whereIn('id', $brand_ids)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-             dd($type,$brands,$brand_ids);
+           //  dd($type,$brands,$brand_ids);
         } else if ($type == 'Region Manager' || \Auth::user()->can('level 3')) {
             $brands = User::where('type', 'company')->where('id', $user->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             $regions = Region::where('id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
