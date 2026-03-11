@@ -315,7 +315,7 @@ class GeneralController extends Controller
     if ($type == 'branch') {
 
         // Restrict branch access for non-admin users
-        if (!in_array($userType, ['super admin','Admin Team','HR']) && !$user->can('level 1')) {
+        if (!in_array($userType, ['super admin','Admin Team','HR',  'Project Director','Project Manager','Region Manager']) && !$user->can('level 1')) {
 
             if ($user->branch_id != $id) {
                 return response()->json([
