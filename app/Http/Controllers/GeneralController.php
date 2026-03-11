@@ -50,6 +50,7 @@ use App\Models\JobCategory;
 use App\Models\LeadTag;
 use App\Models\LeadStage;
 use App\Models\LogActivity;
+use App\Models\TaskTag;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -127,6 +128,15 @@ class GeneralController extends Controller
             // Fetch regions based on the brand ID
             $regions = Region::where('brands', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
+            $regions = Region::where('brands', $id)
+                    ->orderBy('name', 'ASC')
+                    ->pluck('name', 'id')
+                    ->toArray();
+
+                if (count($regions) === 1) {
+                    $regions = ['' => 'Please Select'] + $regions;
+                }
+
             // Return JSON response with regions
             return response()->json([
                 'status' => 'success',
@@ -135,6 +145,10 @@ class GeneralController extends Controller
         } elseif ($type == 'region') {
             // Fetch branches based on the region ID
             $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+             if (count($branches) === 1) {
+                    $branches = ['0' => 'Please Select'] + $branches;
+                }
 
             // Return JSON response with branches
             return response()->json([
@@ -182,6 +196,281 @@ class GeneralController extends Controller
             }
         }
     }
+   public function getRegionBrandsAllUser(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer',
+            'type' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        $id = $request->input('id');
+        $type = $request->input('type');
+
+        if ($type == 'branch') {
+            return  AllUserFiltersBranchUsersFORTASK($id);
+        } elseif ($type == 'brand') {
+            // Fetch regions based on the brand ID
+            $regions = Region::where('brands', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+            $regions = Region::where('brands', $id)
+                    ->orderBy('name', 'ASC')
+                    ->pluck('name', 'id')
+                    ->toArray();
+
+                if (count($regions) === 1) {
+                    $regions = ['' => 'Please Select'] + $regions;
+                }
+
+            // Return JSON response with regions
+            return response()->json([
+                'status' => 'success',
+                'regions' => $regions,
+            ]);
+        } elseif ($type == 'region') {
+            // Fetch branches based on the region ID
+            $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+             if (count($branches) === 1) {
+                    $branches = ['0' => 'Please Select'] + $branches;
+                }
+
+            // Return JSON response with branches
+            return response()->json([
+                'status' => 'success',
+                'branches' => $branches,
+            ]);
+        } elseif ($type == 'institute') {
+            // Fetch institute details based on the ID
+            $institute = University::where('id', $id)->first();
+
+            // If institute exists, get the intake months
+            if ($institute) {
+                $intake_months = $institute->intake_months ?? '';
+                $intake_months = explode(',', $intake_months);
+
+                return response()->json([
+                    'status' => 'success',
+                    'intake_months' => $intake_months,
+                ]);
+            } else {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Institute not found.',
+                ]);
+            }
+        } else {
+            // Fetch region details based on the ID
+            $region = Region::where('id', $id)->first();
+            $brands = [];
+
+            if ($region) {
+                $ids = explode(',', $region->brands);
+                $brands = User::whereIn('id', $ids)->where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+                // Return JSON response with brands
+                return response()->json([
+                    'status' => 'success',
+                    'brands' => $brands,
+                ]);
+            } else {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Region not found.',
+                ]);
+            }
+        }
+    }
+
+    public function getRegionBrandsByRole(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'id' => 'required|integer',
+        'type' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    $id   = $request->input('id');
+    $type = $request->input('type');
+    $user = \Auth::user();
+    $userType = $user->type;
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRANCH USERS
+    |--------------------------------------------------------------------------
+    */
+    if ($type == 'branch') {
+
+        // Restrict branch access for non-admin users
+        if (!in_array($userType, ['super admin','Admin Team','HR']) && !$user->can('level 1')) {
+
+            if ($user->branch_id != $id) {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Unauthorized access to branch.'
+                ]);
+            }
+        }
+
+        return FiltersBranchUsersFORTASK($id);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRAND → REGIONS
+    |--------------------------------------------------------------------------
+    */
+    elseif ($type == 'brand') {
+
+        $query = Region::query()->orderBy('name', 'ASC');
+
+        // Super Admin & HR
+        if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
+            $query->where('brands', $id);
+        }
+        elseif ($userType == 'Project Manager' || $user->can('level 2')) {
+            $query->where('brands', $user->brand_id);
+        }
+
+        // Company user
+        elseif ($userType == 'company') {
+            $query->where('brands', $user->id);
+        }
+
+        // Region Manager
+        elseif ($userType == 'Region Manager' || $user->can('level 3')) {
+            $query->where('id', $user->region_id);
+        }
+
+        // Branch Level Users
+        else {
+            $query->where('id', $user->region_id);
+        }
+
+        $regions = $query->pluck('name', 'id')->toArray();
+
+        if (count($regions) === 1) {
+            $regions = ['' => 'Please Select'] + $regions;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'regions' => $regions,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REGION → BRANCHES
+    |--------------------------------------------------------------------------
+    */
+    elseif ($type == 'region') {
+
+        $query = Branch::query()->orderBy('name', 'ASC');
+
+        if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
+            $query->where('region_id', $id);
+        } elseif ($userType == 'Project Manager' || $user->can('level 2')) {
+            $query->where('region_id', $id);
+             $query->where('brands', $user->brand_id);
+        }  elseif ($userType == 'Region Manager' || $user->can('level 3')) {
+            $query->where('region_id', $user->region_id);
+        }  elseif ($userType == 'Branch Manager' || $user->can('level 4')) {
+            $query->where('id', $user->branch_id);
+        } else {
+            $query->where('id', $user->branch_id);
+        }
+
+        $branches = $query->pluck('name', 'id')->toArray();
+
+        if (count($branches) === 1) {
+            $branches = ['' => 'Please Select'] + $branches;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'branches' => $branches,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSTITUTE
+    |--------------------------------------------------------------------------
+    */
+    elseif ($type == 'institute') {
+
+        $institute = University::where('id', $id)->first();
+
+        if (!$institute) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Institute not found.'
+            ]);
+        }
+
+        $intake_months = $institute->intake_months
+            ? explode(',', $institute->intake_months)
+            : [];
+
+        return response()->json([
+            'status' => 'success',
+            'intake_months' => $intake_months,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REGION → BRANDS
+    |--------------------------------------------------------------------------
+    */
+    else {
+
+        $region = Region::find($id);
+
+        if (!$region) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Region not found.'
+            ]);
+        }
+
+        $brandIds = explode(',', $region->brands);
+
+        // Restrict brand access for non-admin users
+        if (!in_array($userType, ['super admin','Admin Team','HR']) && !$user->can('level 1')) {
+            $brandIds = array_intersect($brandIds, [$user->brand_id]);
+        }
+
+        $brands = User::whereIn('id', $brandIds)
+            ->where('type', 'company')
+            ->orderBy('name', 'ASC')
+            ->pluck('name', 'id')
+            ->toArray();
+
+        if (count($brands) === 1) {
+            $brands = ['' => 'Please Select'] + $brands;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'brands' => $brands,
+        ]);
+    }
+}
 
 
 
@@ -565,7 +854,7 @@ class GeneralController extends Controller
 
     public function getapplicationStagesPluck()
     {
-         $stages = ApplicationStage::orderBy('id')->pluck('name', 'id')->toArray();
+         $stages = ApplicationStage::orderBy('id')->pluck('id', 'name')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $stages,
@@ -616,6 +905,22 @@ class GeneralController extends Controller
             } else {
                 $tags = LeadTag::where('branch_id', $user->branch_id)->pluck('tag', 'id')->toArray();
             }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $tags,
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 'false',
+            'message' => 'Unauthorized',
+        ], 401);
+    }
+    public function TaskTag(Request $request)
+    {
+        if (Auth::check()) {
+             $tags = TaskTag::pluck('id', 'tag')->toArray();
 
             return response()->json([
                 'status' => 'success',
@@ -909,6 +1214,16 @@ class GeneralController extends Controller
         ], 200);
 
     }
+    public function CountryByID()
+    {
+        $Country = Country::orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $Country,
+        ], 200);
+
+    }
 
     public function getLogActivity_old(Request $request)
 {
@@ -1115,13 +1430,75 @@ public function UniversityByCountryCode(Request $request)
             $country = $request->get('country');
             $country_code = Country::where('country_code', $country)->first();
             if ($country_code) {
-                $universities = University::where('uni_status', '0')
-                    ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
-                    ->pluck('name', 'id')
-                    ->toArray();
-                $universities = $universities;
+                // $universities = University::where('uni_status', '0') ;
+                // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                // $universities = $universities->pluck('name', 'id')->toArray();
+                 $alluniversities = University::where('uni_status', '0') ;
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                $alluniversities = $alluniversities->get();
+
+                // $alluniversities = University::where('uni_status', '0')
+                //     ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                //     ->orWhere('country', $country_code->id)
+                //     ->get(); // get collection first
+
+                $universities = [];
+
+                foreach ($alluniversities as $uni) {
+                    if ($uni->uni_status == 0) {
+                        $universities[$uni->id] = $uni->name;
+                    }
+                }
             } else {
-                $universities = [''];
+                $universities = [];
+            }
+            return response()->json([
+                'status' => "success",
+                'data' => $universities,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => "success",
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+}
+
+public function UniversityByCountryid(Request $request)
+{
+        $request->validate([
+            'country' => 'required|string',
+        ]);
+        try {
+            $country = $request->get('country');
+            $country_code = Country::where('id', $country)->first();
+            if ($country_code) {
+                // $universities = University::where('uni_status', '0') ;
+                // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                // $universities = $universities->pluck('name', 'id')->toArray();
+
+                 $alluniversities = University::where('uni_status', '0') ;
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                $alluniversities = $alluniversities->get();
+
+                // $alluniversities = University::where('uni_status', '0')
+                //     ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                //     ->orWhere('country', $country_code->id)
+                //     ->get(); // get collection first
+
+                $universities = [];
+
+                foreach ($alluniversities as $uni) {
+                    if ($uni->uni_status == 0) {
+                        $universities[$uni->id] = $uni->name;
+                    }
+                }
+            } else {
+                $universities = [];
             }
             return response()->json([
                 'status' => "success",
@@ -1250,6 +1627,8 @@ public function GetBranchByType()
                 }
             }
 
+             $tasktags = TaskTag::pluck('tag', 'id')->toArray();
+
         // Fetch countries
         $countries = countries();
 
@@ -1263,6 +1642,7 @@ public function GetBranchByType()
                 'agencies' => $agencies,
                 'countries' => $countries,
                 'tags' => $tags,
+                'tasktags' => $tasktags,
             ]
         ]);
     }
@@ -1271,6 +1651,17 @@ public function GetBranchByType()
     {
         $countryCode = $request->input('code');
         $cities = City::where('country_code', $countryCode)->pluck('name', 'id')->toArray();
+        return response()->json([
+            'status' => 'success',
+            'data' => $cities
+        ]);
+    }
+
+    public function getCitiesOnid(Request $request)
+    {
+        $countryCode = $request->input('code');
+        $country_code = Country::where('id', $countryCode)->first()?->country_code;
+        $cities = City::where('country_code', $country_code)->pluck('name', 'id')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $cities

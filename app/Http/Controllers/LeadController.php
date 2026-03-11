@@ -329,7 +329,7 @@ class LeadController extends Controller
             'brand' => 'nullable|integer|exists:users,id',
             'region_id' => 'nullable|integer',
             'branch_id' => 'nullable|integer',
-            'stage_id' => 'nullable|integer|exists:lead_stages,id',
+            'stage_id' => 'nullable',
             'users' => 'nullable|array',
             'lead_assigned_user' => 'sometimes|nullable',
             'created_by' => 'sometimes|nullable',
@@ -375,7 +375,9 @@ class LeadController extends Controller
     }
 
     if ($request->filled('stage_id')) {
-        $leadsQuery->where('stage_id', $request->stage_id);
+        $leadsQuery->whereIn('stage_id', $request->stage_id);
+    }else{
+          $leadsQuery->whereNotIn('stage_id',[6,7]);
     }
 
     if ($request->filled('tag')) {

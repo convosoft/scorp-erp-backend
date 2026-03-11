@@ -67,6 +67,9 @@ class DealController extends Controller
         if (isset($_POST['brand_id']) && !empty($_POST['brand_id'])) {
             $filters['brand_id'] = $_POST['brand_id'];
         }
+        if (isset($_POST['created_by']) && !empty($_POST['created_by'])) {
+            $filters['created_by'] = $_POST['created_by'];
+        }
 
         if (isset($_POST['region_id']) && !empty($_POST['region_id'])) {
             $filters['region_id'] = $_POST['region_id'];
@@ -248,12 +251,13 @@ class DealController extends Controller
     $filters = $this->dealFilters();
     foreach ($filters as $column => $value) {
         if ($column === 'name') $query->where('name', 'like', "%{$value}%");
-        elseif ($column === 'stage_id') $query->where('stage_id', $value);
+        elseif ($column === 'stage_id') $query->whereIn('stage_id', $value);
         elseif ($column === 'users') $query->whereIn('created_by', $value);
         elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
         elseif ($column === 'brand') $query->where('brand_id', $value);
         elseif ($column === 'region_id') $query->where('region_id', $value);
         elseif ($column === 'branch_id') $query->where('branch_id', $value);
+        elseif ($column === 'created_by') $query->where('created_by', $value);
         elseif ($column === 'deal_assigned_user') $query->where('assigned_to', $value);
         elseif ($column === 'created_at_from') $query->whereDate('created_at', '>=', $value);
         elseif ($column === 'created_at_to') $query->whereDate('created_at', '<=', $value);
@@ -418,7 +422,7 @@ class DealController extends Controller
                 ->pluck('stage_id')
                 ->toArray();
 
-            $applications = DealApplication::where('deal_id', $deal->id)->get();
+            $applications = DealApplication::where('deal_id', $request->deal_id)->get();
 
         return response()->json([
             'status' => 'success',
@@ -711,13 +715,15 @@ class DealController extends Controller
 {
     $user = Auth::user();
 
-    // Permission check
-    if (!$user->can('edit deal') && $user->type != 'super admin') {
-        return response()->json([
-            'status' => 'error',
-            'message' => __('Permission Denied.')
-        ], 200);
-    }
+            // Permission check
+        if (!$user->can('edit deal') && $user->type != 'super admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => [
+                    'permission' => [__('Permission Denied.')]
+                ]
+            ], 422);
+        }
 
     // Validation
     $validator = Validator::make($request->all(), [
@@ -730,6 +736,7 @@ class DealController extends Controller
         'lead_branch' => 'required|gt:0',
         'assigned_to' => 'required|exists:users,id',
         'pipeline_id' => 'required',
+        'drive_link' => 'required',
         // 'gender' => 'required',
         // 'nationality' => 'required',
         // 'date_of_birth' => 'required',
@@ -790,6 +797,10 @@ class DealController extends Controller
     $deal->price = 0;
     $deal->pipeline_id = $request->input('pipeline_id');
     $deal->description = $request->input('deal_description');
+    //$deal->drive_link = $request->input('drive_link');
+    if ($request->filled('drive_link')) {
+            $deal->drive_link = $request->input('drive_link');
+        }
     $deal->status = 'Active';
     $deal->created_by = $deal->created_by;
     $deal->save();

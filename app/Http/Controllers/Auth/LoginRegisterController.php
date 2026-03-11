@@ -18,6 +18,7 @@ use App\Models\Agency;
 use App\Models\ExperienceCertificate;
 use App\Models\GenerateOfferLetter;
 use App\Models\JoiningLetter;
+use App\Models\Branch;
 use App\Models\NOC;
 use  App\Models\Utility;
 use Illuminate\Auth\Events\Registered;
@@ -74,13 +75,16 @@ class LoginRegisterController extends Controller
             ], 404);
         }
 
+
+
         // Generate token
         $data['token'] = $user->createToken($user->email)->plainTextToken;
 
         // Prepare user data
         $userArray = $user->toArray();
         unset($userArray['roles']);
-
+        $Branch = Branch::where('branches.id',$user->branch_id)->first();
+        $data['is_user_b2b'] =  $Branch->is_b2b;
         $data['user'] = $userArray;
         // $data['roles'] = $user->getRoleNames(); // Get user roles
         // $data['permissions'] = $user->getAllPermissions()->pluck('name'); // Get user permissions
@@ -197,6 +201,8 @@ class LoginRegisterController extends Controller
         );
 
         $data['token'] = $user->createToken($request->email)->plainTextToken;
+        $Branch = Branch::where('branches.id',$user->branch_id)->first();
+        $data['is_user_b2b'] =  $Branch->is_b2b;
 
         $userArray = $user->toArray();
         unset($userArray['roles']);
@@ -248,7 +254,9 @@ class LoginRegisterController extends Controller
     }
 
     // Check email existence
-    $user = User::where('email', $request->email)->first();
+    $user = User::whereEmail($request->email)
+            ->where('type', '!=', 'client')
+            ->first();
 
     // Handle case where user is not found
     if(!$user) {
@@ -274,6 +282,9 @@ class LoginRegisterController extends Controller
 
     // Create token if user exists
     $data['token'] = $user->createToken($request->email)->plainTextToken;
+
+    $Branch = Branch::where('branches.id',$user->branch_id)->first();
+        $data['is_user_b2b'] =  $Branch->is_b2b;
 
     $userArray = $user->toArray();
     unset($userArray['roles']);

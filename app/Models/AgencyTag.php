@@ -5,10 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class LeadTag extends Model
+class AgencyTag extends Model
 {
     use HasFactory;
-
      protected $fillable = [
         'tag',
         'brand',
@@ -16,5 +15,4 @@ class LeadTag extends Model
         'branch_id',
         'created_by',
     ];
-
 }
