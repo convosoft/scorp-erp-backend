@@ -1060,5 +1060,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/company-permissions', [CompanyPermissionController::class, 'index']);
     Route::post('/company-permission-update', [CompanyPermissionController::class, 'updatePermission']);
     Route::post('/addToEmailQueue', [SendQueuedEmailsController::class, 'addToEmailQueue']);
+    Route::post('/getEmailQueueByRelated', [SendQueuedEmailsController::class, 'getEmailQueueByRelated']);
 
 });

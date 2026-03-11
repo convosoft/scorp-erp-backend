@@ -58,115 +58,155 @@ class SendQueuedEmailsController extends Controller
     }
 
     public function addToEmailQueue(Request $request)
-{
-    $validator = \Validator::make(
-        $request->all(),
-        [
-            'to' => 'required|string',
-            'cc' => 'nullable|string',
-            'bcc' => 'nullable|string',
+    {
+        $validator = \Validator::make(
+            $request->all(),
+            [
+                'to' => 'required|string',
+                'cc' => 'nullable|string',
+                'bcc' => 'nullable|string',
 
-            'subject' => 'required|string',
-            'content' => 'required|string',
+                'subject' => 'required|string',
+                'content' => 'required|string',
 
-            'brand_id' => 'required|integer',
-            'branch_id' => 'required|integer',
-            'region_id' => 'required|integer',
+                'brand_id' => 'required|integer',
+                'branch_id' => 'required|integer',
+                'region_id' => 'required|integer',
 
-            'related_type' => 'required|in:lead,admission,application',
-            'related_id' => 'required|integer',
+                'related_type' => 'required|in:lead,admission,application',
+                'related_id' => 'required|integer',
 
-            'attachment' => 'nullable|file|max:10240'
-        ]
-        );
+                'attachment' => 'nullable|file|max:10240'
+            ]
+            );
 
-        if ($validator->fails()) {
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $validator->errors()
+                ], 200);
+            }
+
+        try {
+
+            $attachmentPath = null;
+
+            $email = new EmailSendingQueue();
+
+            $email->priority = 2;
+            $email->created_by = auth()->id();
+
+            $email->to = $request->to;
+            $email->cc = $request->cc;   // comma separated allowed
+            $email->bcc = $request->bcc; // comma separated allowed
+
+            $email->subject = $request->subject;
+            $email->content = $request->content;
+
+            $email->brand_id = $request->brand_id;
+            $email->branch_id = $request->branch_id;
+            $email->region_id = $request->region_id;
+
+            $email->from_email = config('app.queue_mail_from');
+
+            $email->related_type = $request->related_type;
+            $email->related_id = $request->related_id;
+
+            $email->is_send = '0';
+            $email->status = '1';
+
+
+            /* Attachment Upload */
+
+            if ($request->hasFile('attachment')) {
+
+                $file = $request->file('attachment');
+
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+                $file->move(public_path('EmailAttachments'), $fileName);
+
+                $email->attachment = 'EmailAttachments/' . $fileName;
+            }
+
+            $email->save();
+
+            /* Activity Log */
+
+            addLogActivity([
+                'type' => 'success',
+                'note' => json_encode([
+                    'title' =>  $email->subject." Email queued",
+                    'message' =>  $email->subject." Email queued for {$request->to}",
+                ]),
+                'module_id' =>$request->related_id,
+                'module_type' => $request->related_type,
+                'notification_type' => 'Email Queued',
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Email added to queue successfully',
+                'data' => $email
+            ]);
+
+        } catch (\Exception $e) {
+
+            addLogActivity([
+                'type' => 'error',
+                'note' => json_encode([
+                    'title' => "Email Queue Failed",
+                    'message' => $e->getMessage(),
+                ]),
+                'module_id' => 0,
+                'module_type' => 'email_queue',
+                'notification_type' => 'Email Queue Failed',
+            ]);
+
             return response()->json([
                 'status' => 'error',
-                'message' => $validator->errors()
-            ], 200);
+                'message' => $e->getMessage()
+            ],500);
         }
-
-    try {
-
-        $attachmentPath = null;
-
-        $email = new EmailSendingQueue();
-
-        $email->priority = 2;
-        $email->created_by = auth()->id();
-
-        $email->to = $request->to;
-        $email->cc = $request->cc;   // comma separated allowed
-        $email->bcc = $request->bcc; // comma separated allowed
-
-        $email->subject = $request->subject;
-        $email->content = $request->content;
-
-        $email->brand_id = $request->brand_id;
-        $email->branch_id = $request->branch_id;
-        $email->region_id = $request->region_id;
-
-        $email->from_email = config('app.queue_mail_from');
-
-        $email->related_type = $request->related_type;
-        $email->related_id = $request->related_id;
-
-        $email->is_send = '0';
-        $email->status = '1';
-
-
-        /* Attachment Upload */
-
-        if ($request->hasFile('attachment')) {
-
-            $file = $request->file('attachment');
-
-            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-            $file->move(public_path('EmailAttachments'), $fileName);
-
-            $email->attachment = 'EmailAttachments/' . $fileName;
-        }
-
-        $email->save();
-
-        /* Activity Log */
-
-        addLogActivity([
-            'type' => 'success',
-            'note' => json_encode([
-                'title' =>  $email->subject." Email queued",
-                'message' =>  $email->subject." Email queued for {$request->to}",
-            ]),
-            'module_id' =>$request->related_id,
-            'module_type' => $request->related_type,
-            'notification_type' => 'Email Queued',
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Email added to queue successfully',
-            'data' => $email
-        ]);
-
-    } catch (\Exception $e) {
-
-        addLogActivity([
-            'type' => 'error',
-            'note' => json_encode([
-                'title' => "Email Queue Failed",
-                'message' => $e->getMessage(),
-            ]),
-            'module_id' => 0,
-            'module_type' => 'email_queue',
-            'notification_type' => 'Email Queue Failed',
-        ]);
-
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage()
-        ],500);
     }
-}
+
+    public function getEmailQueueByRelated(Request $request)
+        {
+            $validator = \Validator::make(
+                $request->all(),
+                [
+                    'related_type' => 'required|in:lead,admission,application',
+                    'related_id' => 'required|integer'
+                ]
+            );
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $validator->errors()
+                ], 200);
+            }
+
+            try {
+
+                $emails = EmailSendingQueue::where('related_type', $request->related_type)
+                            ->where('related_id', $request->related_id)
+                            ->orderBy('id','desc')
+                            ->get();
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $emails
+                ], 200);
+
+            } catch (\Exception $e) {
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+        }
+
+
 }
