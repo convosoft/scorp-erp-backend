@@ -99,16 +99,7 @@ class SendQueuedEmailsController extends Controller
             // Send email with attachments
             $mail->send(new CampaignEmail($queue));
 
-            // Attachments
-            if ($queue->attachment) {
-                $attachments = json_decode($queue->attachment, true); // array of paths
-                foreach ($attachments as $filePath) {
-                    // Attach file from storage
-                    $mail->attach(public_path($filePath));
 
-
-                }
-            }
 
             // only update after successful send
             $queue->is_send = '1';
