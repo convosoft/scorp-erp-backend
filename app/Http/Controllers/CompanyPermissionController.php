@@ -73,6 +73,8 @@ public function updatePermission(Request $request)
         ], 422);
     }
 
+    dd($request->permissions);
+
     foreach ($request->permissions as $perm) {
 
         $company_per = CompanyPermission::where([
