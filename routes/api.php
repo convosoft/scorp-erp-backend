@@ -110,6 +110,7 @@ use App\Http\Controllers\TaskTagController;
 
 Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
 Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']); //  email sendng compain cron
+Route::get('/sendQueuedEmailsCrm', [SendQueuedEmailsController::class, 'handleCrm']); //  email sendng compain cron
 Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sms sendng  all  cron
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
 
