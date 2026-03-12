@@ -94,6 +94,7 @@ use App\Models\AttendanceEmployee;
 use Carbon\Carbon;
 use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
+use App\Http\Controllers\SendQueuedSmsController;
 use App\Http\Controllers\TaskTagController;
 
 /*
@@ -107,8 +108,9 @@ use App\Http\Controllers\TaskTagController;
 |
 */
 
-    Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
-Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']);
+Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
+Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']); //  email sendng compain cron
+Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sms sendng  all  cron
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
 
 Route::post('/brandDetailPublic', [UserController::class, 'brandDetailPublic']);
@@ -1059,7 +1061,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/company-permissions', [CompanyPermissionController::class, 'index']);
     Route::post('/company-permission-update', [CompanyPermissionController::class, 'updatePermission']);
+
+
     Route::post('/addToEmailQueue', [SendQueuedEmailsController::class, 'addToEmailQueue']);
     Route::post('/getEmailQueueByRelated', [SendQueuedEmailsController::class, 'getEmailQueueByRelated']);
+
+    Route::post('/addToSmsQueue', [SendQueuedSmsController::class, 'addToSmsQueue']);
+    Route::post('/getSmsQueueByRelated', [SendQueuedSmsController::class, 'getSmsQueueByRelated']);
 
 });
