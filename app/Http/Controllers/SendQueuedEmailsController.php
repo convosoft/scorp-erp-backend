@@ -33,7 +33,25 @@ class SendQueuedEmailsController extends Controller
             );
 
             try {
-                Mail::to($queue->to)->send(new CampaignEmail($queue));
+                //Mail::to($queue->to)->send(new CampaignEmail($queue));
+
+                 // Build the mail
+            $mail = Mail::to($queue->to);
+
+            // Add CC
+            if ($queue->cc) {
+                $ccs = explode(',', $queue->cc); // comma-separated emails
+                $mail->cc($ccs);
+            }
+
+            // Add BCC
+            if ($queue->bcc) {
+                $bccs = explode(',', $queue->bcc);
+                $mail->bcc($bccs);
+            }
+
+            // Send email with attachments
+            $mail->send(new CampaignEmail($queue));
 
                 // only update after successful send
                 $queue->is_send = '1';
