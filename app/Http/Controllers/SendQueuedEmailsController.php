@@ -106,7 +106,7 @@ class SendQueuedEmailsController extends Controller
                     // Attach file from storage
                     $mail->attach(public_path($filePath));
 
-                    dd(public_path($filePath));
+
                 }
             }
 
@@ -244,42 +244,55 @@ class SendQueuedEmailsController extends Controller
 }
 
     public function getEmailQueueByRelated(Request $request)
-        {
-            $validator = \Validator::make(
-                $request->all(),
-                [
-                    'related_type' => 'required|in:lead,admission,application',
-                    'related_id' => 'required|integer'
-                ]
-            );
+{
+    $validator = \Validator::make(
+        $request->all(),
+        [
+            'related_type' => 'required|in:lead,admission,application',
+            'related_id' => 'required|integer'
+        ]
+    );
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $validator->errors()
-                ], 200);
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $validator->errors()
+        ], 200);
+    }
+
+    try {
+
+        $emails = EmailSendingQueue::where('related_type', $request->related_type)
+                    ->where('related_id', $request->related_id)
+                    ->orderBy('id','desc')
+                    ->get();
+
+        // Map attachments to full public URLs
+        $emails->transform(function($email) {
+            if ($email->attachment) {
+                $attachments = json_decode($email->attachment, true); // array
+                $email->attachment = array_map(function($filePath) {
+                    return url($filePath); // full public URL
+                }, $attachments);
+            } else {
+                $email->attachment = [];
             }
+            return $email;
+        });
 
-            try {
+        return response()->json([
+            'status' => 'success',
+            'data' => $emails
+        ], 200);
 
-                $emails = EmailSendingQueue::where('related_type', $request->related_type)
-                            ->where('related_id', $request->related_id)
-                            ->orderBy('id','desc')
-                            ->get();
+    } catch (\Exception $e) {
 
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $emails
-                ], 200);
-
-            } catch (\Exception $e) {
-
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $e->getMessage()
-                ], 500);
-            }
-        }
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
 
 
 }
