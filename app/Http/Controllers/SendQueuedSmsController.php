@@ -18,7 +18,7 @@ class SendQueuedSmsController extends Controller
     {
 
         $queues = SmsSendingQueue::where('is_send', '0')
-            ->where('status', '0')
+            ->where('status', '1')
             ->limit(350)
             ->get();
 
