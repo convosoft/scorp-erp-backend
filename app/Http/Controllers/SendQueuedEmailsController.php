@@ -57,53 +57,78 @@ class SendQueuedEmailsController extends Controller
         ]);
     }
     public function handleCrm(Request $request)
-    {
-        $queues = EmailSendingQueue::where('is_send', '0')
-            ->where('status', '1')
-            ->where('priority', '2')
-            ->limit(350)
-            ->get();
+{
+    $queues = EmailSendingQueue::where('is_send', '0')
+        ->where('status', '1')
+        ->where('priority', '2')
+        ->limit(350)
+        ->get();
 
-        $sendcount = 0;
-        $failcount = 0;
+    $sendcount = 0;
+    $failcount = 0;
 
-        foreach ($queues as $queue) {
+    foreach ($queues as $queue) {
 
-            // Replace placeholders dynamically
-            $queue->content = str_replace(
-                ['{email}', '{name}', '{activation_link}'],
-                [
-                    $queue->to,
-                    $queue->related_type ?? 'User',
-                    $queue->related_id ? "https://erp.scorp.co/activate/{$queue->related_id}" : ""
-                ],
-                $queue->content
-            );
+        // Replace placeholders dynamically
+        $queue->content = str_replace(
+            ['{email}', '{name}', '{activation_link}'],
+            [
+                $queue->to,
+                $queue->related_type ?? 'User',
+                $queue->related_id ? "https://erp.scorp.co/activate/{$queue->related_id}" : ""
+            ],
+            $queue->content
+        );
 
-            try {
-                Mail::to($queue->to)->send(new CampaignEmail($queue));
+        try {
+            // Build the mail
+            $mail = Mail::to($queue->to);
 
-                // only update after successful send
-                $queue->is_send = '1';
-                $queue->save();
-
-                $sendcount++;
-
-            } catch (\Exception $e) {
-                $queue->status = '2';
-                $queue->mailerror = $e->getMessage();
-                $queue->save();
-
-                $failcount++;
+            // Add CC
+            if ($queue->cc) {
+                $ccs = explode(',', $queue->cc); // comma-separated emails
+                $mail->cc($ccs);
             }
-        }
 
-        return response()->json([
-            'status' => 'completed',
-            'sendcount' => $sendcount,
-            'failcount' => $failcount,
-        ]);
+            // Add BCC
+            if ($queue->bcc) {
+                $bccs = explode(',', $queue->bcc);
+                $mail->bcc($bccs);
+            }
+
+            // Send email with attachments
+            $mail->send(new CampaignEmail($queue));
+
+            // Attachments
+            if ($queue->attachment) {
+                $attachments = json_decode($queue->attachment, true); // array of paths
+                foreach ($attachments as $filePath) {
+                    // Attach file from storage
+                    $mail->attach(public_path($filePath));
+                }
+            }
+
+            // only update after successful send
+            $queue->is_send = '1';
+            $queue->save();
+
+            $sendcount++;
+
+        } catch (\Exception $e) {
+            $queue->status = '2';
+            $queue->mailerror = $e->getMessage();
+            $queue->save();
+
+            $failcount++;
+        }
     }
+
+    return response()->json([
+        'status' => 'completed',
+        'sendcount' => $sendcount,
+        'failcount' => $failcount,
+    ]);
+}
 
     public function addToEmailQueue(Request $request)
 {
