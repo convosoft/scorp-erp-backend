@@ -105,6 +105,8 @@ class SendQueuedEmailsController extends Controller
                 foreach ($attachments as $filePath) {
                     // Attach file from storage
                     $mail->attach(public_path($filePath));
+
+                    dd(public_path($filePath));
                 }
             }
 
