@@ -557,11 +557,14 @@ class ClientController extends Controller
             ->leftJoin('universities', 'universities.id', '=', 'deal_applications.university_id')
 
             ->leftJoin('application_stages as s', 's.id', '=', 'deal_applications.stage_id')
+
+            ->leftJoin('users as au', 'au.id', '=', 'deals.assigned_to')
             ->where('client_deals.client_id', $request->id)
             ->select(
                 'deal_applications.*',
                 'universities.id as university_id',
                 's.name as stage_name',
+                'au.name as assign_user_name',
                 'universities.name as university_name'
             )
             ->get();
