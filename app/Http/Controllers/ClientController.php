@@ -11,6 +11,7 @@ use App\Models\Stage;
 use App\Models\Invoice;
 use App\Models\Utility;
 use App\Models\Contract;
+use App\Models\Branch;
 use App\Models\ClientDeal;
 use App\Models\Estimation;
 use App\Models\University;
@@ -494,7 +495,7 @@ class ClientController extends Controller
             }
 
 
-            $branch_query = App\Models\Branch::select(['branches.*']);
+            $branch_query = Branch::select(['branches.*']);
 
                 $user = \Auth::user();
 
