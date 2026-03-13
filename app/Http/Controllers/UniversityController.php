@@ -83,7 +83,17 @@ class UniversityController extends Controller
         }
 
 
-        if ($request->filled('channel_id')) {
+
+        if ($request->filled('channel_id') && $request->country == 'UK Home') {
+
+            $query->whereHas('homeuniversity', function ($q) use ($request) {
+                $q->where('channel_id', $request->channel_id);
+            });
+
+        }
+
+
+        if ($request->filled('channel_id') && $request->country!='UK Home') {
             $query->where('universities.channel_id', $request->channel_id);
         }
 
