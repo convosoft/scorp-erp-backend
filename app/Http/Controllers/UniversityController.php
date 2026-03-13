@@ -891,6 +891,10 @@ class UniversityController extends Controller
             'institution_link' => 'nullable|string',
             'resource_drive_link' => 'nullable|string',
             'application_method_drive_link' => 'nullable|string',
+            'application_deadline' => 'nullable|date_format:Y-m-d',
+            'postgrad_fee' => 'nullable|string',
+            'undergrad_fee' => 'nullable|string',
+            'research_fee' => 'nullable|string',
             'category_id' => 'nullable|exists:institute_categories,id',
         ]);
 
@@ -929,6 +933,23 @@ class UniversityController extends Controller
         $university->destination_id = $request->destination_id;
         $university->latitude = $request->latitude;
         $university->longitude = $request->longitude;
+
+
+
+        if ($request->filled('application_deadline')) {
+            $university->application_deadline = $request->application_deadline;
+            }
+        if ($request->filled('postgrad_fee')) {
+            $university->postgrad_fee = $request->postgrad_fee;
+            }
+        if ($request->filled('undergrad_fee')) {
+            $university->undergrad_fee = $request->undergrad_fee;
+            }
+        if ($request->filled('research_fee')) {
+            $university->research_fee = $request->research_fee;
+            }
+
+
         $university->save();
 
         // Log changed fields only
