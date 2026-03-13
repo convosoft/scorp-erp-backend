@@ -31,7 +31,7 @@ class DealTask extends Model
     }
      public function getTagsAttribute()
     {
-        return LeadTag::whereRaw("FIND_IN_SET(id, ?)", [$this->tag_ids])->get();
+        return TaskTag::whereRaw("FIND_IN_SET(id, ?)", [$this->tag_ids])->get();
     }
 
 }

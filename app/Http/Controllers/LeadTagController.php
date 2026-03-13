@@ -114,12 +114,12 @@ class LeadTagController extends Controller
     public function addLeadTag(Request $request)
     {
 
-        if (!(Auth::user()->can('level 2') || Auth::user()->type == 'Project Director' || Auth::user()->type == 'Project Manager')) {
-            return response()->json([
-                'status'=>'error',
-                'message'=>__('Permission Denied.')
-            ],403);
-        }
+        // if (!(Auth::user()->can('level 2') || Auth::user()->type == 'Project Director' || Auth::user()->type == 'Project Manager')) {
+        //     return response()->json([
+        //         'status'=>'error',
+        //         'message'=>__('Permission Denied.')
+        //     ],403);
+        // }
 
         $validator = Validator::make($request->all(),[
             'name'=>'required|max:20',

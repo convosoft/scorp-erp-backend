@@ -266,6 +266,14 @@ class LoginRegisterController extends Controller
         ], 404);
     }
 
+    // Handle case where user is not found
+    if(strtolower($user->type)=='agent') {
+        return response()->json([
+            'status' => 'failed',
+            'message' => 'You are not allowed to login.'
+        ], 404);
+    }
+
 
     if (!$user->is_active) {
         return response()->json([

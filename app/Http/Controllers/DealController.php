@@ -231,11 +231,13 @@ class DealController extends Controller
     $query = AdmissionView::query();
 
     // Permissions logic
+    $companies = FiltersBrands();
+            $brand_ids = array_keys($companies);
     if (!in_array($user->type, ['super admin', 'Admin Team']) && !$user->can('level 1')) {
         if ($user->type == 'company') {
             $query->where('brand_id', $user->id);
         } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
-            $query->whereIn('brand_id', array_keys(FiltersBrands()));
+            $query->whereIn('brand_id',  $brand_ids);
         } elseif ($user->type == 'Region Manager' && $user->region_id) {
             $query->where('region_id', $user->region_id);
         } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
@@ -254,7 +256,7 @@ class DealController extends Controller
         elseif ($column === 'stage_id') $query->whereIn('stage_id', $value);
         elseif ($column === 'users') $query->whereIn('created_by', $value);
         elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
-        elseif ($column === 'brand') $query->where('brand_id', $value);
+        elseif ($column === 'brand_id') $query->where('brand_id', $value);
         elseif ($column === 'region_id') $query->where('region_id', $value);
         elseif ($column === 'branch_id') $query->where('branch_id', $value);
         elseif ($column === 'created_by') $query->where('created_by', $value);
@@ -368,6 +370,14 @@ class DealController extends Controller
         ]);
     }
 
+
+      $sql = str_replace('?', "'%s'", $query->toSql());
+            $sql = vsprintf($sql, $query->getBindings());
+            // echo $sql;
+
+            // echo "==========";
+            // echo $sql2;
+           // dd($sql , $brand_ids,$user);
     // List view
     $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
@@ -797,6 +807,7 @@ class DealController extends Controller
     $deal->price = 0;
     $deal->pipeline_id = $request->input('pipeline_id');
     $deal->description = $request->input('deal_description');
+    $deal->tag_ids = $request->tag_ids ?? '';
     //$deal->drive_link = $request->input('drive_link');
     if ($request->filled('drive_link')) {
             $deal->drive_link = $request->input('drive_link');

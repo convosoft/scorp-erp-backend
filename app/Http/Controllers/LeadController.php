@@ -432,17 +432,39 @@ class LeadController extends Controller
                 $leadsQuery->whereNull('agent_id');
             }
 
-    // User permissions
-    $userType = $usr->type;
-    if ($userType === 'company') {
-        $leadsQuery->where('brand_id', $usr->id);
-    } elseif ($userType === 'Region Manager' && $usr->region_id) {
-        $leadsQuery->where('region_id', $usr->region_id);
-    } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
-        $leadsQuery->where('branch_id', $usr->branch_id);
-    } elseif ($userType === 'Agent') {
-        $leadsQuery->where('agent_id', $usr->agent_id);
-    }
+    // // User permissions
+    // $userType = $usr->type;
+    // if ($userType === 'company') {
+    //     $leadsQuery->where('brand_id', $usr->id);
+    // } elseif ($userType === 'Region Manager' && $usr->region_id) {
+    //     $leadsQuery->where('region_id', $usr->region_id);
+    // } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
+    //     $leadsQuery->where('branch_id', $usr->branch_id);
+    // } elseif ($userType === 'Agent') {
+    //     $leadsQuery->where('agent_id', $usr->agent_id);
+    // }
+
+    // Apply user type-based filtering
+     // Initialize variables
+            $companies = FiltersBrands();
+            $brand_ids = array_keys($companies);
+
+            $userType = \Auth::user()->type;
+            if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+                // No additional filtering needed
+            } elseif ($userType === 'company') {
+                $leadsQuery->where('brand_id', \Auth::user()->id);
+            } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+                $leadsQuery->whereIn('brand_id', $brand_ids);
+            } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
+                $leadsQuery->where('region_id', \Auth::user()->region_id);
+            } elseif (($userType === 'Branch Manager' || in_array($userType, ['Careers Consultant', 'Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || \Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id)) {
+                $leadsQuery->where('branch_id', \Auth::user()->branch_id);
+            } elseif ($userType === 'Agent') {
+               $leadsQuery->where('agent_id', $usr->agent_id);
+            } else {
+                $leadsQuery->where('user_id', \Auth::user()->id);
+            }
 
     // Search
     if ($request->filled('search')) {
@@ -537,6 +559,14 @@ class LeadController extends Controller
             'total_records' => $leads->count(),
         ]);
     }
+
+    $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
+            $sql = vsprintf($sql, $leadsQuery->getBindings());
+            // echo $sql;
+
+            // echo "==========";
+            // echo $sql2;
+           // dd($sql );
 
     // ✅ List View - Simple pagination
     $leads = $leadsQuery

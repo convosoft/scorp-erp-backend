@@ -273,7 +273,10 @@ class TaskController extends Controller
                 } elseif (\Auth::user()->type == 'Project Director' || \Auth::user()->type == 'Project Manager' || \Auth::user()->can('level 2')) {
                     $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
                 } elseif (\Auth::user()->type == 'Region Manager' || (\Auth::user()->can('level 3') && !empty(\Auth::user()->region_id))) {
-                    $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
+
+                    if($request->brand!=3751){
+                          $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
+                    }
                 } elseif (\Auth::user()->type == 'Branch Manager' || \Auth::user()->type == 'Admissions Officer' ||
                          \Auth::user()->type == 'Career Consultant' || \Auth::user()->type == 'Admissions Manager' ||
                          \Auth::user()->type == 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
@@ -615,12 +618,12 @@ class TaskController extends Controller
             }
 
             // Additional filters
-            if (!empty($_GET['task_type'])) {
-                $finalQuery->where('deal_tasks.tasks_type', $_GET['task_type']);
+            if (  $request->filled('task_type')) {
+                $finalQuery->where('deal_tasks.tasks_type', $request->task_type);
             }
 
-            if (!empty($_GET['tasks_type_status'])) {
-                $status = $_GET['tasks_type_status'];
+            if ($request->filled('tasks_type_status')) {
+                $status = $request->tasks_type_status;
                 if ($status == '1') {
                     $finalQuery->where('deal_tasks.tasks_type_status', "1")
                               ;
@@ -1962,6 +1965,76 @@ class TaskController extends Controller
             'message' => 'ID is required'
         ], 400);
     }
+
+    public function taskAddTags(Request $request)
+{
+    try {
+
+        // Validation
+        $validator = \Validator::make($request->all(), [
+            'selectedIds' => 'required|string',
+            'tagid' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'msg' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $ids = explode(',', $request->selectedIds);
+
+        $dealTasks = DealTask::whereIn('id', $ids)->get();
+
+        if ($dealTasks->count() == 0) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No tasks found'
+            ], 404);
+        }
+
+        foreach ($dealTasks as $dealTask) {
+
+            $existingTags = $dealTask->tag_ids ? explode(',', $dealTask->tag_ids) : [];
+
+            // Prevent duplicate tag
+            if (!in_array($request->tagid, $existingTags)) {
+
+                $existingTags[] = $request->tagid;
+                $dealTask->tag_ids = implode(',', $existingTags);
+                $dealTask->save();
+
+                // Activity Log
+                $data = [
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => 'Task Tag Added',
+                        'message' => 'Tag ID '.$request->tagid.' added to task ID '.$dealTask->id
+                    ]),
+                    'module_id' => $dealTask->id,
+                    'module_type' => 'task',
+                    'notification_type' => 'Task Tag Added Successfully'
+                ];
+
+                addLogActivity($data);
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Task tag added successfully'
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'msg' => 'Something went wrong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
 
 }
