@@ -1966,5 +1966,75 @@ class TaskController extends Controller
         ], 400);
     }
 
+    public function taskAddTags(Request $request)
+{
+    try {
+
+        // Validation
+        $validator = \Validator::make($request->all(), [
+            'selectedIds' => 'required|string',
+            'tagid' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'msg' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $ids = explode(',', $request->selectedIds);
+
+        $dealTasks = DealTask::whereIn('id', $ids)->get();
+
+        if ($dealTasks->count() == 0) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No tasks found'
+            ], 404);
+        }
+
+        foreach ($dealTasks as $dealTask) {
+
+            $existingTags = $dealTask->tag_ids ? explode(',', $dealTask->tag_ids) : [];
+
+            // Prevent duplicate tag
+            if (!in_array($request->tagid, $existingTags)) {
+
+                $existingTags[] = $request->tagid;
+                $dealTask->tag_ids = implode(',', $existingTags);
+                $dealTask->save();
+
+                // Activity Log
+                $data = [
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => 'Task Tag Added',
+                        'message' => 'Tag ID '.$request->tagid.' added to task ID '.$dealTask->id
+                    ]),
+                    'module_id' => $dealTask->id,
+                    'module_type' => 'task',
+                    'notification_type' => 'Task Tag Added Successfully'
+                ];
+
+                addLogActivity($data);
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Task tag added successfully'
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'msg' => 'Something went wrong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 
 }
