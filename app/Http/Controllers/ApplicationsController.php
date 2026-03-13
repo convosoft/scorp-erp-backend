@@ -402,7 +402,14 @@ public function getApplicationsByViewNew(Request $request)
             $app_query->where('d.branch_id', $value);
 
         } elseif ($column === 'assigned_to') {
-            $app_query->where('d.assigned_to', $value);
+          //  $app_query->where('d.assigned_to', $value);
+
+              if (is_array($value)) {
+                            $app_query->whereIn('d.assigned_to', $value);
+
+                        } else {
+                            $app_query->where('d.assigned_to', $value);
+                        }
 
         } elseif ($column === 'created_at_from') {
             $app_query->whereDate('da.created_at', '>=', $value);
