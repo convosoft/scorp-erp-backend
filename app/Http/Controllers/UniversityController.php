@@ -39,6 +39,17 @@ class UniversityController extends Controller
             ], 403);
         }
 
+         $validator = Validator::make($request->all(), [
+            'application_deadline' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         // European countries for filtering
            $europe_country = Utility::getValByName('europe_country');
         $europeEMEA = array_filter(
@@ -86,6 +97,22 @@ class UniversityController extends Controller
         if ($request->filled('channel_id')) {
             $query->where('universities.channel_id', $request->channel_id);
         }
+
+        if ($request->filled('application_deadline')) {
+            $query->where('universities.application_deadline','<=', $request->application_deadline);
+        }
+
+        if ($request->filled('program_fee')) {
+
+            $query->where(function ($q) use ($request) {
+                $q->where('universities.postgrad_fee', 'like', '%'.$request->program_fee.'%')
+                ->orWhere('universities.undergrad_fee', 'like', '%'.$request->program_fee.'%')
+                ->orWhere('universities.research_fee', 'like', '%'.$request->program_fee.'%');
+            });
+
+        }
+
+
 
         // if ($request->filled('is_refund')) {
         //     $query->where('universities.is_refund', $request->is_refund);
