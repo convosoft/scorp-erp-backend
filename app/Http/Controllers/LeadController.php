@@ -385,7 +385,14 @@ class LeadController extends Controller
     }
 
     if ($request->filled('lead_assigned_user')) {
-        $leadsQuery->where('user_id', $request->lead_assigned_user);
+       //$leadsQuery->where('user_id', $request->lead_assigned_user);
+
+          if (is_array($value)) {
+                            $leadsQuery->whereIn('user_id',$request->lead_assigned_user);
+
+                        } else {
+                            $leadsQuery->where('user_id', $request->lead_assigned_user);
+                        }
     }
 
     if ($request->filled('created_by')) {
