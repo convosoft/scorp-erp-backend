@@ -250,25 +250,112 @@ class DealController extends Controller
     }
 
     // Filters from request
-    $filters = $this->dealFilters();
-    foreach ($filters as $column => $value) {
-        if ($column === 'name') $query->where('name', 'like', "%{$value}%");
-        elseif ($column === 'stage_id') $query->whereIn('stage_id', $value);
-        elseif ($column === 'users') $query->whereIn('created_by', $value);
-        elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
-        elseif ($column === 'brand_id') $query->where('brand_id', $value);
-        elseif ($column === 'region_id') $query->where('region_id', $value);
-        elseif ($column === 'branch_id') $query->where('branch_id', $value);
-        elseif ($column === 'created_by') $query->where('created_by', $value);
-        elseif ($column === 'deal_assigned_user') $query->where('assigned_to', $value);
-        elseif ($column === 'created_at_from') $query->whereDate('created_at', '>=', $value);
-        elseif ($column === 'created_at_to') $query->whereDate('created_at', '<=', $value);
-        elseif ($column === 'tag') $query->whereRaw('FIND_IN_SET(?, tag_ids)', [$value]);
-        elseif ($column === 'days_at_stage') {
-            if ($value === '30+') $query->where('days_at_stage', '>=', 30);
-            else $query->where('days_at_stage', '=', (int)$value);
-        }
+    // $filters = $this->dealFilters();
+    // foreach ($filters as $column => $value) {
+    //     if ($column === 'name') $query->where('name', 'like', "%{$value}%");
+    //     elseif ($column === 'stage_id') $query->whereIn('stage_id', $value);
+    //     elseif ($column === 'users') $query->whereIn('created_by', $value);
+    //     elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
+    //     elseif ($column === 'brand_id') $query->where('brand_id', $value);
+    //     elseif ($column === 'region_id') $query->where('region_id', $value);
+    //     elseif ($column === 'branch_id') $query->where('branch_id', $value);
+    //     elseif ($column === 'created_by') $query->where('created_by', $value);
+    //     elseif ($column === 'deal_assigned_user')
+    //         //$query->where('assigned_to', $value);
+
+    //       if (is_array($value)) {
+    //                         $query->whereIn('assigned_to', $value);
+
+    //                     } else {
+    //                         $query->where('assigned_to', $value);
+    //                     }
+
+    //     elseif ($column === 'created_at_from') $query->whereDate('created_at', '>=', $value);
+    //     elseif ($column === 'created_at_to') $query->whereDate('created_at', '<=', $value);
+    //     elseif ($column === 'tag') $query->whereRaw('FIND_IN_SET(?, tag_ids)', [$value]);
+    //     elseif ($column === 'days_at_stage') {
+    //         if ($value === '30+') $query->where('days_at_stage', '>=', 30);
+    //         else $query->where('days_at_stage', '=', (int)$value);
+    //     }
+    // }
+
+    // Filters from request
+$filters = $this->dealFilters();
+
+foreach ($filters as $column => $value) {
+
+    if ($column === 'name') {
+        $query->where('name', 'like', "%{$value}%");
     }
+
+    elseif ($column === 'stage_id') {
+        $query->whereIn('stage_id', (array)$value);
+    }
+
+    elseif ($column === 'users') {
+        $query->whereIn('created_by', (array)$value);
+    }
+
+    elseif ($column === 'created_at') {
+        $query->whereDate('created_at', substr($value, 0, 10));
+    }
+
+    elseif ($column === 'brand_id') {
+        $query->where('brand_id', $value);
+    }
+
+    elseif ($column === 'region_id') {
+        $query->where('region_id', $value);
+    }
+
+    elseif ($column === 'branch_id') {
+        $query->where('branch_id', $value);
+    }
+
+    elseif ($column === 'created_by') {
+        $query->where('created_by', $value);
+    }
+
+    elseif ($column === 'deal_assigned_user') {
+
+        if (is_array($value)) {
+            $query->whereIn('assigned_to', $value);
+        } else {
+            $query->where('assigned_to', $value);
+        }
+
+    }
+
+    elseif ($column === 'created_at_from') {
+        $query->whereDate('created_at', '>=', $value);
+    }
+
+    elseif ($column === 'created_at_to') {
+        $query->whereDate('created_at', '<=', $value);
+    }
+
+    elseif ($column === 'tag') {
+
+        if (is_array($value)) {
+            foreach ($value as $tag) {
+                $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$tag]);
+            }
+        } else {
+            $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$value]);
+        }
+
+    }
+
+    elseif ($column === 'days_at_stage') {
+
+        if ($value === '30+') {
+            $query->where('days_at_stage', '>=', 30);
+        } else {
+            $query->where('days_at_stage', (int)$value);
+        }
+
+    }
+}
 
     // fetcttype filter
     if ($request->filled('fetcttype')) {
