@@ -8,73 +8,122 @@ use App\Mail\CampaignEmail;
 
 class SendQueuedEmailsController extends Controller
 {
-    public function handle(Request $request)
+public function __construct()
     {
-        $queues = EmailSendingQueue::where('is_send', '0')
-            ->where('status', '1')
-            ->where('priority', '3')
-            ->limit(350)
-            ->get();
+        ini_set('memory_limit', '1G');
+    }
+        public function handle(Request $request)
+        {
+            $sendcount = 0;
+            $failcount = 0;
 
-        $sendcount = 0;
-        $failcount = 0;
+            EmailSendingQueue::where('is_send', '0')
+                ->where('status', '1')
+                ->where('priority', '3')
+                ->take(350)
+                ->chunk(25, function ($queues) use (&$sendcount, &$failcount) {
 
-        foreach ($queues as $queue) {
+                    foreach ($queues as $queue) {
 
-            // Replace placeholders dynamically
-            $queue->content = str_replace(
-                ['{email}', '{name}', '{activation_link}'],
-                [
-                    $queue->to,
-                    $queue->related_type ?? 'User',
-                    $queue->related_id ? "https://erp.scorp.co/activate/{$queue->related_id}" : ""
-                ],
-                $queue->content
-            );
+                        try {
 
-            try {
-                //Mail::to($queue->to)->send(new CampaignEmail($queue));
+                            $mail = Mail::to($queue->to);
 
-                 // Build the mail
-            $mail = Mail::to($queue->to);
+                            if ($queue->cc) {
+                                $mail->cc(explode(',', $queue->cc));
+                            }
 
-            // Add CC
-            if ($queue->cc) {
-                $ccs = explode(',', $queue->cc); // comma-separated emails
-                $mail->cc($ccs);
-            }
+                            if ($queue->bcc) {
+                                $mail->bcc(explode(',', $queue->bcc));
+                            }
 
-            // Add BCC
-            if ($queue->bcc) {
-                $bccs = explode(',', $queue->bcc);
-                $mail->bcc($bccs);
-            }
+                            $mail->send(new CampaignEmail($queue));
 
-            // Send email with attachments
-            $mail->send(new CampaignEmail($queue));
+                            $queue->update(['is_send' => '1']);
 
-                // only update after successful send
-                $queue->is_send = '1';
-                $queue->save();
+                            $sendcount++;
 
-                $sendcount++;
+                            unset($mail);
 
-            } catch (\Exception $e) {
-                $queue->status = '2';
-                $queue->mailerror = $e->getMessage();
-                $queue->save();
+                        } catch (\Exception $e) {
 
-                $failcount++;
-            }
+                            $failcount++;
+
+                            $queue->update([
+                                'status' => '2',
+                                'mailerror' => $e->getMessage()
+                            ]);
+                        }
+
+                        unset($queue);
+                    }
+
+                    gc_collect_cycles();
+                });
+
+            return response()->json([
+                'status' => 'completed',
+                'sendcount' => $sendcount,
+                'failcount' => $failcount,
+            ]);
         }
 
-        return response()->json([
-            'status' => 'completed',
-            'sendcount' => $sendcount,
-            'failcount' => $failcount,
-        ]);
-    }
-    public function handleCrm(Request $request)
+        public function handleCrm(Request $request)
+        {
+            $sendcount = 0;
+            $failcount = 0;
+
+            EmailSendingQueue::where('is_send', '0')
+                ->where('status', '1')
+                ->where('priority', '2')
+                ->take(350)
+                ->chunk(25, function ($queues) use (&$sendcount, &$failcount) {
+
+                    foreach ($queues as $queue) {
+
+                        try {
+
+                            $mail = Mail::to($queue->to);
+
+                            if ($queue->cc) {
+                                $mail->cc(explode(',', $queue->cc));
+                            }
+
+                            if ($queue->bcc) {
+                                $mail->bcc(explode(',', $queue->bcc));
+                            }
+
+                            $mail->send(new CampaignEmail($queue));
+
+                            $queue->update(['is_send' => '1']);
+
+                            $sendcount++;
+
+                            unset($mail);
+
+                        } catch (\Exception $e) {
+
+                            $failcount++;
+
+                            $queue->update([
+                                'status' => '2',
+                                'mailerror' => $e->getMessage()
+                            ]);
+                        }
+
+                        unset($queue);
+                    }
+
+                    gc_collect_cycles();
+                });
+
+            return response()->json([
+                'status' => 'completed',
+                'sendcount' => $sendcount,
+                'failcount' => $failcount,
+            ]);
+        }
+    public function handleCr_old(Request $request)
 {
     $queues = EmailSendingQueue::where('is_send', '0')
         ->where('status', '1')
