@@ -1497,44 +1497,92 @@ private function getTagsForApplication($tagIds)
                 'message' => 'Invalid stage transition',
             ], 200);
         }
-        // Update Deal's latest stage
+        // // Update Deal's latest stage
+        // $deal = Deal::find($application->deal_id);
+        // if ($deal) {
+        //     $latestStage = DealApplication::where('deal_id', $application->deal_id)
+        //         ->orderBy('stage_id', 'desc')
+        //         ->first();
+
+        //     if (!empty($latestStage)) {
+        //         if ($latestStage->stage_id == '0') {
+        //             $deal->stage_id = 0;
+        //         } elseif ($latestStage->stage_id == '1' || $latestStage->stage_id == '2') {
+        //             $deal->stage_id = 1;
+        //         } elseif ($latestStage->stage_id == '3' || $latestStage->stage_id == '4') {
+
+        //             $deal->stage_id = 2;
+        //         } elseif ($latestStage->stage_id == '5' || $latestStage->stage_id == '6') {
+
+        //             $deal->stage_id = 3;
+        //         } elseif ($latestStage->stage_id == '7' || $latestStage->stage_id == '8') {
+
+        //             $deal->stage_id = 4;
+        //         } elseif ($latestStage->stage_id == '9' || $latestStage->stage_id == '10') {
+
+        //             $deal->stage_id = 5;
+        //         } elseif ($latestStage->stage_id == '11') {
+
+        //             $deal->stage_id = 6;
+        //         } elseif ($latestStage->stage_id == '12') {
+
+        //             $deal->stage_id = 7;
+        //         }
+
+        //         $deal->save();
+        //     } else {
+        //         $deal->stage_id = 0;
+        //         $deal->save();
+        //     }
+        // }
+
+
         $deal = Deal::find($application->deal_id);
-        if ($deal) {
-            $latestStage = DealApplication::where('deal_id', $application->deal_id)
-                ->orderBy('stage_id', 'desc')
-                ->first();
 
-            if (!empty($latestStage)) {
-                if ($latestStage->stage_id == '0') {
-                    $deal->stage_id = 0;
-                } elseif ($latestStage->stage_id == '1' || $latestStage->stage_id == '2') {
-                    $deal->stage_id = 1;
-                } elseif ($latestStage->stage_id == '3' || $latestStage->stage_id == '4') {
+            if ($deal) {
 
-                    $deal->stage_id = 2;
-                } elseif ($latestStage->stage_id == '5' || $latestStage->stage_id == '6') {
+                // Get all applications of this deal
+                $applications = DealApplication::where('deal_id', $application->deal_id)->get();
 
-                    $deal->stage_id = 3;
-                } elseif ($latestStage->stage_id == '7' || $latestStage->stage_id == '8') {
 
-                    $deal->stage_id = 4;
-                } elseif ($latestStage->stage_id == '9' || $latestStage->stage_id == '10') {
 
-                    $deal->stage_id = 5;
-                } elseif ($latestStage->stage_id == '11') {
+                // ✅ Check if ALL applications are lost (stage_id = 12)
+                $allLost = $applications->every(function ($app) {
+                    return $app->stage_id == 12;
+                });
 
-                    $deal->stage_id = 6;
-                } elseif ($latestStage->stage_id == '12') {
+                if ($allLost) {
+                    $deal->stage_id = 7; // Lost
+                    $deal->save();
 
-                    $deal->stage_id = 7;
                 }
 
-                $deal->save();
-            } else {
-                $deal->stage_id = 0;
-                $deal->save();
+                // ❗ Otherwise, ignore lost apps and get latest NON-lost stage
+                $latestStage = $applications
+                    ->where('stage_id', '!=', 12)
+                    ->sortByDesc('stage_id')
+                    ->first();
+
+                if ($latestStage) {
+                    if ($latestStage->stage_id == '0') {
+                        $deal->stage_id = 0;
+                    } elseif (in_array($latestStage->stage_id, [1, 2])) {
+                        $deal->stage_id = 1;
+                    } elseif (in_array($latestStage->stage_id, [3, 4])) {
+                        $deal->stage_id = 2;
+                    } elseif (in_array($latestStage->stage_id, [5, 6])) {
+                        $deal->stage_id = 3;
+                    } elseif (in_array($latestStage->stage_id, [7, 8])) {
+                        $deal->stage_id = 4;
+                    } elseif (in_array($latestStage->stage_id, [9, 10])) {
+                        $deal->stage_id = 5;
+                    } elseif ($latestStage->stage_id == 11) {
+                        $deal->stage_id = 6;
+                    }
+
+                    $deal->save();
+                }
             }
-        }
 
         // Add Stage History
         addLeadHistory([
