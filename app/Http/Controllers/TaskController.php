@@ -1257,11 +1257,11 @@ class TaskController extends Controller
 
         $RelatedTo = $this->GetBranchByType($task->related_type,$task->related_to);
 
-          $assigntodetails = User::with([
+          $assignbydetails = User::with([
                 'brand:id,name',
                 'region:id,name',
                 'branch:id,name'
-            ])->select('id', 'name','brand_id','branch_id','region_id')->find($task->assigned_to);
+            ])->select('id', 'name','brand_id','branch_id','region_id')->find($task->created_by);
 
         return response()->json([
             'status' => 'success',
@@ -1273,7 +1273,7 @@ class TaskController extends Controller
                 'CourseName',
                 'applied_meta_html',
                 'applied_meta',
-                'assigntodetails',
+                'assignbydetails',
             )
         ]);
     }
