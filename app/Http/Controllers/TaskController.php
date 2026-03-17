@@ -1261,7 +1261,7 @@ class TaskController extends Controller
                 'brand:id,name',
                 'region:id,name',
                 'branch:id,name'
-            ])->select('id', 'name','brand_id','branch_id','region_id')->find($task->created_by);
+            ])->select('id', 'name','brand_id','branch_id','region_id','type')->find($task->created_by);
 
         return response()->json([
             'status' => 'success',
