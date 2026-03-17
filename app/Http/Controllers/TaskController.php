@@ -1023,7 +1023,7 @@ class TaskController extends Controller
             $task = DealTask::findOrFail($id);
 
             $from = User::find($task->assigned_to);
-            $to = User::find($request->assigned_to);
+            $to = User::find($task->created_by);
 
             // Ensure $from and $to are valid objects before accessing their properties
             $data = [
