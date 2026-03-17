@@ -1257,7 +1257,11 @@ class TaskController extends Controller
 
         $RelatedTo = $this->GetBranchByType($task->related_type,$task->related_to);
 
-          $assigntodetails = User::find($task->assigned_to);
+          $assigntodetails = User::with([
+                'brand:id,name',
+                'region:id,name',
+                'branch:id,name'
+            ])->select('id', 'name')->find($task->assigned_to);
 
         return response()->json([
             'status' => 'success',
