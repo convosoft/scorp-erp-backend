@@ -1257,6 +1257,8 @@ class TaskController extends Controller
 
         $RelatedTo = $this->GetBranchByType($task->related_type,$task->related_to);
 
+          $assigntodetails = User::find($task->assigned_to);
+
         return response()->json([
             'status' => 'success',
             'data' => compact(
@@ -1267,6 +1269,7 @@ class TaskController extends Controller
                 'CourseName',
                 'applied_meta_html',
                 'applied_meta',
+                'assigntodetails',
             )
         ]);
     }
