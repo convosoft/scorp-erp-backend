@@ -1042,6 +1042,9 @@ class TaskController extends Controller
 
             $task->assigned_to = $request->created_by;
             $task->created_by = $request->assigned_to;
+            $task->brand_id = $to->brand_id;
+            $task->region_id = $to->region_id;
+            $task->branch_id = $to->branch_id;
             $task->due_date = Carbon::now()->addDay()->format('Y-m-d');
             $task->is_swap = '1';
             $task->save();
