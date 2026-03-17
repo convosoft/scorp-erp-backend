@@ -640,6 +640,21 @@ foreach ($filters as $column => $value) {
         $newApplication->brand_id = $oldApplication->brand_id;
         $newApplication->created_at = $oldApplication->created_at;
         $newApplication->updated_at = $oldApplication->updated_at;
+        $newApplication->contact_id = $oldApplication->contact_id;
+        $newApplication->country_id = $oldApplication->country_id;
+        $newApplication->course_id = $oldApplication->course_id;
+        $newApplication->region_id = $oldApplication->region_id;
+        $newApplication->branch_id = $oldApplication->branch_id;
+        $newApplication->assigned_to = $oldApplication->assigned_to;
+        $newApplication->tag_ids = $oldApplication->tag_ids;
+        $newApplication->campus = $oldApplication->campus;
+        $newApplication->intakeYear = $oldApplication->intakeYear;
+        $newApplication->request_status = $oldApplication->request_status;
+        $newApplication->request_stage = $oldApplication->request_stage;
+        $newApplication->student_origin_country = $oldApplication->student_origin_country;
+        $newApplication->student_origin_city = $oldApplication->student_origin_city;
+        $newApplication->student_previous_university = $oldApplication->student_previous_university;
+        $newApplication->agent_id = $oldApplication->agent_id;
         $newApplication->save();
 
         // Clone notes
@@ -664,7 +679,7 @@ foreach ($filters as $column => $value) {
             $newTask->date = $task->date;
             $newTask->time = $task->time;
             $newTask->priority = $task->priority;
-            $newTask->status = 1;
+            $newTask->status =$task->status;
             $newTask->organization_id = $task->organization_id;
             $newTask->assigned_to = $task->assigned_to;
             $newTask->assigned_type = $task->assigned_type;
@@ -682,6 +697,13 @@ foreach ($filters as $column => $value) {
             $newTask->region_id = $task->region_id;
             $newTask->created_at = $task->created_at;
             $newTask->updated_at = $task->updated_at;
+            $newTask->is_swap = $task->is_swap;
+            $newTask->stage_request = $task->stage_request;
+            $newTask->tasks_type = $task->tasks_type;
+            $newTask->tasks_type_status = $task->tasks_type_status;
+            $newTask->comment = $task->comment;
+            $newTask->tag_ids = $task->tag_ids;
+            $newTask->agent_id = $task->agent_id;
             $newTask->save();
         }
 
