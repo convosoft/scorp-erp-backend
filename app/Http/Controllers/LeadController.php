@@ -429,7 +429,10 @@ class LeadController extends Controller
         if ($request->fetcttype === 'agentleads') {
                 $leadsQuery->whereNotNull('agent_id');
             } else {
+                if (\Auth::user()->type === 'Agent') {
                 $leadsQuery->whereNull('agent_id');
+                }
+
             }
 
     // // User permissions
