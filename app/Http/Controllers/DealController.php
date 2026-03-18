@@ -270,14 +270,23 @@ class DealController extends Controller
         }
     }
 
-    // fetcttype filter
-    if ($request->filled('fetcttype')) {
-        $type = $request->fetcttype;
-        if ($type === 'youradmissions') $query->where('created_by', $user->id);
-        if ($type === 'assigntome') $query->where('assigned_to', $user->id);
-        if ($type === 'agentadmissions') $query->whereNotNull('agent_id');
-        else $query->whereNull('agent_id');
-    }
+        // fetch type filter
+        if ($request->filled('fetcttype')) {
+            $type = $request->fetcttype;
+
+            if ($type === 'youradmissions') {
+                $query->where('created_by', $user->id);
+
+            } elseif ($type === 'assigntome') {
+                $query->where('assigned_to', $user->id);
+
+            } elseif ($type === 'agentadmissions') {
+                $query->whereNotNull('agent_id');
+
+            } elseif (\Auth::user()->type != 'Agent') {
+                $query->whereNull('agent_id');
+            }
+        }
 
     // Search filter
     if ($request->filled('search')) {
