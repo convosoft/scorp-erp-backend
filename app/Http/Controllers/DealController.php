@@ -627,7 +627,7 @@ foreach ($filters as $column => $value) {
             ]);
         }
 
-        dd( $request->old_deal_id);
+       // dd( $request->old_deal_id);
 
         // Duplicate Application
         $newApplication = new DealApplication();
