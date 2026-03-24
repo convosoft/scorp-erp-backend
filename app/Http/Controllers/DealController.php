@@ -620,14 +620,16 @@ foreach ($filters as $column => $value) {
 
           $request->old_deal_id = $oldApplication->deal_id;
 
-        if ($request->deal_id == $request->old_deal_id) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'The selected deal already contains this application.',
-            ]);
-        }
+        // if ($request->deal_id == $request->old_deal_id) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'The selected deal already contains this application.',
+        //     ]);
+        // }
 
        // dd( $request->old_deal_id);
+
+         $deal = Deal::find($request->deal_id);
 
         // Duplicate Application
         $newApplication = new DealApplication();
@@ -641,14 +643,14 @@ foreach ($filters as $column => $value) {
         $newApplication->external_app_id = $oldApplication->external_app_id;
         $newApplication->status = $oldApplication->status;
         $newApplication->created_by = $oldApplication->created_by;
-        $newApplication->brand_id = $oldApplication->brand_id;
+        $newApplication->brand_id = $deal->brand_id;
         $newApplication->created_at = $oldApplication->created_at;
         $newApplication->updated_at = $oldApplication->updated_at;
         $newApplication->contact_id = $oldApplication->contact_id;
         $newApplication->country_id = $oldApplication->country_id;
         $newApplication->course_id = $oldApplication->course_id;
-        $newApplication->region_id = $oldApplication->region_id;
-        $newApplication->branch_id = $oldApplication->branch_id;
+        $newApplication->region_id = $deal->region_id;
+        $newApplication->branch_id = $deal->branch_id;
         $newApplication->assigned_to = $oldApplication->assigned_to;
         $newApplication->tag_ids = $oldApplication->tag_ids;
         $newApplication->campus = $oldApplication->campus;
