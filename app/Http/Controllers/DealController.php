@@ -599,7 +599,7 @@ foreach ($filters as $column => $value) {
         $validator = \Validator::make($request->all(), [
             'id' => 'required|exists:deal_applications,id',
             'deal_id' => 'required|exists:deals,id',
-            'old_deal_id' => 'required|exists:deals,id',
+          //  'old_deal_id' => 'required|exists:deals,id',
         ]);
 
         if ($validator->fails()) {
@@ -609,14 +609,7 @@ foreach ($filters as $column => $value) {
             ]);
         }
 
-        if ($request->deal_id == $request->old_deal_id) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'The selected deal already contains this application.',
-            ]);
-        }
-
-        $oldApplication = DealApplication::where('id', $request->id)->first();
+         $oldApplication = DealApplication::where('id', $request->id)->first();
 
         if (!$oldApplication) {
             return response()->json([
@@ -624,6 +617,17 @@ foreach ($filters as $column => $value) {
                 'message' => 'Original application not found.',
             ]);
         }
+
+          $request->old_deal_id = $oldApplication->deal_id;
+
+        if ($request->deal_id == $request->old_deal_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'The selected deal already contains this application.',
+            ]);
+        }
+
+        dd( $request->old_deal_id);
 
         // Duplicate Application
         $newApplication = new DealApplication();
