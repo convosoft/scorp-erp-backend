@@ -620,12 +620,12 @@ foreach ($filters as $column => $value) {
 
           $request->old_deal_id = $oldApplication->deal_id;
 
-        // if ($request->deal_id == $request->old_deal_id) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'The selected deal already contains this application.',
-        //     ]);
-        // }
+        if ($request->deal_id == $request->old_deal_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'The selected deal already contains this application.',
+            ]);
+        }
 
        // dd( $request->old_deal_id);
 
