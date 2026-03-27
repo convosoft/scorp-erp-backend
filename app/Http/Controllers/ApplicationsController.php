@@ -1120,7 +1120,7 @@ private function getTagsForApplication($tagIds)
             ], 409);
         }
 
-        if (!empty($request->courses_id)) {
+        if ($request->courses_id!='') {
             $course = Course::find($request->courses_id);
             $courseName = $course ?
                 "{$course->name} - {$course->campus} - {$course->intake_month} - {$course->intakeYear} ({$course->duration})"
