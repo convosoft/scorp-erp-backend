@@ -1124,9 +1124,9 @@ private function getTagsForApplication($tagIds)
             $course = Course::find($request->courses_id);
             $courseName = $course ?
                 "{$course->name} - {$course->campus} - {$course->intake_month} - {$course->intakeYear} ({$course->duration})"
-                : null;
+                : 'f';
         } else {
-            $courseName = $request->courseName ?? null;
+            $courseName = $request->courseName ?? 's';
         }
         $application->country_id = $request->country_id;
         $application->student_origin_country = $request->student_origin_country;
