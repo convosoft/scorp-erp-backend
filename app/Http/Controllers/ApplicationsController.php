@@ -1126,7 +1126,7 @@ private function getTagsForApplication($tagIds)
                 "{$course->name} - {$course->campus} - {$course->intake_month} - {$course->intakeYear} ({$course->duration})"
                 : null;
         } else {
-            $courseName = $request->CoursesName ?? null;
+            $courseName = $request->courseName ?? null;
         }
         $application->country_id = $request->country_id;
         $application->student_origin_country = $request->student_origin_country;
