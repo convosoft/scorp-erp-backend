@@ -1120,14 +1120,15 @@ private function getTagsForApplication($tagIds)
             ], 409);
         }
 
-        if ($request->courses_id!='') {
-            $course = Course::find($request->courses_id);
-            $courseName = $course ?
-                "{$course->name} - {$course->campus} - {$course->intake_month} - {$course->intakeYear} ({$course->duration})"
-                : 'f';
-        } else {
-            $courseName = $request->courseName ?? 's';
-        }
+        if ($request->filled('courses_id')) {
+                $course = Course::find($request->courses_id);
+
+                $courseName = $course
+                    ? "{$course->name} - {$course->campus} - {$course->intake_month} - {$course->intakeYear} ({$course->duration})"
+                    : null;
+            } else {
+                $courseName = $request->courseName ?? null;
+            }
         $application->country_id = $request->country_id;
         $application->student_origin_country = $request->student_origin_country;
         $application->student_origin_city = $request->student_origin_city;
