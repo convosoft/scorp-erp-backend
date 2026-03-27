@@ -1125,7 +1125,7 @@ private function getTagsForApplication($tagIds)
 
                 $courseName = $course
                     ? "{$course->name} - {$course->campus} - {$course->intake_month} - {$course->intakeYear} ({$course->duration})"
-                    : null;
+                    : $request->courseName;
             } else {
                 $courseName = $request->courseName ?? null;
             }
