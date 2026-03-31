@@ -2319,16 +2319,7 @@ class UserController extends Controller
             ]);
         }
 
-        if ($request->hasFile('document_link')) {
-                dd([
-                    'valid' => $request->file('document_link')->isValid(),
-                    'error' => $request->file('document_link')->getError(),
-                    'error_message' => $request->file('document_link')->getErrorMessage(),
-                    'size' => $request->file('document_link')->getSize(),
-                ]);
-            } else {
-                dd('No file received');
-            }
+
 
         // Validation
         $validator = \Validator::make($request->all(), [
