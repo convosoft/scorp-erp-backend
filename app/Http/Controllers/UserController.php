@@ -2326,7 +2326,7 @@ class UserController extends Controller
             'academic_documents' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
             'profile_picture' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
             'avatar' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
-            'document_link' => 'required|file|mimes:jpg,jpeg,png,pdf|max:4096',
+            'document_link' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
 
             'id' => 'required|exists:users,id',
             'passport_expiry_date' => 'nullable|date',
