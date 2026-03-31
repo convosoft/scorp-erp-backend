@@ -61,7 +61,7 @@ class ApplicationsController extends Controller
             $app_query->whereIn('deals.brand_id', $brand_ids);
         } elseif (($usr->type == 'Region Manager' || $usr->can('level 3')) && !empty($usr->region_id)) {
             $app_query->where('deals.region_id', $usr->region_id);
-        } elseif (in_array($usr->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) || ($usr->can('level 4') && !empty($usr->branch_id))) {
+        } elseif (in_array($usr->type, ['Branch Manager', 'Admissions Officer', 'Careers Consultant', 'Admissions Manager', 'Marketing Officer']) || ($usr->can('level 4') && !empty($usr->branch_id))) {
             $app_query->where('deals.branch_id', $usr->branch_id);
         } elseif ($usr->type === 'Agent') {
             $app_query->where(function ($query) use ($usr) {

@@ -145,7 +145,7 @@ class DealController extends Controller
             $query->whereIn('brand_id', array_keys(FiltersBrands()));
         } elseif ($user->type == 'Region Manager' || ($user->can('level 3') && $user->region_id)) {
             $query->where('region_id', $user->region_id);
-        } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) || ($user->can('level 4') && $user->branch_id)) {
+        } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Careers Consultant', 'Admissions Manager', 'Marketing Officer']) || ($user->can('level 4') && $user->branch_id)) {
             $query->where('branch_id', $user->branch_id);
         } elseif ($user->type == 'Agent') {
             $query->where('agent_id', $user->agent_id);
@@ -240,7 +240,7 @@ class DealController extends Controller
             $query->whereIn('brand_id',  $brand_ids);
         } elseif ($user->type == 'Region Manager' && $user->region_id) {
             $query->where('region_id', $user->region_id);
-        } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
+        } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Careers Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
             $query->where('branch_id', $user->branch_id);
         } elseif ($user->type == 'Agent') {
             $query->where('agent_id', $user->agent_id);
