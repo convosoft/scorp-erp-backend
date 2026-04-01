@@ -1719,42 +1719,51 @@ class TaskController extends Controller
 
         if ($dealApplication) {
             $deal = Deal::find($dealApplication->deal_id);
-            if ($deal) {
-                $highestStageApplication = DealApplication::where('deal_id', $dealApplication->deal_id)
-                    ->orderBy('stage_id', 'desc')
+
+        if ($deal) {
+            // Get all applications for this deal
+            $applications = DealApplication::where('deal_id', $dealApplication->deal_id)->get();
+
+            // ✅ Check if ALL applications are lost (stage_id = 12)
+            $allLost = $applications->every(function ($app) {
+                return $app->stage_id == 12;
+            });
+
+            if ($allLost) {
+                $deal->stage_id = 7; // Lost
+                $deal->save();
+            } else {
+                // ❗ Otherwise, get latest NON-lost stage
+                $latestStage = $applications
+                    ->where('stage_id', '!=', 12)
+                    ->sortByDesc('stage_id')
                     ->first();
 
-                if (!empty($highestStageApplication)) {
-                    if ($highestStageApplication->stage_id == '0') {
+                if ($latestStage) {
+                    if ($latestStage->stage_id == '0') {
                         $deal->stage_id = 0;
-                    } elseif ($highestStageApplication->stage_id == '1' || $highestStageApplication->stage_id == '2') {
+                    } elseif (in_array($latestStage->stage_id, [1, 2])) {
                         $deal->stage_id = 1;
-                    } elseif ($highestStageApplication->stage_id == '3' || $highestStageApplication->stage_id == '4') {
-
+                    } elseif (in_array($latestStage->stage_id, [3, 4])) {
                         $deal->stage_id = 2;
-                    } elseif ($highestStageApplication->stage_id == '5' || $highestStageApplication->stage_id == '6') {
-
+                    } elseif (in_array($latestStage->stage_id, [5, 6])) {
                         $deal->stage_id = 3;
-                    } elseif ($highestStageApplication->stage_id == '7' || $highestStageApplication->stage_id == '8') {
-
+                    } elseif (in_array($latestStage->stage_id, [7, 8])) {
                         $deal->stage_id = 4;
-                    } elseif ($highestStageApplication->stage_id == '9' || $highestStageApplication->stage_id == '10') {
-
+                    } elseif (in_array($latestStage->stage_id, [9, 10])) {
                         $deal->stage_id = 5;
-                    } elseif ($highestStageApplication->stage_id == '11') {
-
+                    } elseif ($latestStage->stage_id == 11) {
                         $deal->stage_id = 6;
-                    } elseif ($highestStageApplication->stage_id == '12') {
-
-                        $deal->stage_id = 7;
                     }
 
                     $deal->save();
                 } else {
+                    // No applications found → default stage
                     $deal->stage_id = 0;
                     $deal->save();
                 }
             }
+        }
 
             $lastStageHistory = StageHistory::where('type', 'application')
                 ->where('type_id', $applicationId)
