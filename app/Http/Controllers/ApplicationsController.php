@@ -306,25 +306,60 @@ public function getApplicationsByViewNew(Request $request)
     $start = ($page - 1) * $perPage;
 
     // BASE QUERY (same as plain)
-    $app_query = DB::table('deal_applications as da')
-    ->select(
-        'da.*',
-        'u.name as university_name',
-        's.name as stage_name',
-        'au.name as assigned_user_name',
-        'b.name as brand_name',
-        'br.name as branch_name',
-        DB::raw('DATEDIFF(CURDATE(), da.created_at) as applicationAge')
-    )
-    ->join('deals as d', 'd.id', '=', 'da.deal_id')
+     $app_query = DB::table('deal_applications as da')
+        ->select(
+            'da.*',
 
-    ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
-    ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
-    ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
-    ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
-    ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id')
+            DB::raw('COALESCE(dt.tasks_count, 0) as tasks_count'),
+            DB::raw('COALESCE(an.notes_count, 0) as notes_count'),
 
-    ->orderBy('da.created_at', 'desc');
+            'u.name as university_name',
+            's.name as stage_name',
+            'au.name as assigned_user_name',
+            'b.name as brand_name',
+            'br.name as branch_name',
+            DB::raw('DATEDIFF(CURDATE(), da.created_at) as applicationAge')
+        )
+
+        // ✅ JOIN DEAL
+        ->join('deals as d', 'd.id', '=', 'da.deal_id')
+
+        // ✅ TASKS COUNT (GROUPED)
+        ->leftJoin(DB::raw('
+            (SELECT related_to, COUNT(*) as tasks_count
+            FROM deal_tasks
+            WHERE related_type = "application"
+            GROUP BY related_to
+            ) as dt
+        '), 'dt.related_to', '=', 'da.id')
+
+        // ✅ NOTES COUNT (GROUPED)
+        ->leftJoin(DB::raw('
+            (SELECT application_id, COUNT(*) as notes_count
+            FROM application_notes
+            GROUP BY application_id
+            ) as an
+        '), 'an.application_id', '=', 'da.id')
+
+        // OTHER JOINS
+        ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
+        ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
+        ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
+        ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
+        ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
+
+
+        // Conditional sorting
+        if ($request->filled('sort_by_tasks')) {
+            $dir = strtolower($request->sort_by_tasks) === 'asc' ? 'asc' : 'desc';
+            $app_query->orderBy('tasks_count', $dir);
+        } elseif ($request->filled('sort_by_notes')) {
+            $dir = strtolower($request->sort_by_notes) === 'asc' ? 'asc' : 'desc';
+            $app_query->orderBy('notes_count', $dir);
+        } else {
+            // Default fallback
+            $app_query->orderBy('da.created_at', 'desc');
+        }
 
     // ROLE FILTERING (same as plain)
     if ($usr->type == 'super admin' || $usr->type == 'Admin Team' || $usr->can('level 1')) {
