@@ -202,7 +202,12 @@ class LoginRegisterController extends Controller
 
         $data['token'] = $user->createToken($request->email)->plainTextToken;
         $Branch = Branch::where('branches.id',$user->branch_id)->first();
-        $data['is_user_b2b'] =  $Branch->is_b2b;
+        if(!empty($Branch)){
+             $data['is_user_b2b'] =  $Branch->is_b2b;
+        }else{
+             $data['is_user_b2b'] =  0;
+        }
+
 
         $userArray = $user->toArray();
         unset($userArray['roles']);
