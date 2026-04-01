@@ -301,6 +301,7 @@ Route::post('/jobApplyData', [JobController::class, 'jobApplyData']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/resendAgentOTP', [LoginRegisterController::class, 'resendAgentOTP']);
     Route::post('/verifyOtp', [LoginRegisterController::class, 'verifyOtp']);
+    Route::post('/setPassword', [LoginRegisterController::class, 'setPassword']);
     Route::post('/userDetail', [LoginRegisterController::class, 'userDetail']);
 
     Route::post('AttendanceSetting', [UserController::class, 'AttendanceSetting']);

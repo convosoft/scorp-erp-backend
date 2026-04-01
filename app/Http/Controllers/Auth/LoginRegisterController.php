@@ -975,6 +975,68 @@ public function verifyOtp(Request $request)
     }
 }
 
+public function setPassword(Request $request)
+{
+    try {
+        // Validate request
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Validation Error',
+                'data' => $validator->errors(),
+            ], 422);
+        }
+
+        // Get authenticated user
+        $user = \Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Please login first.'
+            ], 401);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->password);
+        $user->is_password_configured = 1;
+        $user->save();
+
+        // 🔥 Logout user (revoke current token)
+
+
+        // Log activity
+        addLogActivity([
+            'type' => 'success',
+            'note' => json_encode([
+                'title' => $user->name . ' has set password',
+                'message' => $user->name . ' has set password'
+            ]),
+            'module_id' => $user->id,
+            'module_type' => 'employeeprofile',
+            'notification_type' => 'has set password',
+        ]);
+
+        \Auth::logout();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Password updated successfully. Please login again.'
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Something went wrong while updating password',
+            'error' => config('app.debug') ? $e->getMessage() : null
+        ], 500);
+    }
+}
+
 public function resendAgentOTP(Request $request)
 {
     try {
