@@ -309,14 +309,6 @@ public function getApplicationsByViewNew(Request $request)
     $app_query = DB::table('deal_applications as da')
     ->select(
         'da.*',
-         // TASK COUNT
-        DB::raw('(SELECT COUNT(*) FROM deal_tasks dt
-                WHERE dt.related_type = "application"
-                AND dt.related_to = da.id) as tasks_count'),
-
-        // NOTES COUNT
-        DB::raw('(SELECT COUNT(*) FROM application_notes an
-                WHERE an.application_id = da.id) as notes_count'),
         'u.name as university_name',
         's.name as stage_name',
         'au.name as assigned_user_name',
@@ -444,17 +436,6 @@ public function getApplicationsByViewNew(Request $request)
                     ->orWhere('da.course', 'like', "%{$g_search}%");
             });
         }
-    }
-
-    // SORTING
-    if ($request->filled('sort_by_tasks')) {
-        $dir = strtolower($request->sort_by_tasks) === 'asc' ? 'asc' : 'desc';
-        $app_query->orderBy('tasks_count', $dir);
-    }
-
-    if ($request->filled('sort_by_notes')) {
-        $dir = strtolower($request->sort_by_notes) === 'asc' ? 'asc' : 'desc';
-        $app_query->orderBy('notes_count', $dir);
     }
 
     // CSV DOWNLOAD
