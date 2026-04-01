@@ -2611,5 +2611,60 @@ private function getTagsForApplication($tagIds)
         ], 200);
     }
 
+    public function getApplicationMeta(Request $request)
+    {
+        try {
+            // Validate input
+            $validator = \Validator::make($request->all(), [
+                'application_id' => 'required|integer|exists:application_meta,application_id',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $validator->errors(),
+                ], 422);
+            }
+
+            $applicationId = $request->application_id;
+
+            // Fetch data
+            $data = \DB::table('application_meta as am')
+                ->leftJoin('application_stages as s', 's.id', '=', 'am.stage_id')
+                ->leftJoin('users as u', 'u.id', '=', 'am.created_by')
+                ->where('am.application_id', $applicationId)
+                ->select(
+                    'am.stage_id',
+                    's.name as stage_name',
+                    'u.id as user_id',
+                    'u.name as created_by_name',
+                    \DB::raw('JSON_OBJECTAGG(am.meta_key, am.meta_value) as meta_data')
+                )
+                ->groupBy('am.stage_id', 's.name', 'u.id', 'u.name')
+                ->orderBy('am.stage_id', 'DESC')
+                ->get();
+
+            if ($data->isEmpty()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No meta data found',
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Application meta fetched successfully',
+                'data' => $data
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
 
 } // class end here
