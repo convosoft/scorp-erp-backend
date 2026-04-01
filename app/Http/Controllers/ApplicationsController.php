@@ -1473,7 +1473,7 @@ private function getTagsForApplication($tagIds)
                     }
                     if (!empty($hasUncompletedTasks) && $hasUncompletedTasks->tasks_type_status != '1' && $hasUncompletedTasks->tasks_type_status != '2') {
                         $hasUncompletedTasks->tasks_type_status ='0';
-                        $hasUncompletedTasks->stage_request ='';
+                        $hasUncompletedTasks->stage_request = null;
                         $hasUncompletedTasks->save();
                         $application->request_stage = '';
                     } elseif (!empty($hasUncompletedTasks) && $hasUncompletedTasks->tasks_type == 'Compliance') {
