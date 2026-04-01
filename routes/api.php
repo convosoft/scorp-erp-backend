@@ -984,6 +984,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/getApplications', [ApplicationsController::class, 'getApplications']);
      //Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByView']);
      Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByViewNew']);
+     Route::post('/addApplicationMeta', [ApplicationsController::class, 'addApplicationMeta']);
      Route::post('/getDetailApplication', [ApplicationsController::class, 'getDetailApplication']);
      Route::post('/updateApplication', [ApplicationsController::class, 'updateApplication']);
      Route::post('/storeApplication', [ApplicationsController::class, 'storeApplication']);

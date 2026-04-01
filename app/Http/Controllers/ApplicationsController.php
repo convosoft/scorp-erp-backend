@@ -2557,4 +2557,59 @@ private function getTagsForApplication($tagIds)
             ]);
         }
     }
-}
+
+    public function addApplicationMeta(Request $request)
+    {
+        // Validate Input
+        $validator = \Validator::make($request->all(), [
+            'application_id' => 'required|integer|exists:deal_applications,id',
+            'stage_id' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        // Get application
+        $application = DealApplication::find($request->application_id);
+
+        if (!$application) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Application not found',
+            ], 404);
+        }
+
+        // Remove unwanted fields
+        $inputs = $request->except(['_token', '_method', 'submit', 'application_id', 'stage_id']);
+
+        foreach ($inputs as $key => $value) {
+
+            if (is_array($value)) {
+                $value = json_encode($value);
+            }
+
+            \DB::table('application_meta')->updateOrInsert(
+                [
+                    'created_by' => \Auth::id(),
+                    'application_id' => $application->id,
+                    'stage_id' => $request->stage_id,
+                    'meta_key' => $key
+                ],
+                [
+                    'meta_value' => $value
+                ]
+            );
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Application meta added successfully'
+        ], 200);
+    }
+
+
+} // class end here
