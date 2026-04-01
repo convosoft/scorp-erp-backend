@@ -1021,7 +1021,7 @@ public function setPassword(Request $request)
             'notification_type' => 'has set password',
         ]);
 
-        \Auth::logout();
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json([
             'status' => 'success',
