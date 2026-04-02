@@ -22,6 +22,7 @@ public function uploadMediaDocument(Request $request)
             'TypesDocumentID' => 'required|exists:types_document,id',
             'type' => 'required|in:lead,admission,application,product',
             'type_id' => 'required|integer',
+            'app_id' => 'required|integer',
             'comments' => 'nullable|string'
         ]);
 
@@ -34,7 +35,7 @@ public function uploadMediaDocument(Request $request)
 
         // ✅ Auto Mapping
         $admission_id = null;
-        $application_id = null;
+        $application_id = $request->app_id;
         $type_id = null;
 
         switch ($request->type) {
@@ -43,7 +44,7 @@ public function uploadMediaDocument(Request $request)
                 break;
 
             case 'application':
-                $application_id = $request->type_id;
+                $admission_id = $request->type_id;
                 break;
 
             default:
