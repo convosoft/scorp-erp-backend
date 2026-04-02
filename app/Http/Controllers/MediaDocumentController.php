@@ -52,21 +52,41 @@ public function uploadMediaDocument(Request $request)
     }
 
     // ✅ File Upload to S3
+   // ✅ File Upload to S3
     $file = $request->file('file');
     $path = 'media_documents/' . $request->type . '/' . date('Y/m');
     $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
 
-    // ✅ Use storeAs instead of putFileAs (supports visibility correctly)
-    $s3Path = $file->storeAs($path, $filename, [
-        'disk' => 's3',
-        'visibility' => 'public',
-    ]);
+    try {
+        $s3Path = $file->storeAs($path, $filename, [
+            'disk' => 's3',
+            'visibility' => 'public',
+        ]);
 
-    // ✅ Guard against upload failure
-    if (!$s3Path) {
+        if (!$s3Path) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'File upload to S3 failed. Please try again.',
+                'debug' => [
+                    'path' => $path,
+                    'filename' => $filename,
+                    's3_path' => $s3Path,
+                    's3_driver' => config('filesystems.disks.s3'),
+                ]
+            ], 500);
+        }
+
+    } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
-            'message' => 'File upload to S3 failed. Please try again.',
+            'message' => 'S3 Exception: ' . $e->getMessage(),
+            'debug' => [
+                'path' => $path,
+                'filename' => $filename,
+                's3_key' => config('filesystems.disks.s3.key'),
+                's3_bucket' => config('filesystems.disks.s3.bucket'),
+                's3_region' => config('filesystems.disks.s3.region'),
+            ]
         ], 500);
     }
 
