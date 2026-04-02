@@ -96,6 +96,7 @@ use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
 use App\Http\Controllers\SendQueuedSmsController;
 use App\Http\Controllers\TaskTagController;
+use App\Http\Controllers\TypesDocumentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -583,6 +584,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/addHoliday', [HolidayController::class, 'addHoliday']);
     Route::post('/updateHoliday', [HolidayController::class, 'updateHoliday']);
     Route::post('/deleteHoliday', [HolidayController::class, 'deleteHoliday']);
+
+
+    Route::post('/getTypesDocumentPluck', [TypesDocumentController::class, 'getTypesDocumentPluck']);
+    Route::get('/getTypesDocuments', [TypesDocumentController::class, 'getTypesDocuments']);
+    Route::post('/addTypesDocument', [TypesDocumentController::class, 'addTypesDocument']);
+    Route::post('/updateTypesDocument', [TypesDocumentController::class, 'updateTypesDocument']);
+    Route::post('/deleteTypesDocument', [TypesDocumentController::class, 'deleteTypesDocument']);
 
     // Training type
     Route::post('/addTrainingType', [TrainingTypeController::class, 'addTrainingType']);
