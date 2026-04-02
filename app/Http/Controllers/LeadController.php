@@ -36,6 +36,7 @@ use App\Models\User;
 use App\Models\UserDeal;
 use App\Models\UserLead;
 use App\Models\Utility;
+use App\Models\MediaDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -2052,6 +2053,23 @@ class LeadController extends Controller
                 'description' => $LeadNote->description,
                 'created_by' => $LeadNote->created_by,
                 'deal_id' => $deal->id,
+            ]);
+        }
+
+
+         // Transfer lead documents to deal
+        $leadDocuments = MediaDocument::where('type_id', $lead->id)
+            ->where('type', 'lead')
+            ->get();
+
+        foreach ($leadDocuments as $doc) {
+            MediaDocument::create([
+                'TypesDocumentID' => $doc->TypesDocumentID,
+                'type' => 'admission',             // Change type to admission/deal
+                'admission_id' => $deal->id,       // Map to new deal
+                'document_link' => $doc->document_link,
+                'comments' => $doc->comments,
+                'created_by' => $doc->created_by,
             ]);
         }
 
