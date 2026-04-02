@@ -84,6 +84,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
 use App\Http\Controllers\LeadTagController;
+use App\Http\Controllers\MediaDocumentController;
 use App\Models\InterviewSchedule;
 use App\Models\JobCategory;
 use App\Models\TaskFile;
@@ -407,6 +408,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/UserEmployeeFileDocumentDelete', [UserController::class, 'UserEmployeeFileDocumentDelete']);
     Route::post('/EmployeeMetaUpdate', [UserController::class, 'storeOrUpdateMetas']);
     Route::post('/getEmployeeMeta', [UserController::class, 'getEmployeeMeta']);
+
+    // media document
+    Route::post('/uploadMediaDocument', [MediaDocumentController::class, 'uploadMediaDocument']);
 
 
     // trainers
