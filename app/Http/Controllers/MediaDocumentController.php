@@ -60,7 +60,6 @@ public function uploadMediaDocument(Request $request)
     try {
         $s3Path = $file->storeAs($path, $filename, [
             'disk' => 's3',
-            'visibility' => 'public',
         ]);
 
         if (!$s3Path) {
