@@ -206,13 +206,14 @@ public function deleteMediaDocument(Request $request)
             ], 404);
         }
 
-        // ✅ Delete file from S3 if exists
-        if ($document->document_link) {
-            // Extract S3 key from URL
-            $bucketUrl = config('filesystems.disks.s3.url');
+
+
+        // Delete file from S3 if exists
+        if (!empty($document->document_link)) {
+            $bucketUrl = rtrim(config('filesystems.disks.s3.url'), '/');
             $s3Key = str_replace($bucketUrl . '/', '', $document->document_link);
 
-            if (Storage::disk('s3')->exists($s3Key)) {
+            if (!empty($s3Key) && Storage::disk('s3')->exists($s3Key)) {
                 Storage::disk('s3')->delete($s3Key);
             }
         }
