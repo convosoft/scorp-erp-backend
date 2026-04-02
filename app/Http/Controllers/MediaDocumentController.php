@@ -18,7 +18,7 @@ public function uploadMediaDocument(Request $request)
 
     // ✅ Validation
     $validator = \Validator::make($request->all(), [
-        'file' => 'required|file|mimes:jpg,jpeg,png,pdf,mp4,mov,avi,wmv,mkv|max:20480',
+        'file' => 'required|file|mimes:jpg,jpeg,png,pdf,mp4|max:256000',
         'TypesDocumentID' => 'required|exists:types_document,id',
         'type' => 'required|in:lead,admission,application,product',
         'type_id' => 'required|integer',
