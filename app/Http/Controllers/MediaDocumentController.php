@@ -56,30 +56,26 @@ public function uploadMediaDocument(Request $request)
                 break;
         }
 
-        // ✅ Upload to S3
         $file = $request->file('file');
-
         $path = 'media_documents/' . $request->type . '/' . date('Y/m');
-
         $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
 
         $s3Path = Storage::disk('s3')->putFileAs(
             $path,
             $file,
             $filename,
-            'public'
+            ['visibility' => 'public'] // ✅ must be array
         );
 
         $fileUrl = Storage::disk('s3')->url($s3Path);
 
-        // ✅ Save
         $document = MediaDocument::create([
             'TypesDocumentID' => $request->TypesDocumentID,
             'type_id' => $type_id,
             'admission_id' => $admission_id,
             'application_id' => $application_id,
             'type' => $request->type,
-            'document_link' => $fileUrl,
+            'document_link' => $fileUrl,  // ✅ now it will have full URL
             'comments' => $request->comments,
             'created_by' => \Auth::id(),
         ]);
