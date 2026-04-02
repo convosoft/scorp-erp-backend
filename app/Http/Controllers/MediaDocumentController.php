@@ -133,7 +133,7 @@ public function uploadMediaDocument(Request $request)
     }
 
 
-    public function getMediaDocument(Request $request)
+public function getMediaDocument(Request $request)
     {
         // ✅ Validation
         $validator = \Validator::make($request->all(), [
@@ -171,6 +171,80 @@ public function uploadMediaDocument(Request $request)
         return response()->json([
             'status' => 'success',
             'data' => $documents,
+        ], 200);
+    }
+
+public function deleteMediaDocument(Request $request)
+    {
+        // ✅ Check permission
+        if (!\Auth::user()->can('delete document')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Permission Denied',
+            ], 403);
+        }
+
+        // ✅ Validate input
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|exists:media_documents,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        // ✅ Find document
+        $document = MediaDocument::find($request->id);
+
+        if (!$document) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document not found',
+            ], 404);
+        }
+
+        // ✅ Delete file from S3 if exists
+        if ($document->document_link) {
+            // Extract S3 key from URL
+            $bucketUrl = config('filesystems.disks.s3.url');
+            $s3Key = str_replace($bucketUrl . '/', '', $document->document_link);
+
+            if (Storage::disk('s3')->exists($s3Key)) {
+                Storage::disk('s3')->delete($s3Key);
+            }
+        }
+
+        // ✅ Save info for logging
+        $typeId = $document->type_id ?? $document->admission_id ?? $document->application_id ?? null;
+        $moduleMap = [
+            'lead' => 'lead',
+            'admission' => 'deal',
+            'application' => 'application',
+            'product' => 'toolkit',
+        ];
+        $moduleType = $moduleMap[$document->type] ?? null;
+
+        // ✅ Delete record
+        $document->delete();
+
+        // ✅ Log activity
+        addLogActivity([
+            'type' => 'warning',
+            'note' => json_encode([
+                'title' => 'Document deleted',
+                'message' => 'Document deleted successfully',
+            ]),
+            'module_id' => $typeId,
+            'module_type' => $moduleType,
+            'notification_type' => 'Document Deleted',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document deleted successfully',
         ], 200);
     }
 
