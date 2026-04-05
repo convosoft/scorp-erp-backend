@@ -157,50 +157,62 @@ class TypesDocumentController extends Controller
     /**
      * Delete
      */
-    public function deleteTypesDocument(Request $request)
-    {
-        $validator = \Validator::make(
-            $request->all(),
-            [
-                'id' => 'required|exists:types_document,id'
-            ]
-        );
+public function deleteTypesDocument(Request $request)
+{
+    $validator = \Validator::make(
+        $request->all(),
+        [
+            'id' => 'required|exists:types_document,id'
+        ]
+    );
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $validator->errors()->first()
-            ], 422);
-        }
-
-        $doc = TypesDocument::find($request->id);
-
-        if (!$doc) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Record not found.')
-            ], 404);
-        }
-
-        $name = $doc->name;
-        $id = $doc->id;
-
-        $doc->delete();
-
-        addLogActivity([
-            'type' => 'warning',
-            'note' => json_encode([
-                'title' => $name . " document type deleted",
-                'message' => $name . " document type deleted"
-            ]),
-            'module_id' => $id,
-            'module_type' => 'types_document',
-            'notification_type' => 'Document Type Deleted',
-        ]);
-
+    if ($validator->fails()) {
         return response()->json([
-            'status' => 'success',
-            'message' => __('Document type successfully deleted.')
-        ], 200);
+            'status' => 'error',
+            'message' => $validator->errors()->first()
+        ], 422);
     }
+
+    $doc = TypesDocument::find($request->id);
+
+    if (!$doc) {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Record not found.')
+        ], 404);
+    }
+
+    // ✅ Check if any media document exists with this type
+    $isUsed = \App\Models\MediaDocument::where('TypesDocumentID', $doc->id)->exists();
+
+    if ($isUsed) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'This document type is already in use and cannot be deleted.'
+        ], 400);
+    }
+
+    $name = $doc->name;
+    $id = $doc->id;
+
+    // ✅ Safe to delete
+    $doc->delete();
+
+    // ✅ Log activity
+    addLogActivity([
+        'type' => 'warning',
+        'note' => json_encode([
+            'title' => $name . " document type deleted",
+            'message' => $name . " document type deleted"
+        ]),
+        'module_id' => $id,
+        'module_type' => 'types_document',
+        'notification_type' => 'Document Type Deleted',
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => __('Document type successfully deleted.')
+    ], 200);
+}
 }
