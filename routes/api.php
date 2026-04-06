@@ -291,6 +291,7 @@ Route::controller(LoginRegisterController::class)->group(function () {
     Route::post('/forgotpasswordAgentOTP', 'forgotpasswordAgentOTP');
     Route::post('/verifyforgotpasswordOtp', 'verifyforgotpasswordOtp');
     Route::post('/changefogotPassword', 'changefogotPassword');
+    Route::post('/changefogotPasswordByID', 'changefogotPasswordByID');
     Route::post('/acceptInvite', 'acceptInvite');
 });
 
