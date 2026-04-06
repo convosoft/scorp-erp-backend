@@ -137,7 +137,7 @@ public function uploadMediaDocument(Request $request)
 
 public function getMediaDocument(Request $request)
     {
-        // ✅ Validation
+        // ✅ Validation test
         $validator = \Validator::make($request->all(), [
             'type' => 'required|in:lead,admission,application,product_home,product_international',
             'type_id' => 'required|integer',
