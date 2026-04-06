@@ -152,7 +152,7 @@ public function getMediaDocument(Request $request)
 
         // ✅ Determine which column to filter based on type
         $typeColumn = match ($request->type) {
-            'lead', 'product' => 'type_id',
+            'lead', 'product_home', 'product_international' => 'type_id',
             'admission' => 'admission_id',
             'application' => 'application_id',
             default => null,
