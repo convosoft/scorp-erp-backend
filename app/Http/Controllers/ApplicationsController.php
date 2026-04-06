@@ -1645,6 +1645,99 @@ private function getTagsForApplication($tagIds)
             ], 200);
     }
 
+    public function manualUpdateApplicationStage(Request $request)
+    {
+        $application_id = (int)($request->application_id ?? 0);
+        $stage_id = (int)($request->stage_id ?? 0);
+
+        if (!$application_id || !$stage_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid application ID or stage ID',
+            ], 200);
+        }
+
+        // Fetch application
+        $application = DealApplication::find($application_id);
+
+        if (!$application) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Application not found',
+            ], 200);
+        }
+
+        // ✅ Direct update (NO checks)
+        $application->stage_id = $stage_id;
+        $application->request_stage = null; // optional reset
+        $application->save();
+
+        // ✅ Update Deal stage (same logic as before)
+        $deal = Deal::find($application->deal_id);
+
+        if ($deal) {
+            $applications = DealApplication::where('deal_id', $application->deal_id)->get();
+
+            $allLost = $applications->every(function ($app) {
+                return $app->stage_id == 12;
+            });
+
+            if ($allLost) {
+                $deal->stage_id = 7;
+                $deal->save();
+            } else {
+                $latestStage = $applications
+                    ->where('stage_id', '!=', 12)
+                    ->sortByDesc('stage_id')
+                    ->first();
+
+                if ($latestStage) {
+                    if ($latestStage->stage_id == '0') {
+                        $deal->stage_id = 0;
+                    } elseif (in_array($latestStage->stage_id, [1, 2])) {
+                        $deal->stage_id = 1;
+                    } elseif (in_array($latestStage->stage_id, [3, 4])) {
+                        $deal->stage_id = 2;
+                    } elseif (in_array($latestStage->stage_id, [5, 6])) {
+                        $deal->stage_id = 3;
+                    } elseif (in_array($latestStage->stage_id, [7, 8])) {
+                        $deal->stage_id = 4;
+                    } elseif (in_array($latestStage->stage_id, [9, 10])) {
+                        $deal->stage_id = 5;
+                    } elseif ($latestStage->stage_id == 11) {
+                        $deal->stage_id = 6;
+                    }
+
+                    $deal->save();
+                }
+            }
+        }
+
+        // ✅ History
+        addLeadHistory([
+            'stage_id' => $stage_id,
+            'type_id' => $application_id,
+            'type' => 'application',
+        ]);
+
+        // ✅ Activity Log
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => 'Stage Updated (Manual)',
+                'message' => 'Application stage manually updated.',
+            ]),
+            'module_id' => $application_id,
+            'module_type' => 'application',
+            'notification_type' => 'application stage update',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Application stage manually updated successfully',
+        ], 200);
+    }
+
     public function applicationAppliedStage(Request $request)
     {
         // ✅ Validate the request

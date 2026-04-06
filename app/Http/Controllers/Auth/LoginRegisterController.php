@@ -1289,37 +1289,71 @@ public function verifyforgotpasswordOtp(Request $request)
 
 
 public function changefogotPassword(Request $request)
-{
-    $validate = Validator::make($request->all(), [
-        'email' => 'required|email',
-        'password' => 'required|min:8|confirmed',
-    ]);
+    {
+        $validate = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed',
+        ]);
 
-    if ($validate->fails()) {
+        if ($validate->fails()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Validation Error',
+                'data' => $validate->errors(),
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
         return response()->json([
-            'status' => 'failed',
-            'message' => 'Validation Error',
-            'data' => $validate->errors(),
-        ], 422);
+            'status' => 'success',
+            'message' => 'Password updated successfully',
+        ], 200);
     }
 
-    $user = User::where('email', $request->email)->first();
+public function changefogotPasswordByID(Request $request)
+    {
+        $validate = Validator::make($request->all(), [
+            'userid' => 'required',
+            'password' => 'required|min:8',
+        ]);
 
-    if (!$user) {
+        if ($validate->fails()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Validation Error',
+                'data' => $validate->errors(),
+            ], 422);
+        }
+
+        $user = User::where('id', $request->userid)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->is_password_configured = 0;
+        $user->save();
+
         return response()->json([
-            'status' => 'failed',
-            'message' => 'User not found',
-        ], 404);
+            'status' => 'success',
+            'message' => 'Password updated successfully',
+        ], 200);
     }
-
-    $user->password = Hash::make($request->password);
-    $user->save();
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Password updated successfully',
-    ], 200);
-}
 
 
 

@@ -20,7 +20,7 @@ public function uploadMediaDocument(Request $request)
         $validator = \Validator::make($request->all(), [
             'file' => 'required|file|mimes:jpg,jpeg,png,pdf,mp4|max:256000',
             'TypesDocumentID' => 'required|exists:types_document,id',
-            'type' => 'required|in:lead,admission,application,product',
+            'type' => 'required|in:lead,admission,application,product_home,product_international',
             'type_id' => 'required|integer',
             'app_id' => 'required|integer',
             'comments' => 'nullable|string'
@@ -109,7 +109,8 @@ public function uploadMediaDocument(Request $request)
             'lead' => 'lead',
             'admission' => 'deal',
             'application' => 'application',
-            'product' => 'toolkit',
+            'product_home' => 'toolkit',
+            'product_international' => 'toolkit',
         ];
 
         $moduleType = $moduleMap[$request->type] ?? null;
