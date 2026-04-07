@@ -10,9 +10,21 @@ class TypesDocumentController extends Controller
     /**
      * Get pluck (name => id)
      */
-    public function getTypesDocumentPluck()
+   public function getTypesDocumentPluck(Request $request)
     {
-        $data = TypesDocument::pluck('name', 'id')->toArray();
+        $validator = \Validator::make($request->all(), [
+            'type' => 'required|in:CRM,Product',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $data = TypesDocument::where('type', $request->type)
+            ->pluck('name', 'id'); // no need for toArray()
 
         return response()->json([
             'status' => 'success',
