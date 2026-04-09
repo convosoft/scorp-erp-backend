@@ -414,6 +414,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/uploadMediaDocument', [MediaDocumentController::class, 'uploadMediaDocument']);
     Route::post('/getMediaDocument', [MediaDocumentController::class, 'getMediaDocument']);
     Route::post('/deleteMediaDocument', [MediaDocumentController::class, 'deleteMediaDocument']);
+    Route::post('/updateMediaDocumentPosition', [MediaDocumentController::class, 'updateMediaDocumentPosition']);
 
 
     // trainers

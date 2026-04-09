@@ -252,5 +252,95 @@ public function deleteMediaDocument(Request $request)
     }
 
 
+public function updateMediaDocumentPosition(Request $request)
+    {
+        // ✅ Validation
+        $validator = \Validator::make(
+            $request->all(),
+            [
+                'id' => 'required|exists:media_documents,id',
+                'position' => 'required|integer'
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $document = MediaDocument::find($request->id);
+
+        if (!$document) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Document not found.')
+            ], 404);
+        }
+
+        // ✅ Store original data
+        $originalData = $document->toArray();
+
+        // ✅ Update position
+        $document->position = $request->position;
+
+        // Optional: track updater (only if you want)
+         $document->updated_by = \Auth::id();
+
+        $document->save();
+
+        // ✅ Detect changes
+        $changes = [];
+        foreach ($originalData as $field => $oldValue) {
+            if (in_array($field, ['created_at', 'updated_at'])) {
+                continue;
+            }
+
+            if ($document->$field != $oldValue) {
+                $changes[$field] = [
+                    'old' => $oldValue,
+                    'new' => $document->$field
+                ];
+            }
+        }
+
+        // ✅ Module mapping
+        $moduleMap = [
+            'lead' => 'lead',
+            'admission' => 'deal',
+            'application' => 'application',
+            'product' => 'toolkit',
+        ];
+
+        $moduleType = $moduleMap[$document->type] ?? null;
+
+        // ✅ Get correct module_id
+        $moduleId = $document->type_id
+            ?? $document->admission_id
+            ?? $document->application_id;
+
+        // ✅ Log activity if changed
+        if (!empty($changes)) {
+            addLogActivity([
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Document position updated',
+                    'message' => 'Position updated successfully',
+                    'changes' => $changes
+                ]),
+                'module_id' => $moduleId,
+                'module_type' => $moduleType,
+                'notification_type' => 'Document Updated'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Document position successfully updated.'),
+            'data' => $document
+        ], 200);
+    }
+
 
 } // class end here
