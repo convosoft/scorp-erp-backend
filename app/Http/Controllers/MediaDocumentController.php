@@ -168,6 +168,8 @@ public function getMediaDocument(Request $request)
         // ✅ Fetch documents
         $documents = MediaDocument::where('type', $request->type)
             ->where($typeColumn, $request->type_id)
+            ->orderBy('position', 'asc')
+            ->orderBy('id', 'desc')
             ->get();
 
         return response()->json([
