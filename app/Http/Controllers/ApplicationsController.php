@@ -349,8 +349,8 @@ public function getApplicationsByViewNew(Request $request)
         ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
         // Conditional sorting
-        if ($request->filled('destination_id')) {
-            $app_query->where('u.destination_id', $request->destination_id);
+        if ($request->filled('country')) {
+            $app_query->whereIn('u.country', $request->country);
         }
 
 
