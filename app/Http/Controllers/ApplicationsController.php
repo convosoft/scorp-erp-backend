@@ -348,6 +348,11 @@ public function getApplicationsByViewNew(Request $request)
         ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
         ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
+        // Conditional sorting
+        if ($request->filled('destination_id')) {
+            $app_query->where('u.destination_id', $request->destination_id);
+        }
+
 
         // Conditional sorting
         if ($request->filled('sort_by_tasks')) {
