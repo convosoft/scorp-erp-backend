@@ -345,4 +345,115 @@ public function updateMediaDocumentPosition(Request $request)
     }
 
 
+    public function updateMediaDocument(Request $request)
+    {
+        // ✅ Validation
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|exists:media_documents,id',
+            'file' => 'nullable|file|mimes:jpg,jpeg,png,pdf,mp4|max:256000',
+            'TypesDocumentID' => 'required|exists:types_document,id',
+            'comments' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $document = MediaDocument::find($request->id);
+
+        if (!$document) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Document not found'
+            ], 404);
+        }
+
+        // ✅ Store original data
+        $originalData = $document->toArray();
+
+        // ✅ Handle File Update (optional)
+        if ($request->hasFile('file')) {
+
+            // 🔥 Delete old file from S3
+            if (!empty($document->document_link)) {
+                $bucketUrl = rtrim(config('filesystems.disks.s3.url'), '/');
+                $oldKey = str_replace($bucketUrl . '/', '', $document->document_link);
+
+                if (!empty($oldKey) && Storage::disk('s3')->exists($oldKey)) {
+                    Storage::disk('s3')->delete($oldKey);
+                }
+            }
+
+            // 🔥 Upload new file
+            $file = $request->file('file');
+            $path = 'media_documents/' . $document->type . '/' . date('Y/m');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+            $s3Path = $file->storeAs($path, $filename, [
+                'disk' => 's3',
+            ]);
+
+            $document->document_link = Storage::disk('s3')->url($s3Path);
+        }
+
+        // ✅ Update allowed fields only
+        $document->TypesDocumentID = $request->TypesDocumentID;
+        $document->comments = $request->comments;
+
+        $document->save();
+
+        // ✅ Detect changes
+        $changes = [];
+        foreach ($originalData as $field => $oldValue) {
+            if (in_array($field, ['created_at', 'updated_at'])) continue;
+
+            if ($document->$field != $oldValue) {
+                $changes[$field] = [
+                    'old' => $oldValue,
+                    'new' => $document->$field
+                ];
+            }
+        }
+
+        // ✅ Module mapping (based on existing type)
+        $moduleMap = [
+            'lead' => 'lead',
+            'admission' => 'deal',
+            'application' => 'application',
+            'product_home' => 'toolkit',
+            'product_international' => 'toolkit',
+        ];
+
+        $moduleType = $moduleMap[$document->type] ?? null;
+
+        // ✅ Get module_id from existing record
+        $moduleId = $document->type_id
+            ?? $document->admission_id
+            ?? $document->application_id;
+
+        // ✅ Log changes
+        if (!empty($changes)) {
+            addLogActivity([
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Document updated',
+                    'message' => 'Document updated successfully',
+                    'changes' => $changes
+                ]),
+                'module_id' => $moduleId,
+                'module_type' => $moduleType,
+                'notification_type' => 'Document Updated',
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Document updated successfully',
+            'data' => $document
+        ], 200);
+    }
+
 } // class end here
