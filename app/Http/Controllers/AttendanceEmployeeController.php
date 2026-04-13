@@ -2311,7 +2311,7 @@ public function backuplist(Request $request)
                 }
             }
 
-            if($computedStatus=='Present'){
+            if($computedStatus == 'Present'){
                $worked_hoursworked_hours =   gmdate('H:i:s', $workedSeconds);
             }else{
                  $worked_hoursworked_hours =   '00:00:00';
