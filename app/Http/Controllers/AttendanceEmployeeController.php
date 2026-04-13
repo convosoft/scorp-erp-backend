@@ -3969,11 +3969,11 @@ public function updateAttendance(Request $request)
 
             $attendance = AttendanceEmployee::orderBy('id', 'desc')->where('employee_id', '=', $employeeId)->where('clock_out', '=', '00:00:00')->first();
 
-            if ($attendance != null) {
-                $attendance            = AttendanceEmployee::find($attendance->id);
-                $attendance->clock_out = $endTime;
-                $attendance->save();
-            }
+            // if ($attendance != null) {
+            //     $attendance            = AttendanceEmployee::find($attendance->id);
+            //     $attendance->clock_out = $endTime;
+            //     $attendance->save();
+            // }
 
             $date = date("Y-m-d");
             $time = date("H:i:s");
