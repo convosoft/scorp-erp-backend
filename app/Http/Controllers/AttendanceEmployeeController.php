@@ -2289,7 +2289,7 @@ public function backuplist(Request $request)
                 $computedStatus = 'Leave';
             } elseif (!empty($row->earlyCheckOutReason)) {
                 $computedStatus = 'Early Clock Out';
-            } elseif ($clockIn && $shiftStart && $row->status === 'Absent') {
+            } elseif ($clockIn && $shiftStart && $row->status != 'Absent') {
                 $shiftStartWithMargin = $shiftStart->copy()->addMinutes(30);
                 $computedStatus = $clockIn->lte($shiftStartWithMargin) ? 'OnTime' : 'Late';
             } else {
