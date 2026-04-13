@@ -2337,6 +2337,7 @@ public function backuplist(Request $request)
                         : '00:00:00',
                 'early_leaving' => $row->early_leaving ?? '00:00:00',
                 'overtime' => $row->overtime ?? '00:00:00',
+                'rowstatus' =>$row->status,
             ]);
         }
 
