@@ -1879,7 +1879,7 @@ class LeadController extends Controller
                 'client_passport' => 'required',
                 'intake_month' => 'required',
                 'intake_year' => 'required',
-                'drive_link' => 'required',
+                'drive_link' => 'nullable',
             ]
         );
 

@@ -1765,7 +1765,7 @@ class UserController extends Controller
             'name' => 'required|string|max:120',
             'email' => 'required|email|unique:users,email',
             'website_link' => 'required|url',
-            'drive_link' => 'required|url',
+            'drive_link' => 'nullable|url',
             'domain_link' => 'nullable|url',
             'project_director' => 'nullable|integer|exists:users,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
