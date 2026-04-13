@@ -2311,6 +2311,12 @@ public function backuplist(Request $request)
                 }
             }
 
+            if($computedStatus=='Present'){
+               $worked_hoursworked_hours =   gmdate('H:i:s', $workedSeconds);
+            }else{
+                 $worked_hoursworked_hours =   '00:00:00';
+            }
+
             $filteredRecords->push([
                 'employee_id' => $row->employee_id,
                 'attendance_id' => $row->attendance_id,
@@ -2328,7 +2334,7 @@ public function backuplist(Request $request)
                 'clock_in' => $clockInRaw ?? '00:00:00',
                 'clock_out' => $clockOutRaw ?? '00:00:00',
                 'earlyCheckOutReason' => $row->earlyCheckOutReason,
-                'worked_hours' => gmdate('H:i:s', $workedSeconds),
+                'worked_hours' => $worked_hoursworked_hours,
                 'status' => $computedStatus,
                 'late' => ($clockIn !== '00:00:00' && $row?->shift_start)
                         ? ($clockIn > $row->shift_start
