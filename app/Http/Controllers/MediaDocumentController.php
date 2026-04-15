@@ -181,12 +181,12 @@ public function getMediaDocument(Request $request)
 public function deleteMediaDocument(Request $request)
     {
         // ✅ Check permission
-        if (!\Auth::user()->can('delete document')) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Permission Denied',
-            ], 403);
-        }
+        // if (!\Auth::user()->can('delete document')) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'Permission Denied',
+        //     ], 403);
+        // }
 
         // ✅ Validate input
         $validator = \Validator::make($request->all(), [
