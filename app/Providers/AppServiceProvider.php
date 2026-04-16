@@ -18,15 +18,15 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
 
         // ✅ Idle Timeout Logic (15 minutes)
-        PersonalAccessToken::retrieved(function ($token) {
-            if ($token->last_used_at) {
-                $idleMinutes = now()->diffInMinutes($token->last_used_at);
+        // PersonalAccessToken::retrieved(function ($token) {
+        //     if ($token->last_used_at) {
+        //         $idleMinutes = now()->diffInMinutes($token->last_used_at);
 
-                if ($idleMinutes > 15) {
-                    // delete expired token
-                    $token->delete();
-                }
-            }
-        });
+        //         if ($idleMinutes > 15) {
+        //             // delete expired token
+        //             $token->delete();
+        //         }
+        //     }
+        // });
     }
 }
