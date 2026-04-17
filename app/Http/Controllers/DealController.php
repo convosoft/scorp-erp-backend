@@ -1118,6 +1118,18 @@ if (!empty($changes)) {
         ];
         addLogActivity($data);
 
+        // Update or Create Lead
+            $lead = Lead::where('is_converted', $deal->id)->first();
+
+            if (!empty($lead)) {
+
+                    $lead->is_converted = 0;
+
+
+                $lead->save();
+
+            }
+
         // Delete the deal
         $deal->delete();
 
