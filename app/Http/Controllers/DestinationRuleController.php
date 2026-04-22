@@ -21,7 +21,7 @@ class DestinationRuleController extends Controller
         $validator = \Validator::make(
             $request->all(),
             [
-                'destination_id' => 'required|integer|exists:universities,id',
+                'destination_id' => 'required|integer|exists:designations,id',
                 'type' => 'required|integer|in:1,2',
                 'rule_type' => 'required|string|in:restriction,requirement,pipeline'
             ]
