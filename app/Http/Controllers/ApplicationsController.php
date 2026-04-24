@@ -957,6 +957,7 @@ private function getTagsForApplication($tagIds)
             'student_origin_city' => 'required',
             'student_previous_university' => 'required',
             'intakeYear' => 'required',
+            'campus' => 'nullable',
 
             // Conditional fields
             'courses_id' => $universitydetails && $universitydetails->status == 1 ? 'required' : 'nullable',
@@ -1114,6 +1115,7 @@ private function getTagsForApplication($tagIds)
             'university' => 'required|exists:universities,id',
             'status' => 'required|integer',
             'intake_month' => 'required|string',
+            'campus' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {

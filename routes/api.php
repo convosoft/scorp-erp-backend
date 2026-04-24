@@ -1069,6 +1069,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/DeleteSavedFilter', [GeneralController::class, 'DeleteSavedFilter']);
     Route::post('/GetBranchByType', [GeneralController::class, 'GetBranchByType']);
     Route::post('/leadsrequireddata', [GeneralController::class, 'leadsrequireddata']);
+    Route::post('/getPluckSourses', [GeneralController::class, 'getPluckSourses']);
     Route::post('/getCitiesOnCode', [GeneralController::class, 'getCitiesOnCode']);
     Route::post('/getCitiesOnid', [GeneralController::class, 'getCitiesOnid']);
 

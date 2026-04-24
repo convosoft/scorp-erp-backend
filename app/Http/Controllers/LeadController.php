@@ -1879,6 +1879,7 @@ class LeadController extends Controller
                 'client_passport' => 'required',
                 'intake_month' => 'required',
                 'intake_year' => 'required',
+                'destination_id' => 'nullable',
                 'drive_link' => 'nullable',
             ]
         );
@@ -1982,10 +1983,11 @@ class LeadController extends Controller
         // Create Deal
         $deal = new Deal;
         $deal->name = $request->name;
+        $deal->destination_id = $request->destination_id;
         $deal->price = 0;
         $deal->pipeline_id = $lead->pipeline_id;
         $deal->stage_id = $stage->id;
-        $deal->sources = in_array('sources', $request->is_transfer ?? []) ? $lead->sources : '';
+        $deal->sources = $lead->sources;
         $deal->products = in_array('products', $request->is_transfer ?? []) ? $lead->products : '';
         $deal->notes = in_array('notes', $request->is_transfer ?? []) ? $lead->notes : '';
         $deal->labels = $lead->labels;

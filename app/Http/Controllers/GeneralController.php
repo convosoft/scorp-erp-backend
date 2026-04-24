@@ -1647,6 +1647,24 @@ public function GetBranchByType()
         ]);
     }
 
+
+
+ public function getPluckSourses(Request $request)
+    {
+
+        $sources = Source::pluck('name', 'id');
+
+
+
+        // Return the response
+        return response()->json([
+            'status' => "success",
+            'data' => [
+                'sources' => $sources
+            ]
+        ]);
+    }
+
     public function getCitiesOnCode(Request $request)
     {
         $countryCode = $request->input('code');
