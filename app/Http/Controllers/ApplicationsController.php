@@ -348,9 +348,18 @@ public function getApplicationsByViewNew(Request $request)
         ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
         ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
-        // Conditional sorting
+
         if ($request->filled('country')) {
             $app_query->whereIn('u.country', $request->country);
+        }
+
+        if ($request->filled('intake_month')) {
+            $app_query->whereIn('da.intake', $request->intake_month);
+        }
+
+
+        if ($request->filled('intake_year')) {
+            $app_query->whereIn('da.intakeYear', $request->intake_year);
         }
 
 
