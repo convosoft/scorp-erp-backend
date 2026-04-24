@@ -339,7 +339,7 @@ class DealController extends Controller
         }
 
         if ($request->filled('destination_id')) {
-            $destination_id = (array) $request->destination_id;
+            $destination_id = array_map('intval', (array) $request->destination_id);
 $query->whereIn('destination_id', $destination_id);
 
              $sql = str_replace('?', "'%s'", $query->toSql());
