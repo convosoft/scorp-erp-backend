@@ -361,6 +361,9 @@ public function getApplicationsByViewNew(Request $request)
         if ($request->filled('intake_year')) {
             $app_query->whereIn('da.intakeYear', $request->intake_year);
         }
+        if ($request->filled('sources')) {
+            $app_query->whereIn('da.sources', $request->sources);
+        }
 
 
         // Conditional sorting
