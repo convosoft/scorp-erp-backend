@@ -899,7 +899,7 @@ class DealController extends Controller
 
     // Update Deal
     $deal->name  = $request->name;
-    $deal->destination_id = $request->destination_id;
+    $deal->destination_id = implode(',', $request->destination_id);
     $deal->category = $request->input('category');
     $deal->university_id = $request->input('university_id');
     $deal->organization_id = $request->input('organization_id');
