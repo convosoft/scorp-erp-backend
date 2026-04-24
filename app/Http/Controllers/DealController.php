@@ -340,6 +340,7 @@ class DealController extends Controller
 
         if ($request->filled('destination_id')) {
             $destination_id = $request->destination_id;
+            dd($destination_id);
              $query->whereIn('destination_id', $destination_id);
         }
 
