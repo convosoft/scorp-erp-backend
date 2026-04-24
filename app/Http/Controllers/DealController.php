@@ -342,9 +342,9 @@ class DealController extends Controller
             $destination_id = array_map('intval', (array) $request->destination_id);
             $query->whereIn('destination_id', $destination_id);
 
-             $sql = str_replace('?', "'%s'", $query->toSql());
-                $sql = vsprintf($sql, $query->getBindings());
-                 echo $sql;
+            //  $sql = str_replace('?', "'%s'", $query->toSql());
+            //     $sql = vsprintf($sql, $query->getBindings());
+            //      echo $sql;
         }
 
         // Search filter
