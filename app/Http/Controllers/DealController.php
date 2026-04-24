@@ -338,6 +338,11 @@ class DealController extends Controller
             else $query->whereNull('agent_id');
         }
 
+        if ($request->filled('destination_id')) {
+            $destination_id = $request->destination_id;
+             $query->whereIn('destination_id', $destination_id);
+        }
+
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
