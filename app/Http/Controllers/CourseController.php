@@ -442,7 +442,7 @@ class CourseController extends Controller
         // Sync Installments (optional reset logic, or update logic as needed)
         if (!empty($request->installments)) {
             $existingIds = [];
-            
+
             foreach ($request->installments as $installmentData) {
                 if (isset($installmentData['id'])) {
                     // Update existing installment
@@ -460,12 +460,12 @@ class CourseController extends Controller
                     $existingIds[] = $installment->id;
                 }
             }
-            
+
             // Delete any installments not in the current request
             Instalment::where('course_id', $course->id)
                       ->whereNotIn('id', $existingIds)
                       ->delete();
-            
+
             $updatedFields['installments'] = 'Updated installments data';
         }
 
@@ -776,7 +776,159 @@ class CourseController extends Controller
             return response()->json([
                 'status' => 'success',
                 'data' => $Course
-                
+
             ]);
         }
+
+
+        public function courseFinder(Request $request)
+{
+    $query = Course::with([
+        'university:id,name,country,city',
+        'instalments'
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | HARD FILTERS
+    |--------------------------------------------------------------------------
+    */
+
+    if ($request->filled('type')) {
+        $query->where('type', $request->type);
+    }
+
+    if ($request->filled('intakeYear')) {
+        $query->where('intakeYear', $request->intakeYear);
+    }
+
+    if ($request->filled('intake_month')) {
+        $query->whereRaw("FIND_IN_SET(?, intake_month)", [$request->intake_month]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SOFT BASE FILTERS
+    |--------------------------------------------------------------------------
+    */
+
+    if ($request->filled('course')) {
+        $query->where('name', 'LIKE', '%' . $request->course . '%');
+    }
+
+    if ($request->filled('degree_level')) {
+        $query->where('degree_level', $request->degree_level);
+    }
+
+    if ($request->filled('campus')) {
+        $query->whereRaw("FIND_IN_SET(?, campus)", [$request->campus]);
+    }
+
+    if ($request->filled('budget')) {
+        try {
+            [$min, $max] = explode('-', $request->budget);
+            $query->whereBetween('gross_fees', [(int)$min, (int)$max]);
+        } catch (\Exception $e) {}
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAGINATION (50 PER PAGE)
+    |--------------------------------------------------------------------------
+    */
+
+    $paginatedCourses = $query->latest()->paginate(50);
+
+    $selectedUniversities = $request->universities ?? [];
+    $selectedCountries   = $request->countries ?? [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI SCORING (ONLY CURRENT PAGE DATA)
+    |--------------------------------------------------------------------------
+    */
+
+    $scoredCourses = collect($paginatedCourses->items())->map(function ($course) use ($request, $selectedUniversities, $selectedCountries) {
+
+        $score = 0;
+
+        if (!empty($selectedUniversities) && in_array($course->university_id, $selectedUniversities)) {
+            $score += 30;
+        }
+
+        if (!empty($selectedCountries) && in_array($course->university->country, $selectedCountries)) {
+            $score += 20;
+        }
+
+        if ($request->filled('budget')) {
+            try {
+                [$min, $max] = explode('-', $request->budget);
+                if ($course->gross_fees >= $min && $course->gross_fees <= $max) {
+                    $score += 20;
+                }
+            } catch (\Exception $e) {}
+        }
+
+        if ($request->filled('course') &&
+            str_contains(strtolower($course->name), strtolower($request->course))) {
+            $score += 15;
+        }
+
+        if ($request->filled('campus') &&
+            str_contains(strtolower($course->campus), strtolower($request->campus))) {
+            $score += 10;
+        }
+
+        if ($request->filled('intake_month') &&
+            str_contains($course->intake_month, $request->intake_month)) {
+            $score += 5;
+        }
+
+        if ($request->filled('degree_level') &&
+            isset($course->degree_level) &&
+            strtolower($course->degree_level) == strtolower($request->degree_level)) {
+            $score += 10;
+        }
+
+        $course->match_score = min($score, 100);
+
+        return $course;
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | SORT CURRENT PAGE
+    |--------------------------------------------------------------------------
+    */
+
+    $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOP 3 (FROM CURRENT PAGE)
+    |--------------------------------------------------------------------------
+    */
+
+    $topCourses = $sortedCourses->take(3)->values();
+
+    /*
+    |--------------------------------------------------------------------------
+    | REPLACE PAGINATION COLLECTION
+    |--------------------------------------------------------------------------
+    */
+
+    $paginatedCourses->setCollection($sortedCourses);
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
+    return response()->json([
+        'status' => 'success',
+        'top_matches' => $topCourses,
+        'courses' => $paginatedCourses, // includes pagination meta
+    ], 200);
+}
 }
