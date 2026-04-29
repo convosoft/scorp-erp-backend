@@ -17,7 +17,7 @@ public function __construct()
             $sendcount = 0;
             $failcount = 0;
 
-            EmailSendingQueue::where('is_send', '0')
+            EmailSendingQueue::with('brand')->where('is_send', '0')
                 ->where('status', '1')
                 ->where('priority', '3')
                 ->take(350)
@@ -28,6 +28,14 @@ public function __construct()
                         try {
 
                             $mail = Mail::to($queue->to);
+                            // ✅ Only set reply-to if exists
+                            if (!empty($queue->brand?->reply_email)) {
+                                $mail->replyTo(
+                                    $queue->brand->reply_email,
+                                    $queue->brand->name ?? 'Support'
+                                );
+                            }
+
 
                             if ($queue->cc) {
                                 $mail->cc(explode(',', $queue->cc));
@@ -73,7 +81,7 @@ public function __construct()
             $sendcount = 0;
             $failcount = 0;
 
-            EmailSendingQueue::where('is_send', '0')
+            EmailSendingQueue::with('brand')->where('is_send', '0')
                 ->where('status', '1')
                 ->where('priority', '2')
                 ->take(350)
@@ -84,6 +92,14 @@ public function __construct()
                         try {
 
                             $mail = Mail::to($queue->to);
+                            // ✅ Only set reply-to if exists
+                            if (!empty($queue->brand?->reply_email)) {
+                                $mail->replyTo(
+                                    $queue->brand->reply_email,
+                                    $queue->brand->name ?? 'Support'
+                                );
+                            }
+
 
                             if ($queue->cc) {
                                 $mail->cc(explode(',', $queue->cc));

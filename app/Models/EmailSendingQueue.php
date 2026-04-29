@@ -13,4 +13,9 @@ class EmailSendingQueue extends Model
         'status',
         'mailerror',
     ];
+
+     public function brand()
+    {
+        return $this->hasOne('App\Models\User', 'id', 'brand_id');
+    }
 }
