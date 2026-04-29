@@ -817,7 +817,7 @@ class CourseController extends Controller
     }
 
     if ($request->filled('degree_level')) {
-        $query->where('degree_level', $request->degree_level);
+        $query->where('name', $request->degree_level);
     }
 
     if ($request->filled('campus')) {
@@ -886,7 +886,7 @@ class CourseController extends Controller
 
         if ($request->filled('degree_level') &&
             isset($course->degree_level) &&
-            strtolower($course->degree_level) == strtolower($request->degree_level)) {
+            strtolower($course->name) == strtolower($request->degree_level)) {
             $score += 10;
         }
 

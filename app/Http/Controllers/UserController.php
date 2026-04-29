@@ -1764,6 +1764,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:120',
             'email' => 'required|email|unique:users,email',
+            'reply_email' => 'nullable|email',
             'website_link' => 'required|url',
             'drive_link' => 'nullable|url',
             'domain_link' => 'nullable|url',
@@ -1823,6 +1824,9 @@ class UserController extends Controller
                 $user->avatar = 'EmployeeDocument/' . $imageName;
                 $user->save();
             }
+
+            $user->reply_email = $request->reply_email;
+            $user->save();
 
             // Utility Configurations
             Utility::chartOfAccountTypeData($user->id);
@@ -1909,6 +1913,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $request->id,
             'website_link' => 'required|url',
             'drive_link' => 'required|url',
+            'reply_email' => 'nullable|email',
         ]);
 
         if ($validator->fails()) {
@@ -1946,6 +1951,9 @@ class UserController extends Controller
                 $user->avatar = 'EmployeeDocument/' . $imageName;
                 $user->save();
             }
+
+            $user->reply_email = $request->reply_email;
+            $user->save();
 
             // Log changed fields only
             $changes = [];
