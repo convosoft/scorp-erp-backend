@@ -80,6 +80,7 @@ use App\Http\Controllers\UniversityRankController;
 use App\Http\Controllers\UniversityRuleController;
 use App\Http\Controllers\DestinationRuleController;
 use App\Http\Controllers\DestinationController;
+use App\Http\Controllers\EducationDepartmentsController;
 use App\Http\Controllers\EducationLevelsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
@@ -993,19 +994,33 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/assignTagsBulkadmissions', [DealController::class, 'addAdmissionTags']);
 
 
-     //   Announcement Category
+
      Route::post('/addELTRequirement', [ELTRequirementsController::class, 'addELTRequirement']);
      Route::get('/getELTRequirementsPluck', [ELTRequirementsController::class, 'getELTRequirementsPluck']);
      Route::get('/getELTRequirements', [ELTRequirementsController::class, 'getELTRequirements']);
      Route::post('/updateELTRequirement', [ELTRequirementsController::class, 'updateELTRequirement']);
      Route::post('/deleteELTRequirement', [ELTRequirementsController::class, 'deleteELTRequirement']);
 
-     //   Announcement Category
+
+
+
      Route::post('/addEducationLevel', [EducationLevelsController::class, 'addEducationLevel']);
      Route::get('/getEducationLevelsPluck', [EducationLevelsController::class, 'getEducationLevelsPluck']);
      Route::get('/getEducationLevels', [EducationLevelsController::class, 'getEducationLevels']);
      Route::post('/updateEducationLevel', [EducationLevelsController::class, 'updateEducationLevel']);
      Route::post('/deleteEducationLevel', [EducationLevelsController::class, 'deleteEducationLevel']);
+
+     Route::post('/addEducationDepartment', [EducationDepartmentsController::class, 'addEducationDepartment']);
+     Route::get('/getEducationDepartmentsPluck', [EducationDepartmentsController::class, 'getEducationDepartmentsPluck']);
+     Route::get('/getEducationDepartments', [EducationDepartmentsController::class, 'getEducationDepartments']);
+     Route::post('/updateEducationDepartment', [EducationDepartmentsController::class, 'updateEducationDepartment']);
+     Route::post('/deleteEducationDepartment', [EducationDepartmentsController::class, 'deleteEducationDepartment']);
+
+     Route::post('/addBudgetRange', [BudgetRangesController::class, 'addBudgetRange']);
+     Route::get('/getBudgetRangesPluck', [BudgetRangesController::class, 'getBudgetRangesPluck']);
+     Route::get('/getBudgetRanges', [BudgetRangesController::class, 'getBudgetRanges']);
+     Route::post('/updateBudgetRange', [BudgetRangesController::class, 'updateBudgetRange']);
+     Route::post('/deleteBudgetRange', [BudgetRangesController::class, 'deleteBudgetRange']);
 
 
 
