@@ -842,9 +842,9 @@ class CourseController extends Controller
 
     }
 
-     $sql = str_replace('?', "'%s'", $query->toSql());
-            $sql = vsprintf($sql, $query->getBindings());
-             echo $sql;
+    //  $sql = str_replace('?', "'%s'", $query->toSql());
+    //         $sql = vsprintf($sql, $query->getBindings());
+    //          echo $sql;
 
     /*
     |--------------------------------------------------------------------------
