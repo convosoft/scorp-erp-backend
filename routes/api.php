@@ -80,6 +80,7 @@ use App\Http\Controllers\UniversityRankController;
 use App\Http\Controllers\UniversityRuleController;
 use App\Http\Controllers\DestinationRuleController;
 use App\Http\Controllers\DestinationController;
+use App\Http\Controllers\EducationLevelsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
@@ -998,6 +999,13 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::get('/getELTRequirements', [ELTRequirementsController::class, 'getELTRequirements']);
      Route::post('/updateELTRequirement', [ELTRequirementsController::class, 'updateELTRequirement']);
      Route::post('/deleteELTRequirement', [ELTRequirementsController::class, 'deleteELTRequirement']);
+
+     //   Announcement Category
+     Route::post('/addEducationLevel', [EducationLevelsController::class, 'addEducationLevel']);
+     Route::get('/getEducationLevelsPluck', [EducationLevelsController::class, 'getEducationLevelsPluck']);
+     Route::get('/getEducationLevels', [EducationLevelsController::class, 'getEducationLevels']);
+     Route::post('/updateEducationLevel', [EducationLevelsController::class, 'updateEducationLevel']);
+     Route::post('/deleteEducationLevel', [EducationLevelsController::class, 'deleteEducationLevel']);
 
 
 
