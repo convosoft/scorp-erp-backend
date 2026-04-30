@@ -784,7 +784,7 @@ class CourseController extends Controller
         public function courseFinder(Request $request)
 {
     $query = Course::with([
-        'university:id,name,country,city',
+        'university:id,name,country,campuses',
         'instalments'
     ]);
 
