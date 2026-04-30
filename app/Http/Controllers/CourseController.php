@@ -833,7 +833,12 @@ class CourseController extends Controller
     }
 
     if ($request->filled('budget')) {
-        $query->whereBetween(DB::raw('CAST(gross_fees AS UNSIGNED)'), [(int)$min, (int)$max]);
+
+    try {
+        [$min, $max] = explode('-', $request->budget);
+         $query->whereBetween(DB::raw('CAST(gross_fees AS UNSIGNED)'), [(int)$min, (int)$max]);
+        } catch (\Exception $e) {}
+
 
     }
 
