@@ -817,7 +817,7 @@ class CourseController extends Controller
     }
 
     if ($request->filled('degree_level')) {
-        $query->where('name', $request->degree_level);
+         $query->where('name', 'LIKE', '%' . $request->course . '%');
     }
 
     if ($request->filled('campus')) {
