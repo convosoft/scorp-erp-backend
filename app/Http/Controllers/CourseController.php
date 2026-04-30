@@ -803,7 +803,13 @@ class CourseController extends Controller
     }
 
     if ($request->filled('intake_month')) {
-        $query->whereRaw("FIND_IN_SET(?, intake_month)", [$request->intake_month]);
+        $$months = explode(',', $request->intake_month);
+        $query->where(function ($q) use ($months) {
+            foreach ($months as $month) {
+                $q->orWhereRaw("FIND_IN_SET(?, intake_month)", [trim($month)]);
+            }
+        });
+
     }
 
     /*
@@ -821,14 +827,13 @@ class CourseController extends Controller
     }
 
     if ($request->filled('campus')) {
-        $query->whereRaw("FIND_IN_SET(?, campus)", [$request->campus]);
+        $query->where('campus', 'LIKE', '%' . $request->campus . '%');
+
     }
 
     if ($request->filled('budget')) {
-        try {
-            [$min, $max] = explode('-', $request->budget);
-            $query->whereBetween('gross_fees', [(int)$min, (int)$max]);
-        } catch (\Exception $e) {}
+        $query->whereBetween(DB::raw('CAST(gross_fees AS UNSIGNED)'), [(int)$min, (int)$max]);
+
     }
 
      $sql = str_replace('?', "'%s'", $query->toSql());
