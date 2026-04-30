@@ -803,7 +803,7 @@ class CourseController extends Controller
     }
 
     if ($request->filled('intake_month')) {
-        $$months = explode(',', $request->intake_month);
+        $months = explode(',', $request->intake_month);
         $query->where(function ($q) use ($months) {
             foreach ($months as $month) {
                 $q->orWhereRaw("FIND_IN_SET(?, intake_month)", [trim($month)]);
