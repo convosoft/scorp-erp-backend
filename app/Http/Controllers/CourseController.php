@@ -12,6 +12,7 @@ use App\Models\CourseDuration;
 use App\Models\Instalment;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class CourseController extends Controller
 {
