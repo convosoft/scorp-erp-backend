@@ -1512,6 +1512,50 @@ public function UniversityByCountryid(Request $request)
         }
 }
 
+public function UniversityByMultiCountryid(Request $request)
+{
+    $request->validate([
+        'country' => 'required|array',
+        'country.*' => 'required|exists:countries,id',
+    ]);
+
+    try {
+        $countryIds = $request->country;
+
+        $countries = Country::whereIn('id', $countryIds)->get();
+
+        $query = University::where('uni_status', '0');
+
+        $query->where(function ($q) use ($countries) {
+            foreach ($countries as $country) {
+                $q->orWhereRaw("FIND_IN_SET(?, country)", [$country->name])
+                  ->orWhere('country', $country->id);
+            }
+        });
+
+        $alluniversities = $query->get();
+
+        $universities = [];
+
+        foreach ($alluniversities as $uni) {
+            if ($uni->uni_status == 0) {
+                $universities[$uni->id] = $uni->name;
+            }
+        }
+
+        return response()->json([
+            'status' => "success",
+            'data' => $universities,
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => "error",
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 public function GetBranchByType()
 {
     ini_set('memory_limit', '256M');
