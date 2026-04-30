@@ -831,6 +831,10 @@ class CourseController extends Controller
         } catch (\Exception $e) {}
     }
 
+     $sql = str_replace('?', "'%s'", $query->toSql());
+            $sql = vsprintf($sql, $query->getBindings());
+             echo $sql;
+
     /*
     |--------------------------------------------------------------------------
     | PAGINATION (50 PER PAGE)
