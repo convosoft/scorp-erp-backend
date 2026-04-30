@@ -838,13 +838,18 @@ public function courseFinder(Request $request)
         });
     }
 
-    if ($request->filled('course')) {
-        $query->where('courses.name', 'LIKE', '%' . $request->course . '%');
-    }
+            $keywords = array_filter([
+            strtolower($request->course),
+            strtolower($request->degree_level)
+        ]);
 
-    if ($request->filled('degree_level')) {
-        $query->where('courses.name', 'LIKE', '%' . $request->degree_level . '%');
-    }
+        if (!empty($keywords)) {
+            $query->where(function ($q) use ($keywords) {
+                foreach ($keywords as $word) {
+                    $q->orWhereRaw('LOWER(courses.name) LIKE ?', ["%{$word}%"]);
+                }
+            });
+        }
 
     if ($request->is_campus_flexible == 1 && $request->filled('campus')) {
         $campuses = (array)$request->campus;
@@ -872,9 +877,9 @@ public function courseFinder(Request $request)
     | PAGINATION
     |--------------------------------------------------------------------------
     */
-     $sql = str_replace('?', "'%s'", $query->toSql());
-            $sql = vsprintf($sql, $query->getBindings());
-             echo $sql;
+    //  $sql = str_replace('?', "'%s'", $query->toSql());
+    //         $sql = vsprintf($sql, $query->getBindings());
+    //          echo $sql;
 
     $paginatedCourses = $query->latest()->paginate($request->perPage ?? 50);
 
