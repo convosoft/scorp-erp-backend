@@ -872,6 +872,9 @@ public function courseFinder(Request $request)
     | PAGINATION
     |--------------------------------------------------------------------------
     */
+     $sql = str_replace('?', "'%s'", $query->toSql());
+            $sql = vsprintf($sql, $query->getBindings());
+             echo $sql;
 
     $paginatedCourses = $query->latest()->paginate($request->perPage ?? 50);
 
