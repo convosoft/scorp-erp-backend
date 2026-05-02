@@ -1983,7 +1983,13 @@ class LeadController extends Controller
         // Create Deal
         $deal = new Deal;
         $deal->name = $request->name;
-        $deal->destination_id = implode(',', $request->destination_id);
+       if ($request->filled('destination_id')) {
+            $destinationIds = $request->destination_id;
+
+            $deal->destination_id = is_array($destinationIds)
+                ? implode(',', $destinationIds)
+                : $destinationIds;
+        }
         $deal->price = 0;
         $deal->pipeline_id = $lead->pipeline_id;
         $deal->stage_id = $stage->id;
