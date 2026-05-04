@@ -1669,9 +1669,9 @@ private function getTagsForApplication($tagIds)
         $application_id = (int)($request->application_id ?? 0);
         $stage_id = (int)($request->stage_id ?? 0);
 
-        var_dump($stage_id );
+      //  var_dump($stage_id );
 
-        if (!$application_id || !$stage_id) {
+        if (!$application_id  ) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Invalid application ID or stage ID',
