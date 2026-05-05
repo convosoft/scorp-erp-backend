@@ -899,7 +899,13 @@ class DealController extends Controller
 
     // Update Deal
     $deal->name  = $request->name;
-    $deal->destination_id = implode(',', $request->destination_id);
+     if ($request->filled('destination_id')) {
+            $destinationIds = $request->destination_id;
+
+            $deal->destination_id = is_array($destinationIds)
+                ? implode(',', $destinationIds)
+                : $destinationIds;
+        }
     $deal->category = $request->input('category');
     $deal->university_id = $request->input('university_id');
     $deal->organization_id = $request->input('organization_id');
