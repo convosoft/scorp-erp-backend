@@ -18,7 +18,6 @@ class DealTask extends Model
         0 => 'On Going',
         1 => 'Completed'
     ];
-     protected $appends = ['tags'];
 
     public function user_deals()
     {
@@ -29,9 +28,4 @@ class DealTask extends Model
     {
         return $this->hasMany(DealTask::class);
     }
-     public function getTagsAttribute()
-    {
-        return TaskTag::whereRaw("FIND_IN_SET(id, ?)", [$this->tag_ids])->get();
-    }
-
 }

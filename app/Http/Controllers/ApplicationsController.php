@@ -288,298 +288,6 @@ class ApplicationsController extends Controller
     ]);
 }
 
-public function getApplicationsByViewNew(Request $request)
-{
-    $usr = \Auth::user();
-
-    if (!($usr->can('view application') ||
-        in_array($usr->type, ['super admin', 'company', 'Admin Team']) ||
-        $usr->can('level 1'))) {
-        return response()->json([
-            'status' => 'error',
-            'message' => __('Permission Denied.')
-        ], 403);
-    }
-
-    $perPage = (int) $request->input('num_results_on_page', env("RESULTS_ON_PAGE", 50));
-    $page = (int) $request->input('page', 1);
-    $start = ($page - 1) * $perPage;
-
-    // BASE QUERY (same as plain)
-    $app_query = DB::table('deal_applications as da')
-    ->select(
-        'da.*',
-        'u.name as university_name',
-        's.name as stage_name',
-        'au.name as assigned_user_name',
-        'b.name as brand_name',
-        'br.name as branch_name',
-        DB::raw('DATEDIFF(CURDATE(), da.created_at) as applicationAge')
-    )
-    ->join('deals as d', 'd.id', '=', 'da.deal_id')
-
-    ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
-    ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
-    ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
-    ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
-    ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id')
-
-    ->orderBy('da.created_at', 'desc');
-
-    // ROLE FILTERING (same as plain)
-    if ($usr->type == 'super admin' || $usr->type == 'Admin Team' || $usr->can('level 1')) {
-
-    } elseif ($usr->type == 'company') {
-        $app_query->where('d.brand_id', $usr->id);
-
-    } elseif ($usr->type == 'Project Director' || $usr->type == 'Project Manager' || $usr->can('level 2')) {
-        $brand_ids = array_keys(FiltersBrands());
-        $app_query->whereIn('d.brand_id', $brand_ids);
-
-    } elseif ($usr->type == 'Region Manager' || ($usr->can('level 3') && !empty($usr->region_id))) {
-        $app_query->where('d.region_id', $usr->region_id);
-
-    } elseif (
-        $usr->type == 'Branch Manager' ||
-        $usr->type == 'Admissions Officer' ||
-        $usr->type == 'Careers Consultant' ||
-        $usr->type == 'Admissions Manager' ||
-        $usr->type == 'Marketing Officer' ||
-        ($usr->can('level 4') && !empty($usr->branch_id))
-    ) {
-        $app_query->where('d.branch_id', $usr->branch_id);
-
-    } elseif ($usr->type === 'Agent') {
-        $app_query->where(function ($q) use ($usr) {
-            $q->where('d.assigned_to', $usr->id)
-              ->orWhere('d.created_by', $usr->id);
-        });
-
-    } else {
-        $app_query->where('d.assigned_to', $usr->id);
-    }
-
-    // fetcttype (FIXED LOGIC)
-    if ($request->filled('fetcttype')) {
-
-        if ($request->fetcttype === 'yourapplications') {
-            $app_query->where('da.created_by', $usr->id);
-
-        } elseif ($request->fetcttype === 'assigntome') {
-            $app_query->where('d.assigned_to', $usr->id);
-
-        } elseif ($request->fetcttype === 'agentapplications') {
-            $app_query->whereNotNull('da.agent_id');
-        }
-    }
-
-    // Filters
-    $filters = $this->ApplicationFilters($request);
-
-    foreach ($filters as $column => $value) {
-
-        if ($column === 'name') {
-            $app_query->whereIn('da.name', (array)$value);
-
-        } elseif ($column === 'stage_id') {
-            $app_query->whereIn('da.stage_id', (array)$value);
-
-        } elseif ($column === 'university_id') {
-           // $app_query->whereIn('da.university_id', (array)$value);
-
-           $app_query->where('da.university_id', $value);
-
-        } elseif ($column === 'created_by') {
-            $app_query->whereIn('da.created_by', (array)$value);
-
-        } elseif ($column === 'brand') {
-            $app_query->where('d.brand_id', $value);
-
-        } elseif ($column === 'region_id') {
-            $app_query->where('d.region_id', $value);
-
-        } elseif ($column === 'branch_id') {
-            $app_query->where('d.branch_id', $value);
-
-        } elseif ($column === 'assigned_to') {
-            $app_query->where('d.assigned_to', $value);
-
-        } elseif ($column === 'created_at_from') {
-            $app_query->whereDate('da.created_at', '>=', $value);
-
-        } elseif ($column === 'created_at_to') {
-            $app_query->whereDate('da.created_at', '<=', $value);
-
-        } elseif ($column === 'tag_id') {
-            $app_query->whereRaw('FIND_IN_SET(?, da.tag_ids)', [$value]);
-        }
-    }
-
-    // Search
-    if ($request->filled('search')) {
-        $g_search = $request->input('search');
-
-        if (strpos($g_search, 'APC') === 0) {
-            $numericId = preg_replace('/^[A-Z]+/', '', $g_search);
-            $app_query->where('deal_applications.id', $numericId);
-        } else {
-            $app_query->where(function ($query) use ($g_search) {
-                $query->where('da.name', 'like', "%{$g_search}%")
-                    ->orWhere('da.application_key', 'like', "%{$g_search}%")
-                    ->orWhere('da.course', 'like', "%{$g_search}%");
-            });
-        }
-    }
-
-    // CSV DOWNLOAD
-    if ($request->input('download_csv')) {
-
-        $applications = $app_query ->get();
-
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="applications_' . time() . '.csv"',
-        ];
-
-        $callback = function () use ($applications) {
-            $file = fopen('php://output', 'w');
-
-            fputcsv($file, [
-                'ID', 'Application Key', 'Name', 'Course', 'Stage', 'Created At'
-            ]);
-
-            foreach ($applications as $app) {
-                fputcsv($file, [
-                    $app->id,
-                    $app->application_key,
-                    $app->name,
-                    $app->course,
-                    $app->stage_id,
-                    $app->created_at,
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    // KANBAN VIEW
-    // if ($request->input('view') === 'kanban') {
-
-    //     $applications = $app_query
-    //         ->get();
-
-    //     $stages = DB::table('application_stages')
-    //         ->select('id', 'name')
-    //         ->orderBy('order', 'ASC')
-    //         ->get();
-
-    //     $kanban = [];
-
-    //     foreach ($stages as $stage) {
-
-    //         $stageApps = $applications
-    //             ->where('stage_id', $stage->id)
-    //             ->values();
-
-    //         $kanban[] = [
-    //             'stage_id' => $stage->id,
-    //             'title' => $stage->name,
-    //             'count' => $stageApps->count(),
-    //             'applications' => $stageApps
-    //         ];
-    //     }
-
-    //     return response()->json([
-    //         'status' => 'success',
-    //         'view' => 'kanban',
-    //         'data' => $kanban,
-    //         'total_records' => $applications->count(),
-    //     ]);
-    // }
-
-
-    // Kanban view
-    if ($request->input('view') === 'kanban') {
-        $KANBAN_PER_PAGE = 1000;
-        $applications = $app_query->orderBy('created_at', 'desc')->limit($KANBAN_PER_PAGE)->get();
-
-        $stages = DB::table('application_stages')->select('id', 'name')->get();
-        $colors = [
-            1 => ['#4F46E5', '#eef2ff'],
-            2 => ['#F59E0B', '#fff7ed'],
-            3 => ['#22C55E', '#f0fdf4'],
-            4 => ['#EC928E', '#fef2f2'],
-            5 => ['#0EA5E9', '#e0f2fe'],
-            6 => ['#6B7280', '#f3f4f6'],
-        ];
-
-        $kanban = [];
-        foreach ($stages as $stage) {
-            $stageApps = $applications->where('stage_id', $stage->id)->values();
-            $kanban[] = [
-                'stage_id' => $stage->id,
-                'title' => $stage->name,
-                'count' => $stageApps->count(),
-                'color' => $colors[$stage->id][0] ?? '#000',
-                'bgColor' => $colors[$stage->id][1] ?? '#fff',
-                'applications' => $stageApps->map(fn($app) => [
-                    'id' => $app->id,
-                    'name' => $app->name,
-                    'course' => $app->course,
-                    'university' => $app->university_name,
-                    'assigned_to' => $app->assigned_user_name,
-                    'stage' => $app->stage_name,
-                    'applicationAge' => $app->applicationAge,
-                ]),
-            ];
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'view' => 'kanban',
-            'data' => $kanban,
-            'total_records' => $applications->count(),
-        ]);
-    }
-
-    // NORMAL LIST VIEW
-    $total_records = $app_query->count();
-
-    $applications = $app_query
-        ->skip($start)
-        ->limit($perPage)
-        ->get();
-
-        $applicationsWithTags = $applications->map(function($app) {
-    $appArray = (array) $app; // Convert stdClass to array
-    $appArray['tags'] = $this->getTagsForApplication($app->tag_ids ?? '');
-    return $appArray;
-});
-
-    return response()->json([
-        'status' => 'success',
-        'data' => $applicationsWithTags,
-        'current_page' => $page,
-        'last_page' => ceil($total_records / $perPage),
-        'total_records' => $total_records,
-        'per_page' => $perPage,
-    ]);
-}
-
-private function getTagsForApplication($tagIds)
-{
-    if (empty($tagIds)) {
-        return [];
-    }
-
-    return LeadTag::whereRaw("FIND_IN_SET(id, ?)", [$tagIds])
-        ->get()
-        ->toArray();
-}
-
 
     private function ApplicationFilters(Request $request)
     {
@@ -589,16 +297,16 @@ private function getTagsForApplication($tagIds)
             $filters['name'] = $request->input('applications');
         }
 
-        if ($request->filled('stage_id')) {
-            $filters['stage_id'] = $request->input('stage_id');
+        if ($request->filled('stages')) {
+            $filters['stage_id'] = $request->input('stages');
         }
 
         if ($request->filled('created_by')) {
             $filters['created_by'] = $request->input('created_by');
         }
 
-        if ($request->filled('university_id')) {
-            $filters['university_id'] = $request->input('university_id');
+        if ($request->filled('universities')) {
+            $filters['university_id'] = $request->input('universities');
         }
 
         if ($request->filled('brand')) {
@@ -625,8 +333,8 @@ private function getTagsForApplication($tagIds)
             $filters['assigned_to'] = $request->input('lead_assigned_user');
         }
 
-        if ($request->filled('tag_id')) {
-            $filters['tag_id'] = $request->input('tag_id');
+        if ($request->filled('tag')) {
+            $filters['tag'] = $request->input('tag');
         }
 
         return $filters;
@@ -708,23 +416,12 @@ private function getTagsForApplication($tagIds)
             ['stage_id', '=', 5]
         ])->get();
 
-        $deal_details = Deal::where('id',  $application->deal_id)->first();
-
-         $course = Course::find($application->courses_id);
-                if (!empty($course)) {
-                    $coursedetail = $course;
-                    }else{
-                    $coursedetail = [];
-                    }
-
         return response()->json([
             'status' => 'success',
             'data' => [
                 'OneTask' => $OneTask,
                 'SixTask' => $SixTask,
                 'application' => $application,
-                'deal_details' => $deal_details,
-                'coursedetail' => $coursedetail,
                 'country' => $country,
                 'stages' => $stages,
                 'tags' => $tags,
@@ -875,7 +572,6 @@ private function getTagsForApplication($tagIds)
         }
         $user = User::find($user_id); // Single object, not plural
         $university = University::select('name')->where('id', (int)$request->university)->first(); // Fixed missing semicolon
-        $universitydetails = University::where('id', (int)$request->university)->first(); // Fixed missing semicolon
         // Validation rules
         $validator = \Validator::make($request->all(), [
             'university' => [
@@ -893,15 +589,7 @@ private function getTagsForApplication($tagIds)
             ],
             'status' => 'required',
             'intake_month' => 'required',
-            'student_origin_country' => 'required',
-            'student_origin_city' => 'required',
-            'student_previous_university' => 'required',
-            'intakeYear' => 'required',
-
-            // Conditional fields
-            'courses_id' => $universitydetails && $universitydetails->status == 1 ? 'required' : 'nullable',
-            'CoursesName' => $universitydetails && $universitydetails->status != 1 ? 'required' : 'nullable',
-            //'tag_ids' => 'required|array',
+            'tag_ids' => 'required|array',
         ]);
 
         if ($validator->fails()) {
@@ -1129,7 +817,7 @@ private function getTagsForApplication($tagIds)
         $application->deal_id = $application->deal_id;
         $application->university_id = $request->university;
         $application->course = $courseName;
-       // $application->stage_id = $request->status;
+        $application->stage_id = $request->status;
         $application->external_app_id = $request->application_key;
         $application->intake = $request->intake_month;
         $application->name = "{$deal->name}-{$courseName}-{$university_name}-{$request->application_key}";
@@ -1140,10 +828,10 @@ private function getTagsForApplication($tagIds)
         $application->region_id = $deal->region_id;
         $application->assigned_to = $deal->assigned_to;
         $application->campus = $request->campus;
-        //$application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
+        $application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
         $application->intakeYear = $request->intakeYear;
         $application->course_id = $request->courses_id ?? "0";
-       // $application->course_id = $request->courses_id ?? "0";
+        $application->course_id = $request->courses_id ?? "0";
         $application->save();
 
         if (!empty($changes)) {
@@ -1175,16 +863,16 @@ private function getTagsForApplication($tagIds)
                 default => 0,
             };
         } else {
-           // $deal->stage_id = 0;
+            $deal->stage_id = 0;
         }
         $deal->save();
 
         // Add stage history
-        // addLeadHistory([
-        //     'stage_id' => $request->status,
-        //     'type_id' => $application->id,
-        //     'type' => 'application',
-        // ]);
+        addLeadHistory([
+            'stage_id' => $request->status,
+            'type_id' => $application->id,
+            'type' => 'application',
+        ]);
 
         return response()->json([
             'status' => "success",
@@ -1223,14 +911,6 @@ private function getTagsForApplication($tagIds)
                 'message' => __('Application not found.')
             ], 404);
         }
-
-        // Prevent deletion if stage_id is between 5 and 11
-            if ($dealApplication->stage_id >= 5 && $dealApplication->stage_id <= 11) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => __('Application cannot be deleted after deposited stage.')
-                ], 400);
-            }
 
         $dealId = $dealApplication->deal_id;
 
@@ -1896,7 +1576,6 @@ private function getTagsForApplication($tagIds)
             $dealTask->stage_request = $request->stage_id;
             $dealTask->tasks_type = 'Compliance';
         }
-         $dealTask->tasks_type = 'Compliance';
         $dealTask->save();
     } else {
         $dealTask = new \App\Models\DealTask();
@@ -1938,7 +1617,6 @@ private function getTagsForApplication($tagIds)
             $dealTask->stage_request = $request->stage_id;
             $dealTask->tasks_type = 'Compliance';
         }
-         $dealTask->tasks_type = 'Compliance';
         $dealTask->save();
     }
 
@@ -1952,19 +1630,6 @@ private function getTagsForApplication($tagIds)
         'module_id' => $id,
         'module_type' => 'application',
         'notification_type' => 'Application Updated'
-    ];
-    addLogActivity($logData);
-
-     // Add activity log (from the first API version)
-    $logData = [
-        'type' => 'succes',
-        'note' => json_encode([
-            'title' => 'Compliance Task created',
-            'message' => 'Compliance Task created'
-        ]),
-        'module_id' => $dealTask->id,
-        'module_type' => 'task',
-        'notification_type' => 'task created'
     ];
     addLogActivity($logData);
 
@@ -2331,8 +1996,7 @@ private function getTagsForApplication($tagIds)
 
         $dealTask = \App\Models\DealTask::where('related_to', $id)
             ->where('related_type', 'application')
-            ->where('tasks_type', 'Quality')
-            ->latest('id')
+            ->where('tasks_type', 'Compliance')
             ->first();
         if (!empty($dealTask)) {
             // dd(2);
@@ -2374,7 +2038,6 @@ private function getTagsForApplication($tagIds)
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
-            $dealTask->tasks_type = 'Quality';
             $dealTask->save();
         } else {
             $dealTask = new \App\Models\DealTask();
@@ -2405,8 +2068,7 @@ private function getTagsForApplication($tagIds)
                 }
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Quality';
-            }
-            else {
+            } else {
                 if ($client) {
                     $passport_number = $client->passport_number ?? '';
                     $dealTask->name = $passport_number . ' ' . $application->university->name ?? ''; // Fixed the concatenation
@@ -2416,45 +2078,8 @@ private function getTagsForApplication($tagIds)
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
-            $dealTask->tasks_type = 'Quality';
             $dealTask->save();
         }
-           $inputs = $request->except(['_token', '_method', 'submit']);
-            foreach ($inputs as $key => $value) {
-                if (is_array($value)) {
-                    $value = json_encode($value);
-                }
-
-                \DB::table('meta')->updateOrInsert(
-                    ['created_by' => \Auth::id(), 'parent_id' => $application->id, 'stage_id' => $request->stage_id, 'meta_key' => $key],
-                    ['meta_value' => $value]
-                );
-            }
-            // Add activity log (from the first API version)
-    $logData = [
-        'type' => 'info',
-        'note' => json_encode([
-            'title' => 'Application Updated',
-            'message' => 'Application stage request and deposit details were updated successfully.'
-        ]),
-        'module_id' => $id,
-        'module_type' => 'application',
-        'notification_type' => 'Application Updated'
-    ];
-    addLogActivity($logData);
-
-     // Add activity log (from the first API version)
-    $logData = [
-        'type' => 'succes',
-        'note' => json_encode([
-            'title' => 'Compliance Task created',
-            'message' => 'Compliance Task created'
-        ]),
-        'module_id' => $dealTask->id,
-        'module_type' => 'task',
-        'notification_type' => 'task created'
-    ];
-    addLogActivity($logData);
         return response()->json([
             'status' => 'success',
             'message' => 'Application updated successfully!',

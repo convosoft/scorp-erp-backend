@@ -26,7 +26,6 @@ class Branch extends Model
         "shift_time",
         "end_time",
         "is_sat_off",
-        "is_b2b",
         "start_time"
     ];
 

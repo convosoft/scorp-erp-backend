@@ -329,7 +329,7 @@ class LeadController extends Controller
             'brand' => 'nullable|integer|exists:users,id',
             'region_id' => 'nullable|integer',
             'branch_id' => 'nullable|integer',
-            'stage_id' => 'nullable',
+            'stage_id' => 'nullable|integer|exists:lead_stages,id',
             'users' => 'nullable|array',
             'lead_assigned_user' => 'sometimes|nullable',
             'created_by' => 'sometimes|nullable',
@@ -375,9 +375,7 @@ class LeadController extends Controller
     }
 
     if ($request->filled('stage_id')) {
-        $leadsQuery->whereIn('stage_id', $request->stage_id);
-    }else{
-          $leadsQuery->whereNotIn('stage_id',[6,7]);
+        $leadsQuery->where('stage_id', $request->stage_id);
     }
 
     if ($request->filled('tag')) {
@@ -429,45 +427,20 @@ class LeadController extends Controller
         if ($request->fetcttype === 'agentleads') {
                 $leadsQuery->whereNotNull('agent_id');
             } else {
-                if (\Auth::user()->type != 'Agent') {
                 $leadsQuery->whereNull('agent_id');
-                }
-
             }
 
-    // // User permissions
-    // $userType = $usr->type;
-    // if ($userType === 'company') {
-    //     $leadsQuery->where('brand_id', $usr->id);
-    // } elseif ($userType === 'Region Manager' && $usr->region_id) {
-    //     $leadsQuery->where('region_id', $usr->region_id);
-    // } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
-    //     $leadsQuery->where('branch_id', $usr->branch_id);
-    // } elseif ($userType === 'Agent') {
-    //     $leadsQuery->where('agent_id', $usr->agent_id);
-    // }
-
-    // Apply user type-based filtering
-     // Initialize variables
-            $companies = FiltersBrands();
-            $brand_ids = array_keys($companies);
-
-            $userType = \Auth::user()->type;
-            if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
-                // No additional filtering needed
-            } elseif ($userType === 'company') {
-                $leadsQuery->where('brand_id', \Auth::user()->id);
-            } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
-                $leadsQuery->whereIn('brand_id', $brand_ids);
-            } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
-                $leadsQuery->where('region_id', \Auth::user()->region_id);
-            } elseif (($userType === 'Branch Manager' || in_array($userType, ['Careers Consultant', 'Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || \Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id)) {
-                $leadsQuery->where('branch_id', \Auth::user()->branch_id);
-            } elseif ($userType === 'Agent') {
-               $leadsQuery->where('agent_id', $usr->agent_id);
-            } else {
-                $leadsQuery->where('user_id', \Auth::user()->id);
-            }
+    // User permissions
+    $userType = $usr->type;
+    if ($userType === 'company') {
+        $leadsQuery->where('brand_id', $usr->id);
+    } elseif ($userType === 'Region Manager' && $usr->region_id) {
+        $leadsQuery->where('region_id', $usr->region_id);
+    } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
+        $leadsQuery->where('branch_id', $usr->branch_id);
+    } elseif ($userType === 'Agent') {
+        $leadsQuery->where('agent_id', $usr->agent_id);
+    }
 
     // Search
     if ($request->filled('search')) {
@@ -562,14 +535,6 @@ class LeadController extends Controller
             'total_records' => $leads->count(),
         ]);
     }
-
-    $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
-            $sql = vsprintf($sql, $leadsQuery->getBindings());
-            // echo $sql;
-
-            // echo "==========";
-            // echo $sql2;
-           // dd($sql );
 
     // ✅ List View - Simple pagination
     $leads = $leadsQuery

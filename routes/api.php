@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
-use App\Http\Controllers\AgencyTagController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginRegisterController;
@@ -22,7 +21,6 @@ use App\Http\Controllers\LeadController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CommissionsController;
-use App\Http\Controllers\CompanyPermissionController;
 use App\Http\Controllers\CompetenciesController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\JobController;
@@ -83,7 +81,6 @@ use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
-use App\Http\Controllers\LeadTagController;
 use App\Models\InterviewSchedule;
 use App\Models\JobCategory;
 use App\Models\TaskFile;
@@ -94,9 +91,6 @@ use App\Models\AttendanceEmployee;
 use Carbon\Carbon;
 use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
-use App\Http\Controllers\SendQueuedSmsController;
-use App\Http\Controllers\TaskTagController;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -108,10 +102,8 @@ use App\Http\Controllers\TaskTagController;
 |
 */
 
-Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
-Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']); //  email sendng compain cron
-Route::get('/sendQueuedEmailsCrm', [SendQueuedEmailsController::class, 'handleCrm']); //  email sendng compain cron
-Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sms sendng  all  cron
+    Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
+Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']);
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
 
 Route::post('/brandDetailPublic', [UserController::class, 'brandDetailPublic']);
@@ -314,8 +306,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/agentRequestPost', [AgentController::class, 'agentRequestPost']);
     Route::post('/userTasksGet', [TaskController::class, 'userTasksGet']);
     Route::post('/createtask', [TaskController::class, 'createtask']);
-    Route::post('/taskAddTags', [TaskController::class, 'taskAddTags']);
-    Route::post('/TaskStatusChange', [TaskController::class, 'TaskStatusChange']);
     Route::post('/taskUpdate', [TaskController::class, 'taskUpdate']);
     Route::post('/updateTaskStatus', [TaskController::class, 'updateTaskStatus']);
     Route::post('/ShuffleTaskOwnership', [TaskController::class, 'ShuffleTaskOwnership']);
@@ -797,30 +787,12 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/deleteAnnouncement', [AnnouncementController::class, 'deleteAnnouncement']);
      Route::post('/announcementDetail', [AnnouncementController::class, 'announcementDetail']);
 
-     //   tag
+     //   Institute Category
      Route::post('/addTag', [TagController::class, 'addTag']);
      Route::post('/getTagPluck', [TagController::class, 'getTagPluck']);
      Route::get('/getTagsbytype', [TagController::class, 'getTags']);
      Route::post('/updateTag', [TagController::class, 'updateTag']);
      Route::post('/deleteTag', [TagController::class, 'deleteTag']);
-     //   lead tag
-     Route::post('/addLeadTag', [LeadTagController::class, 'addLeadTag']);
-     Route::post('/getLeadTags', [LeadTagController::class, 'getLeadTags']);
-     Route::post('/updateLeadTag', [LeadTagController::class, 'updateLeadTag']);
-     Route::post('/deleteLeadTag', [LeadTagController::class, 'deleteLeadTag']);
-     Route::post('/deleteBulkLeadTags', [LeadTagController::class, 'deleteBulkLeadTags']);
-     //   task tag
-     Route::post('/addTaskTag', [TaskTagController::class, 'addTaskTag']);
-     Route::post('/getTaskTags', [TaskTagController::class, 'getTaskTags']);
-     Route::post('/updateTaskTag', [TaskTagController::class, 'updateTaskTag']);
-     Route::post('/deleteTaskTag', [TaskTagController::class, 'deleteTaskTag']);
-     Route::post('/deleteBulkTaskTags', [TaskTagController::class, 'deleteBulkTaskTags']);
-     //   Agency tag
-     Route::post('/addAgencyTag', [AgencyTagController::class, 'addAgencyTag']);
-     Route::post('/getAgencyTags', [AgencyTagController::class, 'getAgencyTags']);
-     Route::post('/updateAgencyTag', [AgencyTagController::class, 'updateAgencyTag']);
-     Route::post('/deleteAgencyTag', [AgencyTagController::class, 'deleteAgencyTag']);
-     Route::post('/deleteBulkAgencyTags', [AgencyTagController::class, 'deleteBulkAgencyTags']);
 
        //   Designation
      Route::post('/addDesignation', [DesignationController::class, 'addDesignation']);
@@ -981,8 +953,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
      //     application
      Route::post('/getApplications', [ApplicationsController::class, 'getApplications']);
-     //Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByView']);
-     Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByViewNew']);
+     Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByView']);
      Route::post('/getDetailApplication', [ApplicationsController::class, 'getDetailApplication']);
      Route::post('/updateApplication', [ApplicationsController::class, 'updateApplication']);
      Route::post('/storeApplication', [ApplicationsController::class, 'storeApplication']);
@@ -1015,8 +986,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getDefaultFiltersData', [GeneralController::class, 'getDefaultFiltersData']);
     Route::get('/getAllProjectDirectors', [GeneralController::class, 'getAllProjectDirectors']);
     Route::post('/getRegionBrands', [GeneralController::class, 'getRegionBrands']);
-    Route::post('/getRegionBrandsAllUser', [GeneralController::class, 'getRegionBrandsAllUser']);
-    Route::post('/getRegionBrandsByRole', [GeneralController::class, 'getRegionBrandsByRole']);
     Route::post('/agentTeamPluck', [GeneralController::class, 'agentTeamPluck']);
     Route::post('/getMultiRegionBrands', [GeneralController::class, 'getMultiRegionBrands']);
     Route::post('/getFilterData', [GeneralController::class, 'getFilterData']);
@@ -1027,7 +996,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getStages', [GeneralController::class, 'getStages']);
     Route::get('/getapplicationStagesPluck', [GeneralController::class, 'getapplicationStagesPluck']);
     Route::get('/getTags', [GeneralController::class, 'getTags']);
-    Route::get('/TaskTag', [GeneralController::class, 'TaskTag']);
     Route::get('/getAllcurrencies', [GeneralController::class, 'getAllcurrencies']);
     Route::get('/getTagsByBrandId', [GeneralController::class, 'getTagsByBrandId']);
     Route::get('/getJobCategories', [GeneralController::class, 'getJobCategories']);
@@ -1035,16 +1003,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/UpdateFilterSave', [GeneralController::class, 'UpdateFilterSave']);
     Route::post('/Country', [GeneralController::class, 'Country']);
     Route::post('/Country/by/code', [GeneralController::class, 'CountryByCode']);
-    Route::post('/Country/by/id', [GeneralController::class, 'CountryByID']);
     Route::post('/UniversityByCountryCode', [GeneralController::class, 'UniversityByCountryCode']);
-    Route::post('/UniversityByCountryid', [GeneralController::class, 'UniversityByCountryid']);
     Route::post('/getLogActivity', [GeneralController::class, 'getLogActivity']);
     Route::get('/getDistinctModuleTypes', [GeneralController::class, 'getDistinctModuleTypes']);
     Route::post('/DeleteSavedFilter', [GeneralController::class, 'DeleteSavedFilter']);
     Route::post('/GetBranchByType', [GeneralController::class, 'GetBranchByType']);
     Route::post('/leadsrequireddata', [GeneralController::class, 'leadsrequireddata']);
     Route::post('/getCitiesOnCode', [GeneralController::class, 'getCitiesOnCode']);
-    Route::post('/getCitiesOnid', [GeneralController::class, 'getCitiesOnid']);
 
     Route::post('/DealTagPluck', [GeneralController::class, 'DealTagPluck']);
     Route::post('/DealStagPluck', [GeneralController::class, 'DealStagPluck']);
@@ -1060,15 +1025,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Reassign
 
     Route::post('/reassignUserData', [UserReassignController::class, 'reassignUserData']);
-
-    Route::get('/company-permissions', [CompanyPermissionController::class, 'index']);
-    Route::post('/company-permission-update', [CompanyPermissionController::class, 'updatePermission']);
-
-
-    Route::post('/addToEmailQueue', [SendQueuedEmailsController::class, 'addToEmailQueue']);
-    Route::post('/getEmailQueueByRelated', [SendQueuedEmailsController::class, 'getEmailQueueByRelated']);
-
-    Route::post('/addToSmsQueue', [SendQueuedSmsController::class, 'addToSmsQueue']);
-    Route::post('/getSmsQueueByRelated', [SendQueuedSmsController::class, 'getSmsQueueByRelated']);
 
 });

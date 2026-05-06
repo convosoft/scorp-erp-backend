@@ -11,7 +11,6 @@ use App\Models\Stage;
 use App\Models\Invoice;
 use App\Models\Utility;
 use App\Models\Contract;
-use App\Models\Branch;
 use App\Models\ClientDeal;
 use App\Models\Estimation;
 use App\Models\University;
@@ -495,25 +494,6 @@ class ClientController extends Controller
             }
 
 
-            $branch_query = Branch::select(['branches.*']);
-
-                $user = \Auth::user();
-
-                if ($user->type == 'super admin' || $user->type == 'Admin Team' || $user->type == 'HR') {
-                    // all branches
-                } elseif ($user->type == 'company') {
-                    $branch_query->where('brands', $user->id);
-                } else {
-                    $branch_query->whereIn('brands', array_keys(FiltersBrands()));
-                }
-
-                if ($user->type == 'Region Manager') {
-                    $branch_query->where('region_id', $user->region_id);
-                }
-
-                $allBranches = $branch_query->pluck('id')->toArray();
-
-
 
             $lead = Lead::select('leads.*')
                 ->join('deals as d', 'leads.is_converted', '=', 'd.id')
@@ -526,67 +506,11 @@ class ClientController extends Controller
                 ->select('deals.*')
                 ->get();
 
-            $deals->transform(function ($app) use ($user, $allBranches) {
-
-                $canOpen = false;
-
-                if (in_array($user->type, ['super admin','Admin Team','Product Coordinator'])) {
-                    $canOpen = true;
-                }
-                elseif ($user->type == 'Project Manager' && in_array($app->brand_id, array_keys(FiltersBrands()))) {
-                    $canOpen = true;
-                }
-                elseif ($user->type == 'Admissions Officer' && in_array($app->branch_id, $allBranches)) {
-                    $canOpen = true;
-                }
-
-                $app->can_open = $canOpen;
-
-                return $app;
-            });
-
-            // $applications = Deal::join('deal_applications', 'deal_applications.deal_id', 'deals.id')
-            //     ->join('client_deals', 'client_deals.deal_id', 'deals.id')
-            //     ->where('client_deals.client_id', $request->id)
-            //     ->select('deal_applications.*')
-            //     ->get();
-
-
-            $applications = Deal::join('deal_applications', 'deal_applications.deal_id', '=', 'deals.id')
-            ->join('client_deals', 'client_deals.deal_id', '=', 'deals.id')
-            ->leftJoin('universities', 'universities.id', '=', 'deal_applications.university_id')
-
-            ->leftJoin('application_stages as s', 's.id', '=', 'deal_applications.stage_id')
-
-            ->leftJoin('users as au', 'au.id', '=', 'deals.assigned_to')
-            ->where('client_deals.client_id', $request->id)
-            ->select(
-                'deal_applications.*',
-                'universities.id as university_id',
-                's.name as stage_name',
-                'au.name as assign_user_name',
-                'universities.name as university_name'
-            )
-            ->get();
-
-            $applications->transform(function ($app) use ($user, $allBranches) {
-
-                $canOpen = false;
-
-                if (in_array($user->type, ['super admin','Admin Team','Product Coordinator'])) {
-                    $canOpen = true;
-                }
-                elseif ($user->type == 'Project Manager' && in_array($app->brand_id, array_keys(FiltersBrands()))) {
-                    $canOpen = true;
-                }
-                elseif ($user->type == 'Admissions Officer' && in_array($app->branch_id, $allBranches)) {
-                    $canOpen = true;
-                }
-
-                $app->can_open = $canOpen;
-
-                return $app;
-            });
+            $applications = Deal::join('deal_applications', 'deal_applications.deal_id', 'deals.id')
+                ->join('client_deals', 'client_deals.deal_id', 'deals.id')
+                ->where('client_deals.client_id', $request->id)
+                ->select('deal_applications.*')
+                ->get();
 
             $stages = Stage::pluck('name', 'id');
 

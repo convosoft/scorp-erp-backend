@@ -67,9 +67,6 @@ class DealController extends Controller
         if (isset($_POST['brand_id']) && !empty($_POST['brand_id'])) {
             $filters['brand_id'] = $_POST['brand_id'];
         }
-        if (isset($_POST['created_by']) && !empty($_POST['created_by'])) {
-            $filters['created_by'] = $_POST['created_by'];
-        }
 
         if (isset($_POST['region_id']) && !empty($_POST['region_id'])) {
             $filters['region_id'] = $_POST['region_id'];
@@ -231,13 +228,11 @@ class DealController extends Controller
     $query = AdmissionView::query();
 
     // Permissions logic
-    $companies = FiltersBrands();
-            $brand_ids = array_keys($companies);
     if (!in_array($user->type, ['super admin', 'Admin Team']) && !$user->can('level 1')) {
         if ($user->type == 'company') {
             $query->where('brand_id', $user->id);
         } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
-            $query->whereIn('brand_id',  $brand_ids);
+            $query->whereIn('brand_id', array_keys(FiltersBrands()));
         } elseif ($user->type == 'Region Manager' && $user->region_id) {
             $query->where('region_id', $user->region_id);
         } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Career Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
@@ -253,13 +248,12 @@ class DealController extends Controller
     $filters = $this->dealFilters();
     foreach ($filters as $column => $value) {
         if ($column === 'name') $query->where('name', 'like', "%{$value}%");
-        elseif ($column === 'stage_id') $query->whereIn('stage_id', $value);
+        elseif ($column === 'stage_id') $query->where('stage_id', $value);
         elseif ($column === 'users') $query->whereIn('created_by', $value);
         elseif ($column === 'created_at') $query->whereDate('created_at', 'LIKE', '%' . substr($value, 0, 10) . '%');
-        elseif ($column === 'brand_id') $query->where('brand_id', $value);
+        elseif ($column === 'brand') $query->where('brand_id', $value);
         elseif ($column === 'region_id') $query->where('region_id', $value);
         elseif ($column === 'branch_id') $query->where('branch_id', $value);
-        elseif ($column === 'created_by') $query->where('created_by', $value);
         elseif ($column === 'deal_assigned_user') $query->where('assigned_to', $value);
         elseif ($column === 'created_at_from') $query->whereDate('created_at', '>=', $value);
         elseif ($column === 'created_at_to') $query->whereDate('created_at', '<=', $value);
@@ -270,23 +264,14 @@ class DealController extends Controller
         }
     }
 
-        // fetch type filter
-        if ($request->filled('fetcttype')) {
-            $type = $request->fetcttype;
-
-            if ($type === 'youradmissions') {
-                $query->where('created_by', $user->id);
-
-            } elseif ($type === 'assigntome') {
-                $query->where('assigned_to', $user->id);
-
-            } elseif ($type === 'agentadmissions') {
-                $query->whereNotNull('agent_id');
-
-            } elseif (\Auth::user()->type != 'Agent') {
-                $query->whereNull('agent_id');
-            }
-        }
+    // fetcttype filter
+    if ($request->filled('fetcttype')) {
+        $type = $request->fetcttype;
+        if ($type === 'youradmissions') $query->where('created_by', $user->id);
+        if ($type === 'assigntome') $query->where('assigned_to', $user->id);
+        if ($type === 'agentadmissions') $query->whereNotNull('agent_id');
+        else $query->whereNull('agent_id');
+    }
 
     // Search filter
     if ($request->filled('search')) {
@@ -379,14 +364,6 @@ class DealController extends Controller
         ]);
     }
 
-
-      $sql = str_replace('?', "'%s'", $query->toSql());
-            $sql = vsprintf($sql, $query->getBindings());
-            // echo $sql;
-
-            // echo "==========";
-            // echo $sql2;
-           // dd($sql , $brand_ids,$user);
     // List view
     $deals = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
@@ -441,7 +418,7 @@ class DealController extends Controller
                 ->pluck('stage_id')
                 ->toArray();
 
-            $applications = DealApplication::where('deal_id', $request->deal_id)->get();
+            $applications = DealApplication::where('deal_id', $deal->id)->get();
 
         return response()->json([
             'status' => 'success',
@@ -734,15 +711,13 @@ class DealController extends Controller
 {
     $user = Auth::user();
 
-            // Permission check
-        if (!$user->can('edit deal') && $user->type != 'super admin') {
-            return response()->json([
-                'status' => 'error',
-                'message' => [
-                    'permission' => [__('Permission Denied.')]
-                ]
-            ], 422);
-        }
+    // Permission check
+    if (!$user->can('edit deal') && $user->type != 'super admin') {
+        return response()->json([
+            'status' => 'error',
+            'message' => __('Permission Denied.')
+        ], 200);
+    }
 
     // Validation
     $validator = Validator::make($request->all(), [
@@ -755,7 +730,6 @@ class DealController extends Controller
         'lead_branch' => 'required|gt:0',
         'assigned_to' => 'required|exists:users,id',
         'pipeline_id' => 'required',
-        'drive_link' => 'required',
         // 'gender' => 'required',
         // 'nationality' => 'required',
         // 'date_of_birth' => 'required',
@@ -816,11 +790,6 @@ class DealController extends Controller
     $deal->price = 0;
     $deal->pipeline_id = $request->input('pipeline_id');
     $deal->description = $request->input('deal_description');
-    $deal->tag_ids = $request->tag_ids ?? '';
-    //$deal->drive_link = $request->input('drive_link');
-    if ($request->filled('drive_link')) {
-            $deal->drive_link = $request->input('drive_link');
-        }
     $deal->status = 'Active';
     $deal->created_by = $deal->created_by;
     $deal->save();

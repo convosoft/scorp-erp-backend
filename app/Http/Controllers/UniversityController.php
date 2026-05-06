@@ -39,17 +39,6 @@ class UniversityController extends Controller
             ], 403);
         }
 
-         $validator = Validator::make($request->all(), [
-            'application_deadline' => 'nullable|date_format:Y-m-d',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         // European countries for filtering
            $europe_country = Utility::getValByName('europe_country');
         $europeEMEA = array_filter(
@@ -94,34 +83,9 @@ class UniversityController extends Controller
         }
 
 
-        if ($request->filled('channel_id') && $request->country == 'UK Home') {
-
-            $query->whereHas('homeuniversity', function ($q) use ($request) {
-                $q->where('channel_id', $request->channel_id);
-            });
-
-        }
-
-
-        if ($request->filled('channel_id') && $request->country!='UK Home') {
+        if ($request->filled('channel_id')) {
             $query->where('universities.channel_id', $request->channel_id);
         }
-
-        if ($request->filled('application_deadline')) {
-            $query->where('universities.application_deadline','<=', $request->application_deadline);
-        }
-
-        if ($request->filled('program_fee')) {
-
-            $query->where(function ($q) use ($request) {
-                $q->where('universities.postgrad_fee', 'like', '%'.$request->program_fee.'%')
-                ->orWhere('universities.undergrad_fee', 'like', '%'.$request->program_fee.'%')
-                ->orWhere('universities.research_fee', 'like', '%'.$request->program_fee.'%');
-            });
-
-        }
-
-
 
         // if ($request->filled('is_refund')) {
         //     $query->where('universities.is_refund', $request->is_refund);
@@ -927,10 +891,6 @@ class UniversityController extends Controller
             'institution_link' => 'nullable|string',
             'resource_drive_link' => 'nullable|string',
             'application_method_drive_link' => 'nullable|string',
-            'application_deadline' => 'nullable|date_format:Y-m-d',
-            'postgrad_fee' => 'nullable|string',
-            'undergrad_fee' => 'nullable|string',
-            'research_fee' => 'nullable|string',
             'category_id' => 'nullable|exists:institute_categories,id',
         ]);
 
@@ -969,23 +929,6 @@ class UniversityController extends Controller
         $university->destination_id = $request->destination_id;
         $university->latitude = $request->latitude;
         $university->longitude = $request->longitude;
-
-
-
-        if ($request->filled('application_deadline')) {
-            $university->application_deadline = $request->application_deadline;
-            }
-        if ($request->filled('postgrad_fee')) {
-            $university->postgrad_fee = $request->postgrad_fee;
-            }
-        if ($request->filled('undergrad_fee')) {
-            $university->undergrad_fee = $request->undergrad_fee;
-            }
-        if ($request->filled('research_fee')) {
-            $university->research_fee = $request->research_fee;
-            }
-
-
         $university->save();
 
         // Log changed fields only
