@@ -1007,7 +1007,7 @@ public function enrichCourseWithAI(Request $request)
         ]);
     }
 
-     dd($courses);
+
 
     $updatedCount = 0;
     $errors = [];
