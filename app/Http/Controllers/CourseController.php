@@ -1024,7 +1024,7 @@ public function enrichCourseWithAI(Request $request)
             }
         }
 
-        dd($countryName,$course,$university);
+       // dd($countryName,$course,$university);
 
         $prompt = "
         Provide a professional description (course information) and the specific campus address (course location) for the course '{$course->name}' at '{$university->name}' in '{$countryName}', specifically for the '{$course->campus}' campus.
