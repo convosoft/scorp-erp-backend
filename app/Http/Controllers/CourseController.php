@@ -961,20 +961,27 @@ public function courseFinder(Request $request)
     // Sort ALL courses by match_score DESC
     $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
     
+    // Sort ALL courses by match_score DESC
+    $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
+    
     $aiSummary = "";
+    $askAi = (int)$request->ask_ai;
 
-    // Check if AI recommendation is requested
-    if ($request->filled('ask_ai') && $request->ask_ai == 1) {
+    // --- AI MODES (1: Recommendation, 2: PDF Generation) ---
+    if ($askAi === 1 || $askAi === 2) {
         $selectedIds = (array)$request->selected_course_ids;
-        
-        // 1. Get manually selected courses (up to 10)
-        $selectedCourses = $sortedCourses->whereIn('id', $selectedIds)->take(10);
-        
-        // 2. Fill remaining spots (up to 10 total) with the top scoring courses from the database
-        $remainingCount = 10 - $selectedCourses->count();
-        $otherTopCourses = $sortedCourses->whereNotIn('id', $selectedIds)->take($remainingCount);
-        
-        $topCandidates = $selectedCourses->concat($otherTopCourses)->values();
+        $topCandidates = collect();
+
+        if ($askAi === 1) {
+            // Recommendation Logic: Selected courses + Top Database matches (up to 10 total)
+            $selectedCourses = $sortedCourses->whereIn('id', $selectedIds)->take(10);
+            $remainingCount = 10 - $selectedCourses->count();
+            $otherTopCourses = $sortedCourses->whereNotIn('id', $selectedIds)->take($remainingCount);
+            $topCandidates = $selectedCourses->concat($otherTopCourses)->values();
+        } else {
+            // PDF Logic: Only the manually selected courses
+            $topCandidates = $sortedCourses->whereIn('id', $selectedIds)->values();
+        }
 
         if ($topCandidates->isNotEmpty()) {
             $studentProfile = $request->only([
@@ -997,7 +1004,7 @@ public function courseFinder(Request $request)
             })->toArray();
 
             $aiPrompt = "
-            You are the SCORP AI Course Finder. Based on the student's profile and the matched courses, generate a personalized report.
+            You are the SCORP AI Course Finder expert. Based on the student's profile and the matched courses, generate a personalized report.
             
             Student Profile:
             " . json_encode($studentProfile) . "
@@ -1040,7 +1047,7 @@ public function courseFinder(Request $request)
                 $aiData = json_decode($aiResponse->choices[0]->message->content, true);
                 $aiSummary = $aiData['greeting'] ?? "";
                 
-                // Map AI data back to the 10 selected candidates
+                // Map AI data back to candidates
                 $topCandidates = $topCandidates->map(function($course) use ($aiData) {
                     $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
                     
@@ -1049,8 +1056,9 @@ public function courseFinder(Request $request)
                     
                     if ($aiMatch) {
                         $course->ai_rationale = $aiMatch['rationale'];
+                         if ($askAi === 1 ) {
                         $course->match_score = $aiMatch['match_percentage'];
-                        
+                         }
                         // Add "TOP PICK" to the start of tags if AI identifies it as such
                         if ($aiMatch['is_top_pick'] ?? false) {
                             array_unshift($tagsArray, "TOP PICK");
@@ -1073,7 +1081,13 @@ public function courseFinder(Request $request)
         }
     }
 
-    // Default: Return all (no AI)
+    // Default Search Results: Return all (no AI) with tag cleaning
+    $sortedCourses = $sortedCourses->map(function ($course) {
+        $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
+        $course->course_tags = implode(', ', array_unique($tagsArray));
+        return $course;
+    });
+
     return response()->json([
         'status' => 'success',
         'courses' => $sortedCourses,
