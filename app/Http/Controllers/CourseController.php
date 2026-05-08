@@ -901,6 +901,10 @@ public function courseFinder(Request $request)
     }
     $selectedUniversities = $request->universities ?? [];
 
+    $sql = str_replace('?', "'%s'", $query->toSql());
+    $sql = vsprintf($sql, $query->getBindings());
+    dd($sql);   
+
     $allCourses = $query->latest()->get();
 
     $scoredCourses = $allCourses->map(function ($course) use ($request, $selectedUniversities, $selectedCountryNames) {
