@@ -974,7 +974,7 @@ public function courseFinder(Request $request)
         $selectedIds = (array)$request->selected_course_ids;
         $topCandidates = collect();
 
-        if ($askAi === 1) {
+        if ($askAi == 1) {
             // Recommendation Logic: Selected courses + Top Database matches (up to 10 total)
             $selectedCourses = $sortedCourses->whereIn('id', $selectedIds)->take(10);
             $remainingCount = 10 - $selectedCourses->count();
