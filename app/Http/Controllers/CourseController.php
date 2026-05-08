@@ -968,7 +968,7 @@ public function courseFinder(Request $request)
     $askAi = (int)$request->ask_ai;
 
     // --- AI MODES (1: Recommendation, 2: PDF Generation) ---
-    if ($askAi === 1 || $askAi === 2) {
+    if ($askAi == 1 || $askAi == 2) {
         $selectedIds = (array)$request->selected_course_ids;
         $topCandidates = collect();
 
@@ -1056,7 +1056,7 @@ public function courseFinder(Request $request)
                     
                     if ($aiMatch) {
                         $course->ai_rationale = $aiMatch['rationale'];
-                         if ($askAi === 1 ) {
+                         if ($askAi == 1 ) {
                         $course->match_score = $aiMatch['match_percentage'];
                          }
                         // Add "TOP PICK" to the start of tags if AI identifies it as such
