@@ -989,6 +989,8 @@ public function courseFinder(Request $request)
            
         }
 
+         dd($selectedIds,$askAi,$topCandidates);
+
         if ($topCandidates->isNotEmpty()) {
             $studentProfile = $request->only([
                 'full_name', 'last_qualification', 'department', 'degree_name', 
