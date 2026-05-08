@@ -559,6 +559,8 @@ class CourseController extends Controller
         'final_instalment' => $request->final_instalment,
         'course_information' => $request->course_information,
         'course_location' => $request->course_location,
+        'min_requirements' => $request->min_requirements,
+        'course_tags' => $request->course_tags,
     ];
 
     foreach ($fieldsToUpdate as $field => $newValue) {
