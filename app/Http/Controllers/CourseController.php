@@ -1079,7 +1079,7 @@ public function courseFinder(Request $request)
                     $course->course_tags = implode(', ', array_unique($tagsArray));
                     return $course;
                 })->sortByDesc('match_score')->values();
-                 dd($selectedIds,$askAi,count($topCandidates),count($aiData['recommendations']),count($aiData )); //ask ai 2  records are 2 
+                 //dd($selectedIds,$askAi,count($topCandidates),count($aiData['recommendations']),count($aiData )); //ask ai 2  records are 2 
 
 
                 // dd($selectedIds,$askAi,$topCandidates);  ask ai 2  records are 42 
