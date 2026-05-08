@@ -116,7 +116,7 @@ Route::get('/NotificationFifteenDays', function () {
    return App\Models\Notification::where('created_at', '<', now()->subDays(15))->delete();
  });
  
-    Route::get('/enrichCourseWithAI', [CourseController::class, 'enrichCourseWithAI']);
+Route::get('/enrichCourseWithAI', [CourseController::class, 'enrichCourseWithAI']);
 
 Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
 Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']); //  email sendng compain cron
