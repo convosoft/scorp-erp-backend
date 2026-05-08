@@ -991,7 +991,7 @@ public function courseFinder(Request $request)
            
         }
 
-         dd($selectedIds,$askAi,$topCandidates);
+       //  dd($selectedIds,$askAi,$topCandidates);
 
         if ($topCandidates->isNotEmpty()) {
             $studentProfile = $request->only([
@@ -1080,7 +1080,7 @@ public function courseFinder(Request $request)
                 })->sortByDesc('match_score')->values();
 
 
-                 dd($selectedIds,$askAi,$topCandidates);
+               //  dd($selectedIds,$askAi,$topCandidates);
 
                 return response()->json([
                     'status' => 'success',
