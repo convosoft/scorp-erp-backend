@@ -879,55 +879,35 @@ public function courseFinder(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | PAGINATION
-    |--------------------------------------------------------------------------
-    */
-    //  $sql = str_replace('?', "'%s'", $query->toSql());
-    //         $sql = vsprintf($sql, $query->getBindings());
-    //          echo $sql;
-
-    $paginatedCourses = $query->latest()->paginate($request->perPage ?? 50);
-
-    /*
-    |--------------------------------------------------------------------------
-    | PREPARE COUNTRY NAMES FROM IDS
+    | AI SCORING & ENRICHMENT
     |--------------------------------------------------------------------------
     */
 
     $selectedCountryNames = [];
-
     if (!empty($request->countries)) {
         $selectedCountryNames = \App\Models\Country::whereIn('id', $request->countries)
             ->pluck('name')
             ->map(fn($name) => strtolower(trim($name)))
             ->toArray();
     }
-
     $selectedUniversities = $request->universities ?? [];
 
-    /*
-    |--------------------------------------------------------------------------
-    | AI SCORING (CORRECTED)
-    |--------------------------------------------------------------------------
-    */
+    $allCourses = $query->latest()->get();
 
-    $scoredCourses = collect($paginatedCourses->items())->map(function ($course) use ($request, $selectedUniversities, $selectedCountryNames) {
-
+    $scoredCourses = $allCourses->map(function ($course) use ($request, $selectedUniversities, $selectedCountryNames) {
         $score = 0;
 
-        // University preference
-        if (!empty($selectedUniversities) &&
-            in_array($course->university_id, $selectedUniversities)) {
+        // University Match (+30)
+        if (!empty($selectedUniversities) && in_array($course->university_id, $selectedUniversities)) {
             $score += 30;
         }
 
-        // ✅ COUNTRY MATCH (FIXED)
-        if (!empty($selectedCountryNames) &&
-            in_array(strtolower(trim($course->resolved_country_name)), $selectedCountryNames)) {
+        // Country Match (+20)
+        if (!empty($selectedCountryNames) && in_array(strtolower(trim($course->resolved_country_name)), $selectedCountryNames)) {
             $score += 20;
         }
 
-        // Budget
+        // Budget Match (+20)
         if ($request->filled('budget')) {
             try {
                 [$min, $max] = explode('-', $request->budget);
@@ -937,55 +917,117 @@ public function courseFinder(Request $request)
             } catch (\Exception $e) {}
         }
 
-        // Course match
-        if ($request->filled('course') &&
-            str_contains(strtolower($course->name), strtolower($request->course))) {
+        // Course/Keyword Match (+15)
+        if ($request->filled('course') && str_contains(strtolower($course->name), strtolower($request->course))) {
             $score += 15;
         }
 
-        // Campus
-        if ($request->filled('campus') &&
-            str_contains(strtolower($course->campus), strtolower(implode(',', (array)$request->campus)))) {
+        // Campus Match (+10)
+        if ($request->filled('campus') && str_contains(strtolower($course->campus), strtolower(implode(',', (array)$request->campus)))) {
             $score += 10;
         }
 
-        // Intake
-        if ($request->filled('intake_month') &&
-            str_contains($course->intake_month, implode(',', (array)$request->intake_month))) {
+        // Intake Match (+5)
+        if ($request->filled('intake_month') && str_contains($course->intake_month, implode(',', (array)$request->intake_month))) {
             $score += 5;
         }
-        // Intake
-        if ($request->filled('intakeYear') &&
-            str_contains($course->intakeYear, implode(',', (array)$request->intakeYear))) {
-            $score += 5;
-        }
-
-        // Degree
-        if ($request->filled('degree_level') &&
-            str_contains(strtolower($course->name), strtolower($request->degree_level))) {
+        if ($request->filled('intakeYear') && str_contains($course->intakeYear, implode(',', (array)$request->intakeYear))) {
             $score += 5;
         }
 
         $course->match_score = min($score, 100);
-
         return $course;
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | SORT + TOP
-    |--------------------------------------------------------------------------
-    */
-
+    // Sort ALL courses by match_score DESC
     $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
-    $topCourses = $sortedCourses->take(3)->values();
+    
+    // Pick top candidates for AI rationale and greeting (limited to 10 for performance)
+    $topCandidates = $sortedCourses->take(10)->values();
+    $aiSummary = "";
 
-    $paginatedCourses->setCollection($sortedCourses);
+    if ($topCandidates->isNotEmpty()) {
+        $studentProfile = $request->only([
+            'full_name', 'last_qualification', 'department', 'degree_name', 
+            'cgpa', 'intakeYear', 'passingYear', 'language_test', 'total_bands', 
+            'intake_month', 'course', 'degree_level', 'budget'
+        ]);
+
+        $coursesContext = $topCandidates->map(function($c) {
+            return [
+                'id' => $c->id,
+                'name' => $c->name,
+                'university' => $c->university_name,
+                'country' => $c->resolved_country_name,
+                'info' => $c->course_information,
+                'location' => $c->course_location,
+                'fees' => $c->gross_fees,
+            ];
+        })->toArray();
+
+        $aiPrompt = "
+        You are the SCORP AI Course Finder. Based on the student's profile and the matched courses, generate a personalized report.
+        
+        Student Profile:
+        " . json_encode($studentProfile) . "
+        
+        Top Matched Courses:
+        " . json_encode($coursesContext) . "
+        
+        Tasks:
+        1. Write a short, professional greeting (2-3 sentences) addressed to the student by name ({$request->full_name}).
+        2. For each course, provide:
+           - A 'strategic_rationale' (1 sentence explaining why this course is a good fit).
+           - 2-3 'tags' (e.g., 'TOP PICK', 'Research-Led', 'High Employability').
+           - A 'final_match_score' (re-evaluated percentage from 0-100 based on profile fit).
+        
+        Return exactly this JSON format:
+        {
+          \"greeting\": \"...\",
+          \"recommendations\": [
+            {
+              \"course_id\": 123,
+              \"rationale\": \"...\",
+              \"tags\": [\"...\", \"...\"],
+              \"match_percentage\": 95
+            }
+          ]
+        }
+        ";
+
+        try {
+            $aiResponse = OpenAI::chat()->create([
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are the SCORP AI Course Finder expert. Respond ONLY in JSON.'],
+                    ['role' => 'user', 'content' => $aiPrompt],
+                ],
+                'response_format' => ['type' => 'json_object'],
+            ]);
+
+            $aiData = json_decode($aiResponse->choices[0]->message->content, true);
+            $aiSummary = $aiData['greeting'] ?? "";
+            
+            // Map AI data back to courses
+            $sortedCourses = $sortedCourses->map(function($course) use ($aiData) {
+                $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
+                if ($aiMatch) {
+                    $course->ai_rationale = $aiMatch['rationale'];
+                    $course->ai_tags = $aiMatch['tags'];
+                    $course->match_score = $aiMatch['match_percentage'];
+                }
+                return $course;
+            })->sortByDesc('match_score')->values();
+
+        } catch (\Exception $e) {
+            \Log::error("CourseFinder AI Enrichment failed: " . $e->getMessage());
+        }
+    }
 
     return response()->json([
         'status' => 'success',
-        'top_matches' => $topCourses,
-        'courses' => $paginatedCourses,
+        'ai_summary' => $aiSummary,
+        'courses' => $sortedCourses,
     ], 200);
 }
 
