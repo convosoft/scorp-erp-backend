@@ -981,6 +981,8 @@ public function courseFinder(Request $request)
             $otherTopCourses = $sortedCourses->whereNotIn('id', $selectedIds)->take($remainingCount);
             $topCandidates = $selectedCourses->concat($otherTopCourses)->values();
         } else {
+
+            dd($selectedIds,$askAi);
             // PDF Logic: Only the manually selected courses
             $topCandidates = $sortedCourses->whereIn('id', $selectedIds)->values();
         }
