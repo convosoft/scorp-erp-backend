@@ -965,7 +965,7 @@ public function courseFinder(Request $request)
     $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
     
     $aiSummary = "";
-    $askAi = (int)$request->ask_ai;
+    $askAi = $request->ask_ai;
 
     dd($askAi);
 
