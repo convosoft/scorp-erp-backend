@@ -1030,18 +1030,20 @@ public function courseFinder(Request $request)
             $sortedCourses = $sortedCourses->map(function($course) use ($aiData) {
                 $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
                 
-                // Decode existing tags from DB
-                $course->course_tags = json_decode($course->course_tags ?? '[]', true);
-
+                // Explode existing comma-separated tags from DB
+                $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
+                
                 if ($aiMatch) {
                     $course->ai_rationale = $aiMatch['rationale'];
                     $course->match_score = $aiMatch['match_percentage'];
                     
                     // Add "TOP PICK" to the start of tags if AI identifies it as such
                     if ($aiMatch['is_top_pick'] ?? false) {
-                        array_unshift($course->course_tags, "TOP PICK");
+                        array_unshift($tagsArray, "TOP PICK");
                     }
                 }
+                
+                $course->course_tags = implode(', ', array_unique($tagsArray));
                 return $course;
             })->sortByDesc('match_score')->values();
 
@@ -1124,7 +1126,7 @@ public function enrichCourseWithAI(Request $request)
             if (isset($content['information']) && isset($content['location']) && isset($content['tags'])) {
                 $course->course_information = substr($content['information'], 0, 200);
                 $course->course_location = substr($content['location'], 0, 200);
-                $course->course_tags = json_encode($content['tags']);
+                $course->course_tags = implode(', ', (array)$content['tags']);
                 $course->save();
                 $updatedCount++;
             } else {
