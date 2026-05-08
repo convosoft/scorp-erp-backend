@@ -823,6 +823,15 @@ public function courseFinder(Request $request)
         $query->where('courses.type', $request->type);
     }
 
+    if ($request->filled('countries')) {
+        $countries = (array)$request->countries;
+        $query->whereRaw("($caseCountry) IN (" . implode(',', array_fill(0, count($countries), '?')) . ")", $countries);
+    }
+
+    if ($request->filled('universities')) {
+        $query->whereIn('courses.university_id', (array)$request->universities);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | FLEXIBLE FILTERS
