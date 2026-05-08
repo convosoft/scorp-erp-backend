@@ -986,7 +986,7 @@ public function courseFinder(Request $request)
             // PDF Logic: Only the manually selected courses
             $topCandidates = $sortedCourses->whereIn('id', $selectedIds)->values();
 
-            dd($selectedIds,$askAi,$topCandidates);
+           
         }
 
         if ($topCandidates->isNotEmpty()) {
@@ -1074,6 +1074,9 @@ public function courseFinder(Request $request)
                     $course->course_tags = implode(', ', array_unique($tagsArray));
                     return $course;
                 })->sortByDesc('match_score')->values();
+
+
+                 dd($selectedIds,$askAi,$topCandidates);
 
                 return response()->json([
                     'status' => 'success',
