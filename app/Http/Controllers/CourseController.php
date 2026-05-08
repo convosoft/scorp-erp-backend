@@ -990,7 +990,7 @@ public function enrichCourseWithAI(Request $request)
    
 
     // Fetch courses that are missing either information or location
-    $courses = Course::with('university')
+    $courses = Course::has('university')->with('university')
         ->where(function($query) {
             $query->whereNull('course_information')
                   ->orWhere('course_information', '')
@@ -1006,6 +1006,8 @@ public function enrichCourseWithAI(Request $request)
             'message' => 'No courses found needing enrichment.'
         ]);
     }
+
+     dd($courses);
 
     $updatedCount = 0;
     $errors = [];
