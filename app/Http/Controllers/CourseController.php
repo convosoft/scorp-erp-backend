@@ -13,6 +13,7 @@ use App\Models\Instalment;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use OpenAI\Laravel\Facades\OpenAI;
 
 class CourseController extends Controller
 {
@@ -982,6 +983,84 @@ public function courseFinder(Request $request)
         'top_matches' => $topCourses,
         'courses' => $paginatedCourses,
     ], 200);
+}
+
+public function enrichCourseWithAI(Request $request)
+{
+   
+
+    // Fetch courses that are missing either information or location
+    $courses = Course::with('university')
+        ->where(function($query) {
+            $query->whereNull('course_information')
+                  ->orWhere('course_information', '')
+                  ->orWhereNull('course_location')
+                  ->orWhere('course_location', '');
+        })
+        ->limit(20) // Limit to avoid request timeouts
+        ->get();
+
+    if ($courses->isEmpty()) {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'No courses found needing enrichment.'
+        ]);
+    }
+
+    $updatedCount = 0;
+    $errors = [];
+
+    foreach ($courses as $course) {
+        $university = $course->university;
+        $countryName = '';
+        if ($university) {
+            if (is_numeric($university->country)) {
+                $country = \App\Models\Country::find($university->country);
+                $countryName = $country?->name ?? $university->country;
+            } else {
+                $countryName = $university->country;
+            }
+        }
+
+        $prompt = "
+        Provide a professional description (course information) and the specific campus address (course location) for the course '{$course->name}' at '{$university->name}' in '{$countryName}', specifically for the '{$course->campus}' campus.
+        
+        Constraints:
+        - Both the 'information' and 'location' MUST be strictly under 200 characters each.
+        - Return the result in JSON format with exactly two keys: 'information' and 'location'.
+        ";
+
+        try {
+            $response = OpenAI::chat()->create([
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are an expert in university courses and locations. Respond only in JSON format.'],
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'response_format' => ['type' => 'json_object'],
+            ]);
+
+            $content = json_decode($response->choices[0]->message->content, true);
+
+            if (isset($content['information']) && isset($content['location'])) {
+                $course->course_information = substr($content['information'], 0, 200);
+                $course->course_location = substr($content['location'], 0, 200);
+                $course->save();
+                $updatedCount++;
+            } else {
+                $errors[] = "Course ID {$course->id}: Invalid AI response.";
+            }
+
+        } catch (\Exception $e) {
+            $errors[] = "Course ID {$course->id}: " . $e->getMessage();
+        }
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => "Enrichment complete. Updated {$updatedCount} courses.",
+        'errors' => $errors
+    ]);
 }
 
 
