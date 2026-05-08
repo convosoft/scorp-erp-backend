@@ -993,10 +993,11 @@ public function courseFinder(Request $request)
         
         Tasks:
         1. Write a short, professional greeting (2-3 sentences) addressed to the student by name ({$request->full_name}).
-        2. For each course, provide:
+        2. Identify at most 1 course as a 'top_pick' (set is_top_pick to true).
+        3. For each course, provide:
            - A 'strategic_rationale' (1 sentence explaining why this course is a good fit).
-           - 2-3 'tags' (e.g., 'TOP PICK', 'Research-Led', 'High Employability').
            - A 'final_match_score' (re-evaluated percentage from 0-100 based on profile fit).
+           - A boolean 'is_top_pick'.
         
         Return exactly this JSON format:
         {
@@ -1005,8 +1006,8 @@ public function courseFinder(Request $request)
             {
               \"course_id\": 123,
               \"rationale\": \"...\",
-              \"tags\": [\"...\", \"...\"],
-              \"match_percentage\": 95
+              \"match_percentage\": 95,
+              \"is_top_pick\": true
             }
           ]
         }
@@ -1028,10 +1029,18 @@ public function courseFinder(Request $request)
             // Map AI data back to courses
             $sortedCourses = $sortedCourses->map(function($course) use ($aiData) {
                 $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
+                
+                // Decode existing tags from DB
+                $course->course_tags = json_decode($course->course_tags ?? '[]', true);
+
                 if ($aiMatch) {
                     $course->ai_rationale = $aiMatch['rationale'];
-                    $course->ai_tags = $aiMatch['tags'];
                     $course->match_score = $aiMatch['match_percentage'];
+                    
+                    // Add "TOP PICK" to the start of tags if AI identifies it as such
+                    if ($aiMatch['is_top_pick'] ?? false) {
+                        array_unshift($course->course_tags, "TOP PICK");
+                    }
                 }
                 return $course;
             })->sortByDesc('match_score')->values();
@@ -1058,7 +1067,9 @@ public function enrichCourseWithAI(Request $request)
             $query->whereNull('course_information')
                   ->orWhere('course_information', '')
                   ->orWhereNull('course_location')
-                  ->orWhere('course_location', '');
+                  ->orWhere('course_location', '')
+                  ->orWhereNull('course_tags')
+                  ->orWhere('course_tags', '');
         })
         ->limit(20) // Limit to avoid request timeouts
         ->get();
@@ -1090,18 +1101,19 @@ public function enrichCourseWithAI(Request $request)
        // dd($countryName,$course,$university);
 
         $prompt = "
-        Provide a professional description (course information) and the specific campus address (course location) for the course '{$course->name}' at '{$university->name}' in '{$countryName}', specifically for the '{$course->campus}' campus.
+        Provide a professional description (course information), specific campus address (course location), and 2-3 short professional tags (e.g., 'Research-Led', 'High Employability', 'Career-Focused') for the course '{$course->name}' at '{$university->name}' in '{$countryName}', specifically for the '{$course->campus}' campus.
         
         Constraints:
-        - Both the 'information' and 'location' MUST be strictly under 200 characters each.
-        - Return the result in JSON format with exactly two keys: 'information' and 'location'.
+        - 'information' and 'location' MUST be strictly under 200 characters each.
+        - 'tags' should be an array of 2-3 short strings.
+        - Return the result in JSON format with exactly three keys: 'information', 'location', and 'tags'.
         ";
 
         try {
             $response = OpenAI::chat()->create([
                 'model' => 'gpt-4o-mini',
                 'messages' => [
-                    ['role' => 'system', 'content' => 'You are an expert in university courses and locations. Respond only in JSON format.'],
+                    ['role' => 'system', 'content' => 'You are an expert in university courses. Respond only in JSON format.'],
                     ['role' => 'user', 'content' => $prompt],
                 ],
                 'response_format' => ['type' => 'json_object'],
@@ -1109,9 +1121,10 @@ public function enrichCourseWithAI(Request $request)
 
             $content = json_decode($response->choices[0]->message->content, true);
 
-            if (isset($content['information']) && isset($content['location'])) {
+            if (isset($content['information']) && isset($content['location']) && isset($content['tags'])) {
                 $course->course_information = substr($content['information'], 0, 200);
                 $course->course_location = substr($content['location'], 0, 200);
+                $course->course_tags = json_encode($content['tags']);
                 $course->save();
                 $updatedCount++;
             } else {
