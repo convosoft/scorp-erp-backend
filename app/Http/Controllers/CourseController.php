@@ -802,8 +802,7 @@ public function courseFinder(Request $request)
         )
     ";
 
-    $query = Course::query()
-        ->with(['instalments'])
+    $query = Course::query() 
         ->leftJoin('universities', 'courses.university_id', '=', 'universities.id')
         ->leftJoin('countries as c_id', 'universities.country', '=', 'c_id.id')
         ->leftJoin('countries as c_name', 'universities.country', '=', 'c_name.name')
@@ -1057,7 +1056,7 @@ public function courseFinder(Request $request)
                 $aiData = json_decode($aiResponse->choices[0]->message->content, true);
                 $aiSummary = $aiData['greeting'] ?? "";
 
-                  dd($selectedIds,$askAi,count($topCandidates),count($aiData['recommendations']),count($aiData )); //ask ai 2  records are 2 
+                 
                 
                 // Map AI data back to candidates
                 $topCandidates = $topCandidates->map(function($course) use ($aiData,$askAi) {
@@ -1080,6 +1079,7 @@ public function courseFinder(Request $request)
                     $course->course_tags = implode(', ', array_unique($tagsArray));
                     return $course;
                 })->sortByDesc('match_score')->values();
+                 dd($selectedIds,$askAi,count($topCandidates),count($aiData['recommendations']),count($aiData )); //ask ai 2  records are 2 
 
 
                 // dd($selectedIds,$askAi,$topCandidates);  ask ai 2  records are 42 
