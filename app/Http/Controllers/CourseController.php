@@ -1057,7 +1057,7 @@ public function courseFinder(Request $request)
                 $aiData = json_decode($aiResponse->choices[0]->message->content, true);
                 $aiSummary = $aiData['greeting'] ?? "";
 
-                  dd($selectedIds,$askAi,$topCandidates);
+                 // dd($selectedIds,$askAi,$topCandidates);
                 
                 // Map AI data back to candidates
                 $topCandidates = $topCandidates->map(function($course) use ($aiData) {
