@@ -823,9 +823,20 @@ public function courseFinder(Request $request)
         $query->where('courses.type', $request->type);
     }
 
-    if ($request->filled('countries')) {
-        $countries = (array)$request->countries;
-        $query->whereRaw("($caseCountry) IN (" . implode(',', array_fill(0, count($countries), '?')) . ")", $countries);
+     $selectedCountryNames = [];
+    if (!empty($request->countries)) {
+        $selectedCountryNames = \App\Models\Country::whereIn('id', $request->countries)
+            ->pluck('name')
+            ->map(fn($name) => strtolower(trim($name)))
+            ->toArray();
+    }
+    
+
+    if (!empty($selectedCountryNames)) {
+
+        $placeholders = implode(',', array_fill(0, count($selectedCountryNames), '?'));
+
+        $query->whereRaw("LOWER(TRIM($caseCountry)) IN ($placeholders)", $selectedCountryNames);
     }
 
     if ($request->filled('universities')) {
@@ -892,13 +903,6 @@ public function courseFinder(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    $selectedCountryNames = [];
-    if (!empty($request->countries)) {
-        $selectedCountryNames = \App\Models\Country::whereIn('id', $request->countries)
-            ->pluck('name')
-            ->map(fn($name) => strtolower(trim($name)))
-            ->toArray();
-    }
     $selectedUniversities = $request->universities ?? [];
 
     $sql = str_replace('?', "'%s'", $query->toSql());
