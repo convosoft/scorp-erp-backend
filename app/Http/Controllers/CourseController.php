@@ -524,6 +524,8 @@ class CourseController extends Controller
         'second_instalment' => 'nullable|numeric|min:0',
         'third_instalment' => 'nullable|numeric|min:0',
         'final_instalment' => 'nullable|numeric|min:0',
+        'course_location' => 'nullable|string|max:200',
+        'course_information' => 'nullable|string|max:200',
         'installments' => 'required|array',
         'installments.*.id' => 'sometimes|integer',
         'installments.*.fee' => 'required|numeric',
@@ -555,6 +557,8 @@ class CourseController extends Controller
         'second_instalment' => $request->second_instalment,
         'third_instalment' => $request->third_instalment,
         'final_instalment' => $request->final_instalment,
+        'course_information' => $request->course_information,
+        'course_location' => $request->course_location,
     ];
 
     foreach ($fieldsToUpdate as $field => $newValue) {
