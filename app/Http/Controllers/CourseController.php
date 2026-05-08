@@ -961,102 +961,121 @@ public function courseFinder(Request $request)
     // Sort ALL courses by match_score DESC
     $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
     
-    // Pick top candidates for AI rationale and greeting (limited to 10 for performance)
-    $topCandidates = $sortedCourses->take(10)->values();
     $aiSummary = "";
 
-    if ($topCandidates->isNotEmpty()) {
-        $studentProfile = $request->only([
-            'full_name', 'last_qualification', 'department', 'degree_name', 
-            'cgpa', 'intakeYear', 'passingYear', 'language_test', 'total_bands', 
-            'intake_month', 'course', 'degree_level', 'budget'
-        ]);
+    // Check if AI recommendation is requested
+    if ($request->filled('ask_ai') && $request->ask_ai == 1) {
+        $selectedIds = (array)$request->selected_course_ids;
+        
+        // 1. Get manually selected courses (up to 10)
+        $selectedCourses = $sortedCourses->whereIn('id', $selectedIds)->take(10);
+        
+        // 2. Fill remaining spots (up to 10 total) with the top scoring courses from the database
+        $remainingCount = 10 - $selectedCourses->count();
+        $otherTopCourses = $sortedCourses->whereNotIn('id', $selectedIds)->take($remainingCount);
+        
+        $topCandidates = $selectedCourses->concat($otherTopCourses)->values();
 
-        $coursesContext = $topCandidates->map(function($c) {
-            return [
-                'id' => $c->id,
-                'name' => $c->name,
-                'university' => $c->university_name,
-                'country' => $c->resolved_country_name,
-                'info' => $c->course_information,
-                'location' => $c->course_location,
-                'fees' => $c->gross_fees,
-            ];
-        })->toArray();
-
-        $aiPrompt = "
-        You are the SCORP AI Course Finder. Based on the student's profile and the matched courses, generate a personalized report.
-        
-        Student Profile:
-        " . json_encode($studentProfile) . "
-        
-        Top Matched Courses:
-        " . json_encode($coursesContext) . "
-        
-        Tasks:
-        1. Write a short, professional greeting (2-3 sentences) addressed to the student by name ({$request->full_name}).
-        2. Identify at most 1 course as a 'top_pick' (set is_top_pick to true).
-        3. For each course, provide:
-           - A 'strategic_rationale' (1 sentence explaining why this course is a good fit).
-           - A 'final_match_score' (re-evaluated percentage from 0-100 based on profile fit).
-           - A boolean 'is_top_pick'.
-        
-        Return exactly this JSON format:
-        {
-          \"greeting\": \"...\",
-          \"recommendations\": [
-            {
-              \"course_id\": 123,
-              \"rationale\": \"...\",
-              \"match_percentage\": 95,
-              \"is_top_pick\": true
-            }
-          ]
-        }
-        ";
-
-        try {
-            $aiResponse = OpenAI::chat()->create([
-                'model' => 'gpt-4o-mini',
-                'messages' => [
-                    ['role' => 'system', 'content' => 'You are the SCORP AI Course Finder expert. Respond ONLY in JSON.'],
-                    ['role' => 'user', 'content' => $aiPrompt],
-                ],
-                'response_format' => ['type' => 'json_object'],
+        if ($topCandidates->isNotEmpty()) {
+            $studentProfile = $request->only([
+                'full_name', 'last_qualification', 'department', 'degree_name', 
+                'cgpa', 'intakeYear', 'passingYear', 'language_test', 'total_bands', 
+                'intake_month', 'course', 'degree_level', 'budget'
             ]);
 
-            $aiData = json_decode($aiResponse->choices[0]->message->content, true);
-            $aiSummary = $aiData['greeting'] ?? "";
-            
-            // Map AI data back to courses
-            $sortedCourses = $sortedCourses->map(function($course) use ($aiData) {
-                $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
-                
-                // Explode existing comma-separated tags from DB
-                $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
-                
-                if ($aiMatch) {
-                    $course->ai_rationale = $aiMatch['rationale'];
-                    $course->match_score = $aiMatch['match_percentage'];
-                    
-                    // Add "TOP PICK" to the start of tags if AI identifies it as such
-                    if ($aiMatch['is_top_pick'] ?? false) {
-                        array_unshift($tagsArray, "TOP PICK");
-                    }
-                }
-                
-                $course->course_tags = implode(', ', array_unique($tagsArray));
-                return $course;
-            })->sortByDesc('match_score')->values();
+            $coursesContext = $topCandidates->map(function($c) {
+                return [
+                    'id' => $c->id,
+                    'name' => $c->name,
+                    'university' => $c->university_name,
+                    'country' => $c->resolved_country_name,
+                    'info' => $c->course_information,
+                    'location' => $c->course_location,
+                    'fees' => $c->gross_fees,
+                    'requirements' => $c->min_requirements ?? ''
+                ];
+            })->toArray();
 
-        } catch (\Exception $e) {
-            \Log::error("CourseFinder AI Enrichment failed: " . $e->getMessage());
+            $aiPrompt = "
+            You are the SCORP AI Course Finder. Based on the student's profile and the matched courses, generate a personalized report.
+            
+            Student Profile:
+            " . json_encode($studentProfile) . "
+            
+            Top Matched Courses:
+            " . json_encode($coursesContext) . "
+            
+            Tasks:
+            1. Write a short, professional greeting (2-3 sentences) addressed to the student by name ({$request->full_name}).
+            2. Identify at most 1 course as a 'top_pick' (set is_top_pick to true).
+            3. For each course, provide:
+               - A 'strategic_rationale' (1 sentence explaining why this course is a good fit).
+               - A 'final_match_score' (re-evaluated percentage from 0-100 based on profile fit).
+               - A boolean 'is_top_pick'.
+            
+            Return exactly this JSON format:
+            {
+              \"greeting\": \"...\",
+              \"recommendations\": [
+                {
+                  \"course_id\": 123,
+                  \"rationale\": \"...\",
+                  \"match_percentage\": 95,
+                  \"is_top_pick\": true
+                }
+              ]
+            }
+            ";
+
+            try {
+                $aiResponse = OpenAI::chat()->create([
+                    'model' => 'gpt-4o-mini',
+                    'messages' => [
+                        ['role' => 'system', 'content' => 'You are the SCORP AI Course Finder expert. Respond ONLY in JSON.'],
+                        ['role' => 'user', 'content' => $aiPrompt],
+                    ],
+                    'response_format' => ['type' => 'json_object'],
+                ]);
+
+                $aiData = json_decode($aiResponse->choices[0]->message->content, true);
+                $aiSummary = $aiData['greeting'] ?? "";
+                
+                // Map AI data back to the 10 selected candidates
+                $topCandidates = $topCandidates->map(function($course) use ($aiData) {
+                    $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
+                    
+                    // Explode existing comma-separated tags from DB
+                    $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
+                    
+                    if ($aiMatch) {
+                        $course->ai_rationale = $aiMatch['rationale'];
+                        $course->match_score = $aiMatch['match_percentage'];
+                        
+                        // Add "TOP PICK" to the start of tags if AI identifies it as such
+                        if ($aiMatch['is_top_pick'] ?? false) {
+                            array_unshift($tagsArray, "TOP PICK");
+                        }
+                    }
+                    
+                    $course->course_tags = implode(', ', array_unique($tagsArray));
+                    return $course;
+                })->sortByDesc('match_score')->values();
+
+                return response()->json([
+                    'status' => 'success',
+                    'ai_summary' => $aiSummary,
+                    'courses' => $topCandidates,
+                ], 200);
+
+            } catch (\Exception $e) {
+                \Log::error("CourseFinder AI Enrichment failed: " . $e->getMessage());
+            }
         }
     }
 
+    // Default: Return all (no AI)
     return response()->json([
         'status' => 'success',
-        'ai_summary' => $aiSummary,
         'courses' => $sortedCourses,
     ], 200);
 }
