@@ -972,9 +972,10 @@ public function courseFinder(Request $request)
     // --- AI MODES (1: Recommendation, 2: PDF Generation) ---
     if ($askAi == 1 || $askAi == 2) {
         $selectedIds = (array)$request->selected_course_ids;
-        $topCandidates = collect();
+       
 
         if ($askAi == 1) {
+             $topCandidates = collect();
             // Recommendation Logic: Selected courses + Top Database matches (up to 10 total)
             $selectedCourses = $sortedCourses->whereIn('id', $selectedIds)->take(10);
             $remainingCount = 10 - $selectedCourses->count();
@@ -982,6 +983,7 @@ public function courseFinder(Request $request)
             $topCandidates = $selectedCourses->concat($otherTopCourses)->values();
         } else {
 
+             $topCandidates = collect();
             
             // PDF Logic: Only the manually selected courses
             $topCandidates = $sortedCourses->whereIn('id', $selectedIds)->values();
