@@ -967,7 +967,7 @@ public function courseFinder(Request $request)
     $aiSummary = "";
     $askAi = $request->ask_ai;
 
-    dd($askAi);
+    //dd($askAi);
 
     // --- AI MODES (1: Recommendation, 2: PDF Generation) ---
     if ($askAi == 1 || $askAi == 2) {
