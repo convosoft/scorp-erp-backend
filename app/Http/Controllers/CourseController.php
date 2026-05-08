@@ -1073,7 +1073,7 @@ public function enrichCourseWithAI(Request $request)
                   ->orWhereNull('course_tags')
                   ->orWhere('course_tags', '');
         })
-        ->limit(20) // Limit to avoid request timeouts
+        ->limit(100) // Limit to avoid request timeouts
         ->get();
 
     if ($courses->isEmpty()) {
