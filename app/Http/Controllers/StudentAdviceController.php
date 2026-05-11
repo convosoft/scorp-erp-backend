@@ -66,6 +66,18 @@ class StudentAdviceController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
+            // ✅ Activity Log
+            addLogActivity([
+                'type' => 'success',
+                'note' => json_encode([
+                    'title' => 'Student Advice Uploaded',
+                    'message' => 'A new advice document has been attached to this admission.',
+                ]),
+                'module_id' => $request->admission_id,
+                'module_type' => 'deal',
+                'notification_type' => 'Advice Uploaded',
+            ]);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Advice file uploaded successfully.',
@@ -80,6 +92,9 @@ class StudentAdviceController extends Controller
         }
     }
 
+    /**
+     * Get all advice files for a specific admission.
+     */
     public function getAdvice(Request $request)
     {
         // ✅ Validation
@@ -107,9 +122,21 @@ class StudentAdviceController extends Controller
     /**
      * Delete an advice file.
      */
-    public function deleteAdvice($id)
+    public function deleteAdvice(Request $request)
     {
-        $advice = StudentAdvice::find($id);
+        // ✅ Validation
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:student_advice,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $advice = StudentAdvice::find($request->id);
 
         if (!$advice) {
             return response()->json([
@@ -117,6 +144,9 @@ class StudentAdviceController extends Controller
                 'message' => 'Advice record not found.'
             ], 404);
         }
+
+        // Capture admission_id for logging before deletion
+        $admission_id = $advice->admission_id;
 
         // ✅ Delete file from S3
         try {
@@ -127,11 +157,23 @@ class StudentAdviceController extends Controller
                 Storage::disk('s3')->delete($s3Key);
             }
         } catch (\Exception $e) {
-            \Log::warning("Could not delete S3 file for StudentAdvice ID: $id. Error: " . $e->getMessage());
+            \Log::warning("Could not delete S3 file for StudentAdvice ID: {$request->id}. Error: " . $e->getMessage());
         }
 
         // ✅ Delete DB Record
         $advice->delete();
+
+        // ✅ Activity Log
+        addLogActivity([
+            'type' => 'warning',
+            'note' => json_encode([
+                'title' => 'Student Advice Deleted',
+                'message' => 'An advice document was removed from this admission.',
+            ]),
+            'module_id' => $admission_id,
+            'module_type' => 'deal',
+            'notification_type' => 'Advice Deleted',
+        ]);
 
         return response()->json([
             'status' => 'success',

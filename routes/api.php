@@ -1129,6 +1129,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Student Advice
     Route::post('/uploadStudentAdvice', [StudentAdviceController::class, 'uploadAdvice']);
     Route::post('/getStudentAdvice', [StudentAdviceController::class, 'getAdvice']);
-    Route::post('/deleteStudentAdvice/{id}', [StudentAdviceController::class, 'deleteAdvice']);
+    Route::post('/deleteStudentAdvice', [StudentAdviceController::class, 'deleteAdvice']);
 
 });
