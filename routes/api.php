@@ -95,6 +95,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\User;
 use App\Models\AttendanceEmployee;
 use Carbon\Carbon;
+use App\Http\Controllers\StudentAdviceController;
 use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
 use App\Http\Controllers\SendQueuedSmsController;
@@ -1124,5 +1125,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/addToSmsQueue', [SendQueuedSmsController::class, 'addToSmsQueue']);
     Route::post('/getSmsQueueByRelated', [SendQueuedSmsController::class, 'getSmsQueueByRelated']);
+
+    // Student Advice
+    Route::post('/uploadStudentAdvice', [StudentAdviceController::class, 'uploadAdvice']);
+    Route::post('/getStudentAdvice', [StudentAdviceController::class, 'getAdvice']);
+    Route::post('/deleteStudentAdvice/{id}', [StudentAdviceController::class, 'deleteAdvice']);
 
 });
