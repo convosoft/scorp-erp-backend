@@ -864,10 +864,17 @@ class CourseController extends Controller
             });
         }
 
-        $keywords = array_filter([
-            strtolower($request->course),
-            strtolower($request->degree_level)
-        ]);
+        $courseInput = strtolower($request->course);
+        $degreeInput = strtolower($request->degree_level);
+
+        $keywords = [];
+        if (!empty($courseInput)) {
+            $keywords = array_merge($keywords, array_filter(explode(' ', $courseInput)));
+        }
+        if (!empty($degreeInput)) {
+            $keywords = array_merge($keywords, array_filter(explode(' ', $degreeInput)));
+        }
+        $keywords = array_unique($keywords);
 
         if (!empty($keywords)) {
             $query->where(function ($q) use ($keywords) {
@@ -913,7 +920,7 @@ class CourseController extends Controller
 
         $allCourses = $query->latest()->get();
 
-        $scoredCourses = $allCourses->map(function ($course) use ($request, $selectedUniversities, $selectedCountryNames) {
+        $scoredCourses = $allCourses->map(function ($course) use ($request, $selectedUniversities, $selectedCountryNames, $keywords) {
             $score = 0;
 
             // University Match (+30)
@@ -938,8 +945,14 @@ class CourseController extends Controller
             }
 
             // Course/Keyword Match (+15)
-            if ($request->filled('course') && str_contains(strtolower($course->name), strtolower($request->course))) {
-                $score += 15;
+            if (!empty($keywords)) {
+                $courseNameLower = strtolower($course->name);
+                foreach ($keywords as $word) {
+                    if (str_contains($courseNameLower, $word)) {
+                        $score += 15;
+                        break;
+                    }
+                }
             }
 
             // Campus Match (+10)
