@@ -78,9 +78,13 @@ use App\Http\Controllers\UniversityRankController;
 use App\Http\Controllers\UniversityRuleController;
 use App\Http\Controllers\DestinationRuleController;
 use App\Http\Controllers\DestinationController;
+use App\Http\Controllers\EducationDepartmentsController;
+use App\Http\Controllers\EducationLevelsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
+use App\Http\Controllers\LeadTagController;
+use App\Http\Controllers\MediaDocumentController;
 use App\Models\InterviewSchedule;
 use App\Models\JobCategory;
 use App\Models\TaskFile;
@@ -89,8 +93,13 @@ use Illuminate\Support\Facades\Http;
 use App\Models\User;
 use App\Models\AttendanceEmployee;
 use Carbon\Carbon;
+use App\Http\Controllers\StudentAdviceController;
 use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
+use App\Http\Controllers\SendQueuedSmsController;
+use App\Http\Controllers\TaskTagController;
+use App\Http\Controllers\TypesDocumentController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -102,8 +111,17 @@ use App\Http\Controllers\SendGridWebhookController;
 |
 */
 
-    Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
-Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']);
+
+Route::get('/NotificationFifteenDays', function () {
+    return App\Models\Notification::where('created_at', '<', now()->subDays(15))->delete();
+});
+
+Route::get('/enrichCourseWithAI', [CourseController::class, 'enrichCourseWithAI']);
+
+Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
+Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']); //  email sendng compain cron
+Route::get('/sendQueuedEmailsCrm', [SendQueuedEmailsController::class, 'handleCrm']); //  email sendng compain cron
+Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sms sendng  all  cron
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
 
 Route::post('/brandDetailPublic', [UserController::class, 'brandDetailPublic']);
@@ -135,75 +153,75 @@ Route::get('/proxy-image', function (Request $request) {
         return response('Proxy error: ' . $e->getMessage(), 500);
     }
 });
-    Route::get('/getencrypted', function (Request $request) {
-        $plaintext = $request->query('plaintext');
-        // More comprehensive validation
-        if (!$plaintext ) {
-            return response()->json([
-                'error' => 'Valid plaintext parameter is required'
-            ], 400);
-        }
-        // Make sure encryptData function is available
-        if (!function_exists('encryptData')) {
-            return response()->json([
-                'error' => 'Encryption service unavailable'
-            ], 500);
-        }
+Route::get('/getencrypted', function (Request $request) {
+    $plaintext = $request->query('plaintext');
+    // More comprehensive validation
+    if (!$plaintext) {
+        return response()->json([
+            'error' => 'Valid plaintext parameter is required'
+        ], 400);
+    }
+    // Make sure encryptData function is available
+    if (!function_exists('encryptData')) {
+        return response()->json([
+            'error' => 'Encryption service unavailable'
+        ], 500);
+    }
 
-        try {
-            $encrypted = encryptData($plaintext);
+    try {
+        $encrypted = encryptData($plaintext);
 
-            return response()->json([
-                'encrypted' => $encrypted,
-                'plaintext_length' => $plaintext
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'error' => 'Encryption failed',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    });
+        return response()->json([
+            'encrypted' => $encrypted,
+            'plaintext_length' => $plaintext
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'error' => 'Encryption failed',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
 
-    Route::get('/getdecrypted', function (Request $request) {
-        $encryptedtext = $request->query('encryptedtext');
-        // More comprehensive validation
-        if (!$encryptedtext ) {
-            return response()->json([
-                'error' => 'Valid encryptedtext parameter is required'
-            ], 400);
-        }
-        // Make sure encryptData function is available
-        if (!function_exists('decryptData')) {
-            return response()->json([
-                'error' => 'decryption service unavailable'
-            ], 500);
-        }
+Route::get('/getdecrypted', function (Request $request) {
+    $encryptedtext = $request->query('encryptedtext');
+    // More comprehensive validation
+    if (!$encryptedtext) {
+        return response()->json([
+            'error' => 'Valid encryptedtext parameter is required'
+        ], 400);
+    }
+    // Make sure encryptData function is available
+    if (!function_exists('decryptData')) {
+        return response()->json([
+            'error' => 'decryption service unavailable'
+        ], 500);
+    }
 
-        try {
-            $plaintext = decryptData($encryptedtext);
+    try {
+        $plaintext = decryptData($encryptedtext);
 
-            return response()->json([
-                'encryptedtext' => $encryptedtext,
-                'plaintext_length' => $plaintext
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'error' => 'Encryption failed',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    });
+        return response()->json([
+            'encryptedtext' => $encryptedtext,
+            'plaintext_length' => $plaintext
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'error' => 'Encryption failed',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
 
-    Route::get('PayslipAutoGenerateEachMonth/', [PaySlipController::class, 'PayslipAutoGenerateEachMonth']);
-    Route::get('/sendexpiredDocumentEmail', [UserController::class, 'sendexpiredDocumentEmail']);
-    Route::get('/getCronAttendances', [AttendanceEmployeeController::class, 'getCronAttendances']);
-    Route::get('/sendBirthdayAndAnniversaryEmails', [UserController::class, 'sendBirthdayAndAnniversaryEmails']);
-    Route::get('/convertToBase64', [GeneralController::class, 'convertToBase64']);
-    Route::post('/getTables', [GeneralController::class, 'getTables']);
-    Route::post('/getTableData', [GeneralController::class, 'getTableData']);
-    Route::post('/generateSop', [OpenAIController::class, 'generateSop']);
-    Route::get('/getPublicUniversities', [UniversityController::class, 'getPublicUniversities']);
+Route::get('PayslipAutoGenerateEachMonth/', [PaySlipController::class, 'PayslipAutoGenerateEachMonth']);
+Route::get('/sendexpiredDocumentEmail', [UserController::class, 'sendexpiredDocumentEmail']);
+Route::get('/getCronAttendances', [AttendanceEmployeeController::class, 'getCronAttendances']);
+Route::get('/sendBirthdayAndAnniversaryEmails', [UserController::class, 'sendBirthdayAndAnniversaryEmails']);
+Route::get('/convertToBase64', [GeneralController::class, 'convertToBase64']);
+Route::post('/getTables', [GeneralController::class, 'getTables']);
+Route::post('/getTableData', [GeneralController::class, 'getTableData']);
+Route::post('/generateSop', [OpenAIController::class, 'generateSop']);
+Route::get('/getPublicUniversities', [UniversityController::class, 'getPublicUniversities']);
 
 Route::get('/AttendanceEmployeeCron_old', function () {
     $today = Carbon::today()->toDateString();
@@ -262,7 +280,7 @@ Route::get('/AttendanceEmployeeCron_old', function () {
         'module_id' => 0, // or some relevant ID if you want
         'module_type' => 'attendance',
         'notification_type' => 'attendance_cron_run',
-    ],1);
+    ], 1);
 
     return "Attendance marked for absent. Records inserted: {$insertedCount}";
 });
@@ -281,6 +299,7 @@ Route::controller(LoginRegisterController::class)->group(function () {
     Route::post('/forgotpasswordAgentOTP', 'forgotpasswordAgentOTP');
     Route::post('/verifyforgotpasswordOtp', 'verifyforgotpasswordOtp');
     Route::post('/changefogotPassword', 'changefogotPassword');
+    Route::post('/changefogotPasswordByID', 'changefogotPasswordByID');
     Route::post('/acceptInvite', 'acceptInvite');
 });
 
@@ -293,6 +312,7 @@ Route::post('/jobApplyData', [JobController::class, 'jobApplyData']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/resendAgentOTP', [LoginRegisterController::class, 'resendAgentOTP']);
     Route::post('/verifyOtp', [LoginRegisterController::class, 'verifyOtp']);
+    Route::post('/setPassword', [LoginRegisterController::class, 'setPassword']);
     Route::post('/userDetail', [LoginRegisterController::class, 'userDetail']);
 
     Route::post('AttendanceSetting', [UserController::class, 'AttendanceSetting']);
@@ -325,7 +345,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-// space space
+    // space space
 
     // Leads start here
     Route::post('/getLeads', [LeadController::class, 'getLeads']);
@@ -395,6 +415,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/UserEmployeeFileDocumentDelete', [UserController::class, 'UserEmployeeFileDocumentDelete']);
     Route::post('/EmployeeMetaUpdate', [UserController::class, 'storeOrUpdateMetas']);
     Route::post('/getEmployeeMeta', [UserController::class, 'getEmployeeMeta']);
+
+    // media document
+    Route::post('/uploadMediaDocument', [MediaDocumentController::class, 'uploadMediaDocument']);
+    Route::post('/getMediaDocument', [MediaDocumentController::class, 'getMediaDocument']);
+    Route::post('/deleteMediaDocument', [MediaDocumentController::class, 'deleteMediaDocument']);
+    Route::post('/updateMediaDocumentPosition', [MediaDocumentController::class, 'updateMediaDocumentPosition']);
+    Route::post('/updateMediaDocument', [MediaDocumentController::class, 'updateMediaDocument']);
 
 
     // trainers
@@ -573,6 +600,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateHoliday', [HolidayController::class, 'updateHoliday']);
     Route::post('/deleteHoliday', [HolidayController::class, 'deleteHoliday']);
 
+
+    Route::post('/getTypesDocumentPluck', [TypesDocumentController::class, 'getTypesDocumentPluck']);
+    Route::get('/getTypesDocuments', [TypesDocumentController::class, 'getTypesDocuments']);
+    Route::post('/addTypesDocument', [TypesDocumentController::class, 'addTypesDocument']);
+    Route::post('/updateTypesDocument', [TypesDocumentController::class, 'updateTypesDocument']);
+    Route::post('/deleteTypesDocument', [TypesDocumentController::class, 'deleteTypesDocument']);
+
     // Training type
     Route::post('/addTrainingType', [TrainingTypeController::class, 'addTrainingType']);
 
@@ -680,6 +714,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/addCourses', [CourseController::class, 'addCourses']);
     Route::post('/getCourseDetail', [CourseController::class, 'getCourseDetail']);
     Route::post('/pluckCourse', [CourseController::class, 'pluckCourse']);
+    Route::post('/courseFinder', [CourseController::class, 'courseFinder']);
 
     //  Job Applications
     Route::post('/candidate', [JobApplicationController::class, 'candidate']);
@@ -768,211 +803,237 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getIntakeMonthByUniversity', [UniversityController::class, 'getIntakeMonthByUniversity']);
     Route::post('/get_course_campus', [UniversityController::class, 'get_course_campus']);
 
-     //   Institute Category
-     Route::post('/addInstituteCategory', [InstituteCategoryController::class, 'addInstituteCategory']);
-     Route::get('/getInstituteCategoryPluck', [InstituteCategoryController::class, 'getInstituteCategoryPluck']);
-     Route::get('/getInstituteCategories', [InstituteCategoryController::class, 'getInstituteCategories']);
-     Route::post('/updateInstituteCategory', [InstituteCategoryController::class, 'updateInstituteCategory']);
-     Route::post('/deleteInstituteCategory', [InstituteCategoryController::class, 'deleteInstituteCategory']);
-     //   Announcement Category
-     Route::post('/addAnnouncementCategory', [AnnouncementCategoryController::class, 'addAnnouncementCategory']);
-     Route::get('/getAnnouncementCategoryPluck', [AnnouncementCategoryController::class, 'getAnnouncementCategoryPluck']);
-     Route::get('/getAnnouncementCategories', [AnnouncementCategoryController::class, 'getAnnouncementCategories']);
-     Route::post('/updateAnnouncementCategory', [AnnouncementCategoryController::class, 'updateAnnouncementCategory']);
-     Route::post('/deleteAnnouncementCategory', [AnnouncementCategoryController::class, 'deleteAnnouncementCategory']);
-     //   Announcement
-     Route::post('/addAnnouncement', [AnnouncementController::class, 'addAnnouncement']);
-     Route::post('/getAnnouncement', [AnnouncementController::class, 'index']);
-     Route::post('/updateAnnouncement', [AnnouncementController::class, 'updateAnnouncement']);
-     Route::post('/deleteAnnouncement', [AnnouncementController::class, 'deleteAnnouncement']);
-     Route::post('/announcementDetail', [AnnouncementController::class, 'announcementDetail']);
+    //   Institute Category
+    Route::post('/addInstituteCategory', [InstituteCategoryController::class, 'addInstituteCategory']);
+    Route::get('/getInstituteCategoryPluck', [InstituteCategoryController::class, 'getInstituteCategoryPluck']);
+    Route::get('/getInstituteCategories', [InstituteCategoryController::class, 'getInstituteCategories']);
+    Route::post('/updateInstituteCategory', [InstituteCategoryController::class, 'updateInstituteCategory']);
+    Route::post('/deleteInstituteCategory', [InstituteCategoryController::class, 'deleteInstituteCategory']);
+    //   Announcement Category
+    Route::post('/addAnnouncementCategory', [AnnouncementCategoryController::class, 'addAnnouncementCategory']);
+    Route::get('/getAnnouncementCategoryPluck', [AnnouncementCategoryController::class, 'getAnnouncementCategoryPluck']);
+    Route::get('/getAnnouncementCategories', [AnnouncementCategoryController::class, 'getAnnouncementCategories']);
+    Route::post('/updateAnnouncementCategory', [AnnouncementCategoryController::class, 'updateAnnouncementCategory']);
+    Route::post('/deleteAnnouncementCategory', [AnnouncementCategoryController::class, 'deleteAnnouncementCategory']);
+    //   Announcement
+    Route::post('/addAnnouncement', [AnnouncementController::class, 'addAnnouncement']);
+    Route::post('/getAnnouncement', [AnnouncementController::class, 'index']);
+    Route::post('/updateAnnouncement', [AnnouncementController::class, 'updateAnnouncement']);
+    Route::post('/deleteAnnouncement', [AnnouncementController::class, 'deleteAnnouncement']);
+    Route::post('/announcementDetail', [AnnouncementController::class, 'announcementDetail']);
 
-     //   Institute Category
-     Route::post('/addTag', [TagController::class, 'addTag']);
-     Route::post('/getTagPluck', [TagController::class, 'getTagPluck']);
-     Route::get('/getTagsbytype', [TagController::class, 'getTags']);
-     Route::post('/updateTag', [TagController::class, 'updateTag']);
-     Route::post('/deleteTag', [TagController::class, 'deleteTag']);
+    //   Institute Category
+    Route::post('/addTag', [TagController::class, 'addTag']);
+    Route::post('/getTagPluck', [TagController::class, 'getTagPluck']);
+    Route::get('/getTagsbytype', [TagController::class, 'getTags']);
+    Route::post('/updateTag', [TagController::class, 'updateTag']);
+    Route::post('/deleteTag', [TagController::class, 'deleteTag']);
 
-       //   Designation
-     Route::post('/addDesignation', [DesignationController::class, 'addDesignation']);
-     Route::post('/getDesignationPluck', [DesignationController::class, 'getDesignationPluck']);
-     Route::get('/getDesignations', [DesignationController::class, 'getDesignations']);
-     Route::post('/updateDesignation', [DesignationController::class, 'updateDesignation']);
-     Route::post('/deleteDesignation', [DesignationController::class, 'deleteDesignation']);
+    //   Designation
+    Route::post('/addDesignation', [DesignationController::class, 'addDesignation']);
+    Route::post('/getDesignationPluck', [DesignationController::class, 'getDesignationPluck']);
+    Route::get('/getDesignations', [DesignationController::class, 'getDesignations']);
+    Route::post('/updateDesignation', [DesignationController::class, 'updateDesignation']);
+    Route::post('/deleteDesignation', [DesignationController::class, 'deleteDesignation']);
 
-           //   Moduletype
-     Route::post('/addModuleType', [ModuleTypeController::class, 'addModuleType']);
-     Route::post('/getModuleTypePluck', [ModuleTypeController::class, 'getModuleTypePluck']);
-     Route::get('/getModuleTypes', [ModuleTypeController::class, 'getModuleTypes']);
-     Route::post('/updateModuleType', [ModuleTypeController::class, 'updateModuleType']);
-     Route::post('/deleteModuleType', [ModuleTypeController::class, 'deleteModuleType']);
-      //   PermissionType
-     Route::post('/addPermissionType', [PermissionTypeController::class, 'addPermissionType']);
-     Route::post('/getPermissionTypePluck', [PermissionTypeController::class, 'getPermissionTypePluck']);
-     Route::get('/getPermissionTypes', [PermissionTypeController::class, 'getPermissionTypes']);
-     Route::post('/updatePermissionType', [PermissionTypeController::class, 'updatePermissionType']);
-     Route::post('/deletePermissionType', [PermissionTypeController::class, 'deletePermissionType']);
+    //   Moduletype
+    Route::post('/addModuleType', [ModuleTypeController::class, 'addModuleType']);
+    Route::post('/getModuleTypePluck', [ModuleTypeController::class, 'getModuleTypePluck']);
+    Route::get('/getModuleTypes', [ModuleTypeController::class, 'getModuleTypes']);
+    Route::post('/updateModuleType', [ModuleTypeController::class, 'updateModuleType']);
+    Route::post('/deleteModuleType', [ModuleTypeController::class, 'deleteModuleType']);
+    //   PermissionType
+    Route::post('/addPermissionType', [PermissionTypeController::class, 'addPermissionType']);
+    Route::post('/getPermissionTypePluck', [PermissionTypeController::class, 'getPermissionTypePluck']);
+    Route::get('/getPermissionTypes', [PermissionTypeController::class, 'getPermissionTypes']);
+    Route::post('/updatePermissionType', [PermissionTypeController::class, 'updatePermissionType']);
+    Route::post('/deletePermissionType', [PermissionTypeController::class, 'deletePermissionType']);
 
-      //   ToolkitLevel
-     Route::post('/addToolkitLevel', [ToolkitLevelController::class, 'addToolkitLevel']);
-     Route::post('/getToolkitLevelPluck', [ToolkitLevelController::class, 'getToolkitLevelPluck']);
-     Route::get('/getToolkitLevels', [ToolkitLevelController::class, 'getToolkitLevels']);
-     Route::post('/updateToolkitLevel', [ToolkitLevelController::class, 'updateToolkitLevel']);
-     Route::post('/deleteToolkitLevel', [ToolkitLevelController::class, 'deleteToolkitLevel']);
+    //   ToolkitLevel
+    Route::post('/addToolkitLevel', [ToolkitLevelController::class, 'addToolkitLevel']);
+    Route::post('/getToolkitLevelPluck', [ToolkitLevelController::class, 'getToolkitLevelPluck']);
+    Route::get('/getToolkitLevels', [ToolkitLevelController::class, 'getToolkitLevels']);
+    Route::post('/updateToolkitLevel', [ToolkitLevelController::class, 'updateToolkitLevel']);
+    Route::post('/deleteToolkitLevel', [ToolkitLevelController::class, 'deleteToolkitLevel']);
 
-      //   ToolkitTeam
-     Route::post('/addToolkitTeam', [ToolkitTeamController::class, 'addToolkitTeam']);
-     Route::post('/getToolkitTeamPluck', [ToolkitTeamController::class, 'getToolkitTeamPluck']);
-     Route::get('/getToolkitTeams', [ToolkitTeamController::class, 'getToolkitTeams']);
-     Route::post('/updateToolkitTeam', [ToolkitTeamController::class, 'updateToolkitTeam']);
-     Route::post('/deleteToolkitTeam', [ToolkitTeamController::class, 'deleteToolkitTeam']);
+    //   ToolkitTeam
+    Route::post('/addToolkitTeam', [ToolkitTeamController::class, 'addToolkitTeam']);
+    Route::post('/getToolkitTeamPluck', [ToolkitTeamController::class, 'getToolkitTeamPluck']);
+    Route::get('/getToolkitTeams', [ToolkitTeamController::class, 'getToolkitTeams']);
+    Route::post('/updateToolkitTeam', [ToolkitTeamController::class, 'updateToolkitTeam']);
+    Route::post('/deleteToolkitTeam', [ToolkitTeamController::class, 'deleteToolkitTeam']);
 
-      //   ToolkitChannel
-     Route::post('/addToolkitChannel', [ToolkitChannelController::class, 'addToolkitChannel']);
-     Route::post('/getToolkitChannelPluck', [ToolkitChannelController::class, 'getToolkitChannelPluck']);
-     Route::get('/getToolkitChannels', [ToolkitChannelController::class, 'getToolkitChannels']);
-     Route::post('/updateToolkitChannel', [ToolkitChannelController::class, 'updateToolkitChannel']);
-     Route::post('/deleteToolkitChannel', [ToolkitChannelController::class, 'deleteToolkitChannel']);
-
-
-      //   ToolkitApplicableFee
-     Route::post('/addToolkitApplicableFee', [ToolkitApplicableFeeController::class, 'addToolkitApplicableFee']);
-     Route::post('/getToolkitApplicableFeePluck', [ToolkitApplicableFeeController::class, 'getToolkitApplicableFeePluck']);
-     Route::get('/getToolkitApplicableFees', [ToolkitApplicableFeeController::class, 'getToolkitApplicableFees']);
-     Route::post('/updateToolkitApplicableFee', [ToolkitApplicableFeeController::class, 'updateToolkitApplicableFee']);
-     Route::post('/deleteToolkitApplicableFee', [ToolkitApplicableFeeController::class, 'deleteToolkitApplicableFee']);
-
-      //   ToolkitPaymentType
-     Route::post('/addToolkitPaymentType', [ToolkitPaymentTypeController::class, 'addToolkitPaymentType']);
-     Route::post('/getToolkitPaymentTypePluck', [ToolkitPaymentTypeController::class, 'getToolkitPaymentTypePluck']);
-     Route::get('/getToolkitPaymentTypes', [ToolkitPaymentTypeController::class, 'getToolkitPaymentTypes']);
-     Route::post('/updateToolkitPaymentType', [ToolkitPaymentTypeController::class, 'updateToolkitPaymentType']);
-     Route::post('/deleteToolkitPaymentType', [ToolkitPaymentTypeController::class, 'deleteToolkitPaymentType']);
-
-      //   ToolkitInstallmentPayOut
-     Route::post('/addToolkitInstallmentPayOut', [ToolkitInstallmentPayOutController::class, 'addToolkitInstallmentPayOut']);
-     Route::post('/getToolkitInstallmentPayOutPluck', [ToolkitInstallmentPayOutController::class, 'getToolkitInstallmentPayOutPluck']);
-     Route::get('/getToolkitInstallmentPayOuts', [ToolkitInstallmentPayOutController::class, 'getToolkitInstallmentPayOuts']);
-     Route::post('/updateToolkitInstallmentPayOut', [ToolkitInstallmentPayOutController::class, 'updateToolkitInstallmentPayOut']);
-     Route::post('/deleteToolkitInstallmentPayOut', [ToolkitInstallmentPayOutController::class, 'deleteToolkitInstallmentPayOut']);
-
-        //   PermissionType
-     Route::post('/addPermission', [PermissionController::class, 'addPermission']);
-     Route::post('/getPermissionPluck', [PermissionController::class, 'getPermissionPluck']);
-     Route::get('/getPermissions', [PermissionController::class, 'getPermissions']);
-     Route::post('/updatePermission', [PermissionController::class, 'updatePermission']);
-     Route::post('/deletePermission', [PermissionController::class, 'deletePermission']);
-     Route::post('/allPermissions', [PermissionController::class, 'allPermissions']);
-        //    EmailT emplate
-     Route::post('/addEmailTemplate', [EmailTemplateController::class, 'addEmailTemplate']);
-     Route::post('/getEmailTemplatePluck', [EmailTemplateController::class, 'getEmailTemplatePluck']);
-     Route::get('/getEmailTemplates', [EmailTemplateController::class, 'getEmailTemplates']);
-     Route::post('/updateEmailTemplate', [EmailTemplateController::class, 'updateEmailTemplate']);
-     Route::post('/deleteEmailTemplate', [EmailTemplateController::class, 'deleteEmailTemplate']);
-     Route::post('email_template_submit_to_queue', [EmailTemplateController::class, 'email_template_submit_to_queue'])->name('email_template_submit_to_queue');
-     Route::get('email-marketing-queue', [EmailTemplateController::class, 'email_marketing_queue'])->name('email_marketing_queue');
-     Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue');
-     Route::post('email-marketing-approved-reject', [EmailTemplateController::class, 'email_marketing_approved_reject'])->name('email_marketing_approved_reject');
-     Route::post('getEmailTemplateDetail', [EmailTemplateController::class, 'getEmailTemplateDetail'])->name('getEmailTemplateDetail');
-     //    Role
-     Route::post('/getRoleDetail', [RoleController::class, 'getRoleDetail']);
-     Route::post('/addRole', [RoleController::class, 'addRole']);
-     Route::post('/updateRole', [RoleController::class, 'updateRole']);
-     Route::post('/getRoles', [RoleController::class, 'getRoles']);
+    //   ToolkitChannel
+    Route::post('/addToolkitChannel', [ToolkitChannelController::class, 'addToolkitChannel']);
+    Route::post('/getToolkitChannelPluck', [ToolkitChannelController::class, 'getToolkitChannelPluck']);
+    Route::get('/getToolkitChannels', [ToolkitChannelController::class, 'getToolkitChannels']);
+    Route::post('/updateToolkitChannel', [ToolkitChannelController::class, 'updateToolkitChannel']);
+    Route::post('/deleteToolkitChannel', [ToolkitChannelController::class, 'deleteToolkitChannel']);
 
 
-     //   Institute DocumentType
-     Route::post('/addDocumentType', [DocumentTypeController::class, 'addDocumentType']);
-     Route::post('/getDocumentTypePluck', [DocumentTypeController::class, 'getDocumentTypePluck']);
-     Route::get('/getDocumentTypes', [DocumentTypeController::class, 'getDocumentTypes']);
-     Route::post('/updateDocumentType', [DocumentTypeController::class, 'updateDocumentType']);
-     Route::post('/deleteDocumentType', [DocumentTypeController::class, 'deleteDocumentType']);
+    //   ToolkitApplicableFee
+    Route::post('/addToolkitApplicableFee', [ToolkitApplicableFeeController::class, 'addToolkitApplicableFee']);
+    Route::post('/getToolkitApplicableFeePluck', [ToolkitApplicableFeeController::class, 'getToolkitApplicableFeePluck']);
+    Route::get('/getToolkitApplicableFees', [ToolkitApplicableFeeController::class, 'getToolkitApplicableFees']);
+    Route::post('/updateToolkitApplicableFee', [ToolkitApplicableFeeController::class, 'updateToolkitApplicableFee']);
+    Route::post('/deleteToolkitApplicableFee', [ToolkitApplicableFeeController::class, 'deleteToolkitApplicableFee']);
+
+    //   ToolkitPaymentType
+    Route::post('/addToolkitPaymentType', [ToolkitPaymentTypeController::class, 'addToolkitPaymentType']);
+    Route::post('/getToolkitPaymentTypePluck', [ToolkitPaymentTypeController::class, 'getToolkitPaymentTypePluck']);
+    Route::get('/getToolkitPaymentTypes', [ToolkitPaymentTypeController::class, 'getToolkitPaymentTypes']);
+    Route::post('/updateToolkitPaymentType', [ToolkitPaymentTypeController::class, 'updateToolkitPaymentType']);
+    Route::post('/deleteToolkitPaymentType', [ToolkitPaymentTypeController::class, 'deleteToolkitPaymentType']);
+
+    //   ToolkitInstallmentPayOut
+    Route::post('/addToolkitInstallmentPayOut', [ToolkitInstallmentPayOutController::class, 'addToolkitInstallmentPayOut']);
+    Route::post('/getToolkitInstallmentPayOutPluck', [ToolkitInstallmentPayOutController::class, 'getToolkitInstallmentPayOutPluck']);
+    Route::get('/getToolkitInstallmentPayOuts', [ToolkitInstallmentPayOutController::class, 'getToolkitInstallmentPayOuts']);
+    Route::post('/updateToolkitInstallmentPayOut', [ToolkitInstallmentPayOutController::class, 'updateToolkitInstallmentPayOut']);
+    Route::post('/deleteToolkitInstallmentPayOut', [ToolkitInstallmentPayOutController::class, 'deleteToolkitInstallmentPayOut']);
+
+    //   PermissionType
+    Route::post('/addPermission', [PermissionController::class, 'addPermission']);
+    Route::post('/getPermissionPluck', [PermissionController::class, 'getPermissionPluck']);
+    Route::get('/getPermissions', [PermissionController::class, 'getPermissions']);
+    Route::post('/updatePermission', [PermissionController::class, 'updatePermission']);
+    Route::post('/deletePermission', [PermissionController::class, 'deletePermission']);
+    Route::post('/allPermissions', [PermissionController::class, 'allPermissions']);
+    //    EmailT emplate
+    Route::post('/addEmailTemplate', [EmailTemplateController::class, 'addEmailTemplate']);
+    Route::post('/getEmailTemplatePluck', [EmailTemplateController::class, 'getEmailTemplatePluck']);
+    Route::get('/getEmailTemplates', [EmailTemplateController::class, 'getEmailTemplates']);
+    Route::post('/updateEmailTemplate', [EmailTemplateController::class, 'updateEmailTemplate']);
+    Route::post('/deleteEmailTemplate', [EmailTemplateController::class, 'deleteEmailTemplate']);
+    Route::post('email_template_submit_to_queue', [EmailTemplateController::class, 'email_template_submit_to_queue'])->name('email_template_submit_to_queue');
+    Route::get('email-marketing-queue', [EmailTemplateController::class, 'email_marketing_queue'])->name('email_marketing_queue');
+    Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue');
+    Route::post('email-marketing-approved-reject', [EmailTemplateController::class, 'email_marketing_approved_reject'])->name('email_marketing_approved_reject');
+    Route::post('getEmailTemplateDetail', [EmailTemplateController::class, 'getEmailTemplateDetail'])->name('getEmailTemplateDetail');
+    //    Role
+    Route::post('/getRoleDetail', [RoleController::class, 'getRoleDetail']);
+    Route::post('/addRole', [RoleController::class, 'addRole']);
+    Route::post('/updateRole', [RoleController::class, 'updateRole']);
+    Route::post('/getRoles', [RoleController::class, 'getRoles']);
 
 
-     //     University Rules
-     Route::post('/getClients', [ClientController::class, 'getClients']);
-     Route::post('/clientDetail', [ClientController::class, 'clientDetail']);
-     Route::post('/deleteClient', [ClientController::class, 'deleteClient']);
-     Route::post('/updateClient', [ClientController::class, 'updateClient']);
-     Route::post('/blockClient', [ClientController::class, 'blockClient']);
-     Route::post('/unBlockClient', [ClientController::class, 'unBlockClient']);
-     Route::post('/updateUnblockRequestStatus', [ClientController::class, 'updateUnblockRequestStatus']);
-
-     //     University Rules
-     Route::post('/addUniversityRule', [UniversityRuleController::class, 'addUniversityRule']);
-     Route::post('/getUniversityRules', [UniversityRuleController::class, 'getUniversityRules']);
-     Route::post('/updateUniversityRule', [UniversityRuleController::class, 'updateUniversityRule']);
-     Route::post('/deleteUniversityRule', [UniversityRuleController::class, 'deleteUniversityRule']);
-     Route::post('/updateUniversityRulePosition', [UniversityRuleController::class, 'updateUniversityRulePosition']);
+    //   Institute DocumentType
+    Route::post('/addDocumentType', [DocumentTypeController::class, 'addDocumentType']);
+    Route::post('/getDocumentTypePluck', [DocumentTypeController::class, 'getDocumentTypePluck']);
+    Route::get('/getDocumentTypes', [DocumentTypeController::class, 'getDocumentTypes']);
+    Route::post('/updateDocumentType', [DocumentTypeController::class, 'updateDocumentType']);
+    Route::post('/deleteDocumentType', [DocumentTypeController::class, 'deleteDocumentType']);
 
 
+    //     University Rules
+    Route::post('/getClients', [ClientController::class, 'getClients']);
+    Route::post('/clientDetail', [ClientController::class, 'clientDetail']);
+    Route::post('/deleteClient', [ClientController::class, 'deleteClient']);
+    Route::post('/updateClient', [ClientController::class, 'updateClient']);
+    Route::post('/blockClient', [ClientController::class, 'blockClient']);
+    Route::post('/unBlockClient', [ClientController::class, 'unBlockClient']);
+    Route::post('/updateUnblockRequestStatus', [ClientController::class, 'updateUnblockRequestStatus']);
 
-     //     Destination
-     Route::post('/addDestination', [DestinationController::class, 'addDestination']);
-     Route::post('/getDestinations', [DestinationController::class, 'getDestinations']);
-     Route::post('/updateDestinationByKey', [DestinationController::class, 'updateDestinationByKey']);
-     Route::post('/deleteDestination', [DestinationController::class, 'deleteDestination']);
-     Route::post('/destinationDetail', [DestinationController::class, 'destinationDetail']);
-     Route::post('/updateDestinationStatus', [DestinationController::class, 'updateDestinationStatus']);
-     Route::post('/pluckDestinations', [DestinationController::class, 'pluckDestinations']);
+    //     University Rules
+    Route::post('/addUniversityRule', [UniversityRuleController::class, 'addUniversityRule']);
+    Route::post('/getUniversityRules', [UniversityRuleController::class, 'getUniversityRules']);
+    Route::post('/updateUniversityRule', [UniversityRuleController::class, 'updateUniversityRule']);
+    Route::post('/deleteUniversityRule', [UniversityRuleController::class, 'deleteUniversityRule']);
+    Route::post('/updateUniversityRulePosition', [UniversityRuleController::class, 'updateUniversityRulePosition']);
+
+
+
+    //     Destination
+    Route::post('/addDestination', [DestinationController::class, 'addDestination']);
+    Route::post('/getDestinations', [DestinationController::class, 'getDestinations']);
+    Route::post('/updateDestinationByKey', [DestinationController::class, 'updateDestinationByKey']);
+    Route::post('/deleteDestination', [DestinationController::class, 'deleteDestination']);
+    Route::post('/destinationDetail', [DestinationController::class, 'destinationDetail']);
+    Route::post('/updateDestinationStatus', [DestinationController::class, 'updateDestinationStatus']);
+    Route::post('/pluckDestinations', [DestinationController::class, 'pluckDestinations']);
 
 
     Route::post('/addUpdateDestinationMeta', [DestinationMetaController::class, 'storeOrUpdateMetas']);
     Route::post('/getDestinationMeta', [DestinationMetaController::class, 'getDestinationMeta']);
 
-     //     Destination Rules
-     Route::post('/addDestinationRule', [DestinationRuleController::class, 'addDestinationRule']);
-     Route::post('/getDestinationRules', [DestinationRuleController::class, 'getDestinationRules']);
-     Route::post('/updateDestinationRule', [DestinationRuleController::class, 'updateDestinationRule']);
-     Route::post('/deleteDestinationRule', [DestinationRuleController::class, 'deleteDestinationRule']);
-     Route::post('/updateDestinationRulePosition', [DestinationRuleController::class, 'updateDestinationRulePosition']);
+    //     Destination Rules
+    Route::post('/addDestinationRule', [DestinationRuleController::class, 'addDestinationRule']);
+    Route::post('/getDestinationRules', [DestinationRuleController::class, 'getDestinationRules']);
+    Route::post('/updateDestinationRule', [DestinationRuleController::class, 'updateDestinationRule']);
+    Route::post('/deleteDestinationRule', [DestinationRuleController::class, 'deleteDestinationRule']);
+    Route::post('/updateDestinationRulePosition', [DestinationRuleController::class, 'updateDestinationRulePosition']);
 
 
-     //     adminission
-     Route::post('/getAdmission', [DealController::class, 'getAdmission']);
-     Route::post('/getAdmissionByView', [DealController::class, 'getAdmissionByView']); // get by view
-     Route::post('/getAdmissionDetails', [DealController::class, 'getAdmissionDetails']);
-     Route::post('/getMoveApplicationPluck', [DealController::class, 'getMoveApplicationPluck']);
-     Route::post('/moveApplicationsave', [DealController::class, 'moveApplicationsave']);
-     Route::post('/updateAdmission', [DealController::class, 'updateAdmission']);
-     Route::post('/GetadmissionNotes', [DealController::class, 'GetadmissionNotes']);
-     Route::post('/deleteAdmission', [DealController::class, 'deleteAdmission']);
-     Route::post('/assignTagsBulkadmissions', [DealController::class, 'addAdmissionTags']);
-
-
-     //   Announcement Category
-     Route::post('/addELTRequirement', [ELTRequirementsController::class, 'addELTRequirement']);
-     Route::get('/getELTRequirementsPluck', [ELTRequirementsController::class, 'getELTRequirementsPluck']);
-     Route::get('/getELTRequirements', [ELTRequirementsController::class, 'getELTRequirements']);
-     Route::post('/updateELTRequirement', [ELTRequirementsController::class, 'updateELTRequirement']);
-     Route::post('/deleteELTRequirement', [ELTRequirementsController::class, 'deleteELTRequirement']);
+    //     adminission
+    Route::post('/getAdmission', [DealController::class, 'getAdmission']);
+    Route::post('/getAdmissionByView', [DealController::class, 'getAdmissionByView']); // get by view
+    Route::post('/getAdmissionDetails', [DealController::class, 'getAdmissionDetails']);
+    Route::post('/getMoveApplicationPluck', [DealController::class, 'getMoveApplicationPluck']);
+    Route::post('/moveApplicationsave', [DealController::class, 'moveApplicationsave']);
+    Route::post('/updateAdmission', [DealController::class, 'updateAdmission']);
+    Route::post('/GetadmissionNotes', [DealController::class, 'GetadmissionNotes']);
+    Route::post('/deleteAdmission', [DealController::class, 'deleteAdmission']);
+    Route::post('/assignTagsBulkadmissions', [DealController::class, 'addAdmissionTags']);
 
 
 
+    Route::post('/addELTRequirement', [ELTRequirementsController::class, 'addELTRequirement']);
+    Route::get('/getELTRequirementsPluck', [ELTRequirementsController::class, 'getELTRequirementsPluck']);
+    Route::get('/getELTRequirements', [ELTRequirementsController::class, 'getELTRequirements']);
+    Route::post('/updateELTRequirement', [ELTRequirementsController::class, 'updateELTRequirement']);
+    Route::post('/deleteELTRequirement', [ELTRequirementsController::class, 'deleteELTRequirement']);
 
-     //     application
-     Route::post('/getApplications', [ApplicationsController::class, 'getApplications']);
-     Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByView']);
-     Route::post('/getDetailApplication', [ApplicationsController::class, 'getDetailApplication']);
-     Route::post('/updateApplication', [ApplicationsController::class, 'updateApplication']);
-     Route::post('/storeApplication', [ApplicationsController::class, 'storeApplication']);
-     Route::post('/deleteApplication', [ApplicationsController::class, 'deleteApplication']);
-     Route::post('/updateApplicationStage', [ApplicationsController::class, 'updateApplicationStage']);
-     Route::post('/DeleteApplicationNotes', [ApplicationsController::class, 'DeleteApplicationNotes']);
-     Route::post('/addApplicationTags', [ApplicationsController::class, 'addApplicationTags']);
 
-     Route::post('/application_request_save_deposite', [ApplicationsController::class, 'application_request_save_deposite']);
 
-     Route::post('/applicationAppliedStage', [ApplicationsController::class, 'applicationAppliedStage']);
-     Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'application_request_save_deposite_applied']);
-     Route::post('/applicationNotesStore', [ApplicationsController::class, 'applicationNotesStore']);
-     Route::post('/getApplicationNotes', [ApplicationsController::class, 'getApplicationNotes']);
 
-     //     University Rules
-     Route::post('/addMOIInstitutes', [MoiAcceptedController::class, 'addMOIInstitutes']);
-     Route::post('/getMIOList', [MoiAcceptedController::class, 'getMIOList']);
-     Route::post('/updateMOIInstitutes', [MoiAcceptedController::class, 'updateMOIInstitutes']);
+    Route::post('/addEducationLevel', [EducationLevelsController::class, 'addEducationLevel']);
+    Route::get('/getEducationLevelsPluck', [EducationLevelsController::class, 'getEducationLevelsPluck']);
+    Route::get('/getEducationLevels', [EducationLevelsController::class, 'getEducationLevels']);
+    Route::post('/updateEducationLevel', [EducationLevelsController::class, 'updateEducationLevel']);
+    Route::post('/deleteEducationLevel', [EducationLevelsController::class, 'deleteEducationLevel']);
+
+    Route::post('/addEducationDepartment', [EducationDepartmentsController::class, 'addEducationDepartment']);
+    Route::get('/getEducationDepartmentsPluck', [EducationDepartmentsController::class, 'getEducationDepartmentsPluck']);
+    Route::get('/getEducationDepartments', [EducationDepartmentsController::class, 'getEducationDepartments']);
+    Route::post('/updateEducationDepartment', [EducationDepartmentsController::class, 'updateEducationDepartment']);
+    Route::post('/deleteEducationDepartment', [EducationDepartmentsController::class, 'deleteEducationDepartment']);
+
+    Route::post('/addBudgetRange', [BudgetRangesController::class, 'addBudgetRange']);
+    Route::get('/getBudgetRangesPluck', [BudgetRangesController::class, 'getBudgetRangesPluck']);
+    Route::get('/getBudgetRanges', [BudgetRangesController::class, 'getBudgetRanges']);
+    Route::post('/updateBudgetRange', [BudgetRangesController::class, 'updateBudgetRange']);
+    Route::post('/deleteBudgetRange', [BudgetRangesController::class, 'deleteBudgetRange']);
+
+
+
+
+    //     application
+    Route::post('/getApplications', [ApplicationsController::class, 'getApplications']);
+    //Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByView']);
+    Route::post('/getApplicationsByView', [ApplicationsController::class, 'getApplicationsByViewNew']);
+    Route::post('/getApplicationsByViewNew_test', [ApplicationsController::class, 'getApplicationsByViewNew_test']);
+    Route::post('/addApplicationMeta', [ApplicationsController::class, 'addApplicationMeta']);
+    Route::post('/getApplicationMeta', [ApplicationsController::class, 'getApplicationMeta']);
+    Route::post('/getDetailApplication', [ApplicationsController::class, 'getDetailApplication']);
+    Route::post('/updateApplication', [ApplicationsController::class, 'updateApplication']);
+    Route::post('/storeApplication', [ApplicationsController::class, 'storeApplication']);
+    Route::post('/deleteApplication', [ApplicationsController::class, 'deleteApplication']);
+    Route::post('/updateApplicationStage', [ApplicationsController::class, 'updateApplicationStage']);
+    Route::post('/manualUpdateApplicationStage', [ApplicationsController::class, 'manualUpdateApplicationStage']);
+    Route::post('/DeleteApplicationNotes', [ApplicationsController::class, 'DeleteApplicationNotes']);
+    Route::post('/addApplicationTags', [ApplicationsController::class, 'addApplicationTags']);
+
+    Route::post('/application_request_save_deposite', [ApplicationsController::class, 'application_request_save_deposite']);
+
+    Route::post('/applicationAppliedStage', [ApplicationsController::class, 'applicationAppliedStage']);
+    Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'application_request_save_deposite_applied']);
+    Route::post('/applicationNotesStore', [ApplicationsController::class, 'applicationNotesStore']);
+    Route::post('/getApplicationNotes', [ApplicationsController::class, 'getApplicationNotes']);
+
+    //     University Rules
+    Route::post('/addMOIInstitutes', [MoiAcceptedController::class, 'addMOIInstitutes']);
+    Route::post('/getMIOList', [MoiAcceptedController::class, 'getMIOList']);
+    Route::post('/updateMOIInstitutes', [MoiAcceptedController::class, 'updateMOIInstitutes']);
     //  Route::post('/deleteUniversityRule', [UniversityRuleController::class, 'deleteUniversityRule']);
     // reports
     Route::post('/reports/visa-analysis', [ReportsController::class, 'visaAnalysis']);
@@ -1004,11 +1065,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/Country', [GeneralController::class, 'Country']);
     Route::post('/Country/by/code', [GeneralController::class, 'CountryByCode']);
     Route::post('/UniversityByCountryCode', [GeneralController::class, 'UniversityByCountryCode']);
+    Route::post('/UniversityByCountryid', [GeneralController::class, 'UniversityByCountryid']);
+    Route::post('/UniversityByMultiCountryid', [GeneralController::class, 'UniversityByMultiCountryid']);
     Route::post('/getLogActivity', [GeneralController::class, 'getLogActivity']);
     Route::get('/getDistinctModuleTypes', [GeneralController::class, 'getDistinctModuleTypes']);
     Route::post('/DeleteSavedFilter', [GeneralController::class, 'DeleteSavedFilter']);
     Route::post('/GetBranchByType', [GeneralController::class, 'GetBranchByType']);
     Route::post('/leadsrequireddata', [GeneralController::class, 'leadsrequireddata']);
+    Route::post('/getPluckSourses', [GeneralController::class, 'getPluckSourses']);
     Route::post('/getCitiesOnCode', [GeneralController::class, 'getCitiesOnCode']);
 
     Route::post('/DealTagPluck', [GeneralController::class, 'DealTagPluck']);
@@ -1026,4 +1090,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/reassignUserData', [UserReassignController::class, 'reassignUserData']);
 
+    Route::get('/company-permissions', [CompanyPermissionController::class, 'index']);
+    Route::post('/company-permission-update', [CompanyPermissionController::class, 'updatePermission']);
+
+
+    Route::post('/addToEmailQueue', [SendQueuedEmailsController::class, 'addToEmailQueue']);
+    Route::post('/getEmailQueueByRelated', [SendQueuedEmailsController::class, 'getEmailQueueByRelated']);
+
+    Route::post('/addToSmsQueue', [SendQueuedSmsController::class, 'addToSmsQueue']);
+    Route::post('/getSmsQueueByRelated', [SendQueuedSmsController::class, 'getSmsQueueByRelated']);
+
+    // Student Advice
+    Route::post('/uploadStudentAdvice', [StudentAdviceController::class, 'uploadAdvice']);
+    Route::post('/getStudentAdvice', [StudentAdviceController::class, 'getAdvice']);
+    Route::post('/deleteStudentAdvice', [StudentAdviceController::class, 'deleteAdvice']);
 });

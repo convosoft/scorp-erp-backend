@@ -12,6 +12,12 @@ class AdmissionView extends Model
  protected $appends = ['tags'];
 
 
+    public function applications()
+    {
+        return $this->hasMany('App\Models\DealApplication', 'deal_id', 'id');
+    }
+
+
     public function labels()
     {
         if($this->labels)
@@ -46,6 +52,8 @@ class AdmissionView extends Model
     {
         return $this->hasMany('App\Models\DealTask', 'deal_id', 'id');
     }
+
+
 
     public function complete_tasks()
     {

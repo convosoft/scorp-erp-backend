@@ -1473,6 +1473,9 @@ class UniversityController extends Controller
         return [
             'status' => 'success',
             'university_status' => $university->status ?? null,
+            'university_campuses' => !empty($university->campuses)
+                                    ? array_map('trim', explode(',', $university->campuses))
+                                    : [],
             'intake_months' => $intake_months,
             'courses' => $course_options,
             'intake_years' => $intake_years,

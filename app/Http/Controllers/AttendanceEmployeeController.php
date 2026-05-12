@@ -20,7 +20,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class AttendanceEmployeeController extends Controller
 {
-  
+
     public function viewAttendance(Request $request)
     {
 
@@ -46,7 +46,7 @@ class AttendanceEmployeeController extends Controller
         }else{
             $employee = Auth::user();
         }
- 
+
         $employeeId = $employee->id;
         $branchId = $employee->branch_id;
 
@@ -185,16 +185,16 @@ class AttendanceEmployeeController extends Controller
     //                 });
     //             }) // ✅ Properly closed here
     //             ->when($request->filled('tag_id'), function ($query) use ($request) {
-                   
+
     //                 $query->whereHas('user', function ($q) use ($request) {
     //                     $q->where('tag_ids', $request->tag_id);
     //                 });
 
-                    
+
     //             })
     //             ->get();
 
-                
+
 
     //         $data = [];
 
@@ -350,7 +350,7 @@ class AttendanceEmployeeController extends Controller
     //         ], 500);
     //     }
     // }
-    
+
 public function getAttendances(Request $request)
 {
     try {
@@ -441,12 +441,12 @@ public function getAttendances(Request $request)
         // Paginate attendance rows directly
         $attendances = $attendanceQuery->orderBy('date', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
-      
+
 
         $data = [];
         foreach ($attendances as $attendance) {
-           
-             
+
+
             $user = $attendance?->user;
             if (!$user) continue;
 
@@ -593,7 +593,7 @@ public function getCombinedAttendances_fine_work(Request $request)
                     ? Carbon::parse($clockOut)->diffInSeconds(Carbon::parse($clockIn))
                     : 0;
 
-                 
+
 
                 $status = 'Present'; // Force status to Present for marked records
 
@@ -731,8 +731,8 @@ public function getCombinedAttendances_fine_work(Request $request)
 //                 'attendances.id as attendance_id',
 //                 DB::raw("
 //                     CASE
-//                         WHEN attendances.id IS NULL THEN 'Not Marked' 
-//                         WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'  
+//                         WHEN attendances.id IS NULL THEN 'Not Marked'
+//                         WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'
 //                         ELSE attendances.status
 //                     END as status
 //                 ")
@@ -803,22 +803,22 @@ public function getCombinedAttendances_fine_work(Request $request)
 //                 $f = fopen('php://output', 'w');
 //                 // Write CSV headers
 //                 fputcsv($f, [
-//                     'Employee ID', 
-//                     'Employee Name', 
-//                     'Brand', 
-//                     'Region', 
-//                     'Branch', 
-//                     'Date', 
-//                     'Clock In', 
-//                     'Clock Out', 
+//                     'Employee ID',
+//                     'Employee Name',
+//                     'Brand',
+//                     'Region',
+//                     'Branch',
+//                     'Date',
+//                     'Clock In',
+//                     'Clock Out',
 //                     'Early Checkout Reason',
-//                     'Worked Hours', 
-//                     'Status', 
-//                     'Late', 
-//                     'Early Leaving', 
+//                     'Worked Hours',
+//                     'Status',
+//                     'Late',
+//                     'Early Leaving',
 //                     'Overtime'
 //                 ]);
-                
+
 //                 // Write data rows
 //                 foreach ($records as $row) {
 //                     fputcsv($f, array_values($row));
@@ -921,7 +921,7 @@ public function getCombinedAttendances_fine_work(Request $request)
 //         $today = Carbon::today();
 
 //         // Improved Date range handling - never go beyond today
-//         $startDate = $request->filled('start_date') 
+//         $startDate = $request->filled('start_date')
 //             ? Carbon::parse($request->start_date)->startOfDay()
 //             : $today->copy()->subMonths(3)->startOfMonth(); // Default to last 3 months
 
@@ -953,7 +953,7 @@ public function getCombinedAttendances_fine_work(Request $request)
 //         $tagIds = $request->filled('tag_ids') ? explode(',', $request->tag_ids) : [];
 
 //         // Paginate Employees
-        
+
 //                 $employeeQuery = DB::table('users')
 //             ->leftJoin('branches', 'branches.id', '=', 'users.branch_id')
 //             ->leftJoin('regions', 'regions.id', '=', 'users.region_id')
@@ -977,8 +977,8 @@ public function getCombinedAttendances_fine_work(Request $request)
 //                 'attendances.id as attendance_id',
 //                 DB::raw("
 //                     CASE
-//                         WHEN attendances.id IS NULL THEN 'Not Marked' 
-//                         WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'  
+//                         WHEN attendances.id IS NULL THEN 'Not Marked'
+//                         WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'
 //                         ELSE attendances.status
 //                     END as status
 //                 ")
@@ -1063,7 +1063,7 @@ public function getCombinedAttendances_fine_work(Request $request)
 //             // 1. Date descending
 //             $dateCompare = strtotime($b['date']) <=> strtotime($a['date']);
 //             if ($dateCompare !== 0) return $dateCompare;
-            
+
 //             // 2. Absent always last
 //             $aAbsent = $a['attendance_id'] === 0;
 //             $bAbsent = $b['attendance_id'] === 0;
@@ -1166,7 +1166,7 @@ public function getemplyee_monthly_attandance(Request $request)
         $today = Carbon::today();
 
         // Date range handling
-        $startDate = $request->filled('start_date') 
+        $startDate = $request->filled('start_date')
             ? Carbon::parse($request->start_date)->startOfDay()
             : $today->copy()->subMonths(3)->startOfMonth();
 
@@ -1218,8 +1218,8 @@ public function getemplyee_monthly_attandance(Request $request)
                 'attendances.id as attendance_id',
                 DB::raw("
                     CASE
-                        WHEN attendances.id IS NULL THEN 'Not Marked' 
-                        WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'  
+                        WHEN attendances.id IS NULL THEN 'Not Marked'
+                        WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'
                         ELSE attendances.status
                     END as status
                 ")
@@ -1254,7 +1254,7 @@ public function getemplyee_monthly_attandance(Request $request)
         foreach ($employees as $record) {
             $clockIn = $record->clock_in ?? '00:00:00';
             $clockOut = $record->clock_out ?? '00:00:00';
-            
+
             $workedSeconds = ($clockIn !== '00:00:00' && $clockOut !== '00:00:00')
                 ? Carbon::parse($clockOut)->diffInSeconds(Carbon::parse($clockIn))
                 : 0;
@@ -1314,7 +1314,7 @@ public function getemplyee_monthly_attandance(Request $request)
                 'Content-Type' => 'text/csv',
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             ];
-            
+
             return response()->stream(function () use ($data) {
                 $f = fopen('php://output', 'w');
                 fputcsv($f, ['Employee ID', 'Employee Name', 'Date', 'Status', 'Clock In', 'Clock Out', 'Late', 'Early Leaving', 'Overtime']);
@@ -1495,8 +1495,8 @@ public function getemplyee_monthly_attandance(Request $request)
 //                 'attendances.date as attendance_date',
 //                 DB::raw("
 //                     CASE
-//                         WHEN attendances.id IS NULL THEN 'Not Marked' 
-//                         WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'  
+//                         WHEN attendances.id IS NULL THEN 'Not Marked'
+//                         WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'
 //                         ELSE attendances.status
 //                     END as status
 //                 ")
@@ -1607,18 +1607,18 @@ public function getemplyee_monthly_attandance(Request $request)
 
 //         if ($enddate == $date) {
 //             $employeesQuery->orderByRaw("
-//                 CASE 
+//                 CASE
 //                     WHEN attendances.id IS NULL THEN 3
 //                     WHEN attendances.status = 'Absent' THEN 2
-//                     ELSE 1 
+//                     ELSE 1
 //                 END ASC,
-//                 CASE 
-//                     WHEN attendances.status != 'Absent' THEN attendances.id 
-//                     ELSE NULL 
+//                 CASE
+//                     WHEN attendances.status != 'Absent' THEN attendances.id
+//                     ELSE NULL
 //                 END DESC,
-//                 CASE 
-//                     WHEN attendances.status = 'Absent' THEN attendances.id 
-//                     ELSE NULL 
+//                 CASE
+//                     WHEN attendances.status = 'Absent' THEN attendances.id
+//                     ELSE NULL
 //                 END DESC
 //             ");
 //         } else {
@@ -1944,8 +1944,8 @@ public function backuplist(Request $request)
                 'attendances.date as attendance_date',
                 DB::raw("
                     CASE
-                        WHEN attendances.id IS NULL THEN 'Not Marked' 
-                        WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'  
+                        WHEN attendances.id IS NULL THEN 'Not Marked'
+                        WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'
                         ELSE attendances.status
                     END as status
                 ")
@@ -1986,7 +1986,7 @@ public function backuplist(Request $request)
         } else {
             $employeesQuery->where('users.id', $user->id)->whereNotIn('users.type', $excludedTypes);
         }
-        
+
         // Apply role-based access control to main query
         $applyRoleAccess = function ($query) use ($auth_user) {
             switch (strtolower($auth_user->type)) {
@@ -2070,27 +2070,27 @@ public function backuplist(Request $request)
             }
         };
         $applyRoleAccess($employeesQuery);
-        
+
         if ($enddate == $date) {
             $employeesQuery->orderByRaw("
-                CASE 
+                CASE
                     WHEN attendances.id IS NULL THEN 3
                     WHEN attendances.status = 'Absent' THEN 2
-                    ELSE 1 
+                    ELSE 1
                 END ASC,
-                CASE 
-                    WHEN attendances.status != 'Absent' THEN attendances.id 
-                    ELSE NULL 
+                CASE
+                    WHEN attendances.status != 'Absent' THEN attendances.id
+                    ELSE NULL
                 END DESC,
-                CASE 
-                    WHEN attendances.status = 'Absent' THEN attendances.id 
-                    ELSE NULL 
+                CASE
+                    WHEN attendances.status = 'Absent' THEN attendances.id
+                    ELSE NULL
                 END DESC
             ");
         } else {
             $employeesQuery->orderBy('attendances.date', 'DESC');
         }
-        
+
         if ($request->filled('status')) {
             if ($request->status == 'Absent') {
                 $employeesQuery->having(function ($q) {
@@ -2289,7 +2289,7 @@ public function backuplist(Request $request)
                 $computedStatus = 'Leave';
             } elseif (!empty($row->earlyCheckOutReason)) {
                 $computedStatus = 'Early Clock Out';
-            } elseif ($clockIn && $shiftStart) {
+            } elseif ($clockIn && $shiftStart && $row->status != 'Absent') {
                 $shiftStartWithMargin = $shiftStart->copy()->addMinutes(30);
                 $computedStatus = $clockIn->lte($shiftStartWithMargin) ? 'OnTime' : 'Late';
             } else {
@@ -2311,6 +2311,12 @@ public function backuplist(Request $request)
                 }
             }
 
+            if($computedStatus == 'Present'){
+               $worked_hoursworked_hours =   gmdate('H:i:s', $workedSeconds);
+            }else{
+                 $worked_hoursworked_hours =   '00:00:00';
+            }
+
             $filteredRecords->push([
                 'employee_id' => $row->employee_id,
                 'attendance_id' => $row->attendance_id,
@@ -2328,7 +2334,7 @@ public function backuplist(Request $request)
                 'clock_in' => $clockInRaw ?? '00:00:00',
                 'clock_out' => $clockOutRaw ?? '00:00:00',
                 'earlyCheckOutReason' => $row->earlyCheckOutReason,
-                'worked_hours' => gmdate('H:i:s', $workedSeconds),
+                'worked_hours' => $worked_hoursworked_hours,
                 'status' => $computedStatus,
                 'late' => ($clockIn !== '00:00:00' && $row?->shift_start)
                         ? ($clockIn > $row->shift_start
@@ -2337,6 +2343,7 @@ public function backuplist(Request $request)
                         : '00:00:00',
                 'early_leaving' => $row->early_leaving ?? '00:00:00',
                 'overtime' => $row->overtime ?? '00:00:00',
+                'rowstatus' =>$row->status,
             ]);
         }
 
@@ -2368,7 +2375,7 @@ public function backuplist(Request $request)
         } else {
             $OnlyCount->where('users.id', $user->id)->whereNotIn('users.type', $excludedTypes);
         }
-        
+
         $applyRoleAccess($OnlyCount);
         $OnlyFullCount = $OnlyCount->count();
         return response()->json([
@@ -2601,8 +2608,8 @@ public function backuplist(Request $request)
                 'attendances.date as attendance_date',
                 DB::raw("
                     CASE
-                        WHEN attendances.id IS NULL THEN 'Not Marked' 
-                        WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'  
+                        WHEN attendances.id IS NULL THEN 'Not Marked'
+                        WHEN attendances.earlyCheckOutReason IS NOT NULL THEN 'Early Clock Out'
                         ELSE attendances.status
                     END as status
                 ")
@@ -2644,31 +2651,31 @@ public function backuplist(Request $request)
         }
 
         // Get total before pagination
-       
+
 
         // Sort by latest marked first, unmarked last
         if ($enddate == $date){
 
             $employeesQuery->orderByRaw("
-                CASE 
+                CASE
                     WHEN attendances.id IS NULL THEN 3
                     WHEN attendances.status = 'Absent' THEN 2
-                    ELSE 1 
+                    ELSE 1
                 END ASC,
-                CASE 
-                    WHEN attendances.status != 'Absent' THEN attendances.id 
-                    ELSE NULL 
+                CASE
+                    WHEN attendances.status != 'Absent' THEN attendances.id
+                    ELSE NULL
                 END DESC,
-                CASE 
-                    WHEN attendances.status = 'Absent' THEN attendances.id 
-                    ELSE NULL 
+                CASE
+                    WHEN attendances.status = 'Absent' THEN attendances.id
+                    ELSE NULL
                 END DESC
             ");
 
         }else{
             $employeesQuery->orderBy('attendances.date', 'DESC');
         }
-        
+
 
        // Apply status filter after ordering
         if ($request->filled('status')) {
@@ -2735,22 +2742,22 @@ public function backuplist(Request $request)
                 $f = fopen('php://output', 'w');
                 // Write CSV headers
                 fputcsv($f, [
-                    'Employee ID', 
-                    'Employee Name', 
-                    'Brand', 
-                    'Region', 
-                    'Branch', 
-                    'Date', 
-                    'Clock In', 
-                    'Clock Out', 
+                    'Employee ID',
+                    'Employee Name',
+                    'Brand',
+                    'Region',
+                    'Branch',
+                    'Date',
+                    'Clock In',
+                    'Clock Out',
                     'Early Checkout Reason',
-                    'Worked Hours', 
-                    'Status', 
-                    'Late', 
-                    'Early Leaving', 
+                    'Worked Hours',
+                    'Status',
+                    'Late',
+                    'Early Leaving',
                     'Overtime'
                 ]);
-                
+
                 // Write data rows
                 foreach ($records as $row) {
                     fputcsv($f, array_values($row));
@@ -2787,7 +2794,7 @@ public function backuplist(Request $request)
                     }
                 });
             });
- 
+
               // Apply user-specific restrictions
         if ($auth_user->can('level 1') || $auth_user->type === 'super admin') {
             // Level 1 permissions
@@ -2807,17 +2814,17 @@ public function backuplist(Request $request)
         $statusCounts = $countsQuery->select(
             DB::raw("
                         SUM(
-                            CASE 
-                                WHEN attendances.clock_in <= DATE_ADD(attendances.shift_start, INTERVAL 30 MINUTE) 
-                                THEN 1 ELSE 0 
+                            CASE
+                                WHEN attendances.clock_in <= DATE_ADD(attendances.shift_start, INTERVAL 30 MINUTE)
+                                THEN 1 ELSE 0
                             END
                         ) as OnTime
                     "),
             DB::raw("
                         SUM(
-                            CASE 
-                                WHEN attendances.clock_in > DATE_ADD(attendances.shift_start, INTERVAL 30 MINUTE) 
-                                THEN 1 ELSE 0 
+                            CASE
+                                WHEN attendances.clock_in > DATE_ADD(attendances.shift_start, INTERVAL 30 MINUTE)
+                                THEN 1 ELSE 0
                             END
                         ) as Late
                     "),
@@ -2885,14 +2892,14 @@ public function backuplist(Request $request)
     }
 }
 
- 
- 
+
+
  public function getDashboardAttendances(Request $request)
 {
-     
+
 
     $user = \Auth::user();
- 
+
 
     // ✅ Inputs
     $date = $request->input('date', Carbon::today()->format('Y-m-d'));
@@ -2904,9 +2911,9 @@ public function backuplist(Request $request)
             ->select([
                 'users.id as employee_id',
                 'users.name as employee_name',
-                'users.avatar',  
-                'attendances.clock_in', 
-                'attendances.status' 
+                'users.avatar',
+                'attendances.clock_in',
+                'attendances.status'
             ])
             ->leftJoin('attendance_employees as attendances', function($join) use ($date) {
                 $join->on('users.id', '=', 'attendances.employee_id')
@@ -2915,12 +2922,12 @@ public function backuplist(Request $request)
             ->where('users.is_attendance_required', 1)
             ->where('attendances.status', 'Present')
             ->orderBy('attendances.clock_in', 'desc') ;
-        
+
     $attendances = $attendanceQuery
         ->orderBy('attendances.id', 'desc')
         ->paginate($perPage, ['*'], 'page', $page);
 
-      
+
 
     // ✅ Response
     return response()->json([
@@ -2939,12 +2946,12 @@ public function backuplist(Request $request)
         public function getCronAttendances_OLD_WORKING_FINE(Request $request)
         {
             try {
-                $date = Carbon::parse($request->date)->format('Y-m-d'); 
+                $date = Carbon::parse($request->date)->format('Y-m-d');
 
                 $branchespluck = Branch::all()->keyBy('id');
                 $userspluck    = User::all()->keyBy('id');
                 $regionspluck  = Region::all()->keyBy('id');
-            
+
                 $excludedTypes = ['company', 'team', 'client', 'Agent'];
 
                 $employeesQuery = DB::table('users')
@@ -2977,16 +2984,16 @@ public function backuplist(Request $request)
 
                     $employees = $employeesQuery->get();
 
-                    
+
 
                     // Template string
                     $absentTemplate = <<<HTML
-                    
+
 
                     <p>Dear {{employee_name}},</p>
 
                     <p>This is an official notice that your attendance for {{date}} has <strong> not been marked </strong>
-                    via the companyʼs HRM mobile app, as required by policy. Consequently, your 
+                    via the companyʼs HRM mobile app, as required by policy. Consequently, your
                     status for the day has been recorded as <strong> Absent</strong> in the HRM system.</p>
 
                     <p>Failure to mark attendance in a timely manner without valid justification is
@@ -3050,7 +3057,7 @@ public function backuplist(Request $request)
 
                                 if (!$employee->attendance_id) {
 
-                            
+
 
                                     // No attendance found — insert new absent record
                                     $insertData[] = [
@@ -3066,7 +3073,7 @@ public function backuplist(Request $request)
                                         'created_at' => now(),
                                         'updated_at' => now(),
                                     ];
-                                    
+
 
                                 } else {
                                     // Attendance exists — update status to 'Absent'
@@ -3075,7 +3082,7 @@ public function backuplist(Request $request)
                                             'status' => 'Absent',
                                             'updated_at' => now(),
                                         ]);
-                                    
+
                                 }
 
                             $replacedHtml = str_replace(
@@ -3136,9 +3143,9 @@ public function backuplist(Request $request)
                                     ];
 
                     }
-                    // Bulk insert new absent records 
+                    // Bulk insert new absent records
                     if (!empty($insertData)) {
-                        AttendanceEmployee::insert($insertData); 
+                        AttendanceEmployee::insert($insertData);
                     }
 
                     if (!empty($insertData)) {
@@ -3149,11 +3156,11 @@ public function backuplist(Request $request)
                     'status' => 'success',
                     'total' => $total,
                     'data' => $employees,
-                    'date' => $date,    
+                    'date' => $date,
                 ]);
             } catch (\Exception $e) {
                 return response()->json([
-                    'status' => 'error', 
+                    'status' => 'error',
                     'message' => $e->getMessage()
                 ], 500);
             }
@@ -3165,7 +3172,7 @@ public function backuplist(Request $request)
 
 
     try {
-    
+
 
        // new attendance date handling
 
@@ -3174,8 +3181,8 @@ public function backuplist(Request $request)
         }
 
         $date = Carbon::parse($request->date)->format('Y-m-d');
-        
-         
+
+
         $dayOfWeek = Carbon::parse($date)->dayOfWeek; // 0 (Sunday) to 6 (Saturday)
 
         // Check if the date is a holiday
@@ -3184,15 +3191,15 @@ public function backuplist(Request $request)
         ->where('end_date', '>=', $date)
         ->exists();
 
- 
+
         $branchespluck = Branch::all()->keyBy('id');
          $excludedTypes = ['team', 'client', 'Agent'];
         $userspluck = User::whereNotIn('type', $excludedTypes)->get()->keyBy('id');
- 
+
         $regionspluck = Region::all()->keyBy('id');
 
         $excludedTypes = ['company', 'team', 'client', 'Agent'];
-        
+
 
         $employeesQuery = DB::table('users')
                     ->leftJoin('attendance_employees as attendances', function ($join) use ($date) {
@@ -3223,19 +3230,19 @@ public function backuplist(Request $request)
 
         $total = $employeesQuery->count();
         $employees = $employeesQuery->get();
-        
-      
 
-       
+
+
+
 
        // Template string
                     $absentTemplate = <<<HTML
-                    
+
 
                     <p>Dear {{employee_name}},</p>
 
                     <p>This is an official notice that your attendance for {{date}} has <strong> not been marked </strong>
-                    via the companyʼs HRM mobile app, as required by policy. Consequently, your 
+                    via the companyʼs HRM mobile app, as required by policy. Consequently, your
                     status for the day has been recorded as <strong> Absent</strong> in the HRM system.</p>
 
                     <p>Failure to mark attendance in a timely manner without valid justification is
@@ -3299,13 +3306,13 @@ public function backuplist(Request $request)
                         $is_attendace_email = $is_attendace_email ? $is_attendace_email->is_attendace_email: 0;
                         // echo $employee->employee_id;
                         // dd($is_attendace_email);
-                        
+
 
             // Check if Saturday is off for this branch
             $isSatOff = $branch_detail && $branch_detail->is_sat_off;
-            
+
             // Determine if today should be treated as holiday
-            $treatAsHoliday = $isHoliday || 
+            $treatAsHoliday = $isHoliday ||
                              $dayOfWeek == 0 || // Sunday
                              ($dayOfWeek == 6 && $isSatOff); // Saturday with is_sat_off
 
@@ -3388,16 +3395,16 @@ public function backuplist(Request $request)
 
                                         }
 
-                                    
-                    
+
+
                             // Clocked in but didn't clock out on holiday - mark as absent
                             AttendanceEmployee::where('id', $employee->attendance_id)
                                 ->update([
                                     'status' => 'Absent',
                                     'updated_at' => now(),
                                 ]);
-                            
-                    
+
+
                     }
                 } else {
                     // Regular working day processing
@@ -3416,7 +3423,7 @@ public function backuplist(Request $request)
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
-                        
+
                         if($is_attendace_email==1){
                                 // Prepare email
                                 $replacedHtml = str_replace(
@@ -3483,7 +3490,7 @@ public function backuplist(Request $request)
                                 'status' => 'Absent',
                                 'updated_at' => now(),
                             ]);
-                        
+
                             if($is_attendace_email==1){
                                     // Prepare email
                                     $replacedHtml = str_replace(
@@ -3542,12 +3549,12 @@ public function backuplist(Request $request)
                                             'created_at' => now(),
                                             'updated_at' => now()
                                         ];
-                                        
+
                         }
                     }
                 }
             }
-         
+
                 if (!empty($insertData)) {
                     AttendanceEmployee::insert($insertData);
                 }
@@ -3559,7 +3566,7 @@ public function backuplist(Request $request)
 
                 return response()->json([
                     'status' => 'success',
-                    'total' => $total, 
+                    'total' => $total,
                     'date' => $date,
                     'is_holiday' => $isHoliday,
                     'day_of_week' => $dayOfWeek,
@@ -3962,11 +3969,11 @@ public function updateAttendance(Request $request)
 
             $attendance = AttendanceEmployee::orderBy('id', 'desc')->where('employee_id', '=', $employeeId)->where('clock_out', '=', '00:00:00')->first();
 
-            if ($attendance != null) {
-                $attendance            = AttendanceEmployee::find($attendance->id);
-                $attendance->clock_out = $endTime;
-                $attendance->save();
-            }
+            // if ($attendance != null) {
+            //     $attendance            = AttendanceEmployee::find($attendance->id);
+            //     $attendance->clock_out = $endTime;
+            //     $attendance->save();
+            // }
 
             $date = date("Y-m-d");
             $time = date("H:i:s");

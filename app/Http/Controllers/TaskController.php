@@ -270,7 +270,7 @@ class TaskController extends Controller
                 } elseif (\Auth::user()->type == 'Region Manager' || (\Auth::user()->can('level 3') && !empty(\Auth::user()->region_id))) {
                     $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
                 } elseif (\Auth::user()->type == 'Branch Manager' || \Auth::user()->type == 'Admissions Officer' ||
-                         \Auth::user()->type == 'Career Consultant' || \Auth::user()->type == 'Admissions Manager' ||
+                         \Auth::user()->type == 'Careers Consultant' || \Auth::user()->type == 'Admissions Manager' ||
                          \Auth::user()->type == 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
                     $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
                 } elseif (\Auth::user()->type === 'Agent') {
@@ -621,7 +621,7 @@ class TaskController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => $validator->errors()->first()
+                'message' => $validator->errors()
             ], 400);
         }
 
@@ -883,7 +883,7 @@ class TaskController extends Controller
             $task = DealTask::findOrFail($id);
 
             $from = User::find($task->assigned_to);
-            $to = User::find($request->assigned_to);
+            $to = User::find($task->created_by);
 
             // Ensure $from and $to are valid objects before accessing their properties
             $data = [
@@ -902,6 +902,9 @@ class TaskController extends Controller
 
             $task->assigned_to = $request->created_by;
             $task->created_by = $request->assigned_to;
+            $task->brand_id = $to->brand_id;
+            $task->region_id = $to->region_id;
+            $task->branch_id = $to->branch_id;
             $task->due_date = Carbon::now()->addDay()->format('Y-m-d');
             $task->is_swap = '1';
             $task->save();
@@ -1114,6 +1117,12 @@ class TaskController extends Controller
 
         $RelatedTo = $this->GetBranchByType($task->related_type,$task->related_to);
 
+          $assignbydetails = User::with([
+                'brand:id,name',
+                'region:id,name',
+                'branch:id,name'
+            ])->select('id', 'name','brand_id','branch_id','region_id','type')->find($task->created_by);
+
         return response()->json([
             'status' => 'success',
             'data' => compact(
@@ -1124,6 +1133,7 @@ class TaskController extends Controller
                 'CourseName',
                 'applied_meta_html',
                 'applied_meta',
+                'assignbydetails',
             )
         ]);
     }
@@ -1568,42 +1578,51 @@ class TaskController extends Controller
 
         if ($dealApplication) {
             $deal = Deal::find($dealApplication->deal_id);
-            if ($deal) {
-                $highestStageApplication = DealApplication::where('deal_id', $dealApplication->deal_id)
-                    ->orderBy('stage_id', 'desc')
+
+        if ($deal) {
+            // Get all applications for this deal
+            $applications = DealApplication::where('deal_id', $dealApplication->deal_id)->get();
+
+            // ✅ Check if ALL applications are lost (stage_id = 12)
+            $allLost = $applications->every(function ($app) {
+                return $app->stage_id == 12;
+            });
+
+            if ($allLost) {
+                $deal->stage_id = 7; // Lost
+                $deal->save();
+            } else {
+                // ❗ Otherwise, get latest NON-lost stage
+                $latestStage = $applications
+                    ->where('stage_id', '!=', 12)
+                    ->sortByDesc('stage_id')
                     ->first();
 
-                if (!empty($highestStageApplication)) {
-                    if ($highestStageApplication->stage_id == '0') {
+                if ($latestStage) {
+                    if ($latestStage->stage_id == '0') {
                         $deal->stage_id = 0;
-                    } elseif ($highestStageApplication->stage_id == '1' || $highestStageApplication->stage_id == '2') {
+                    } elseif (in_array($latestStage->stage_id, [1, 2])) {
                         $deal->stage_id = 1;
-                    } elseif ($highestStageApplication->stage_id == '3' || $highestStageApplication->stage_id == '4') {
-
+                    } elseif (in_array($latestStage->stage_id, [3, 4])) {
                         $deal->stage_id = 2;
-                    } elseif ($highestStageApplication->stage_id == '5' || $highestStageApplication->stage_id == '6') {
-
+                    } elseif (in_array($latestStage->stage_id, [5, 6])) {
                         $deal->stage_id = 3;
-                    } elseif ($highestStageApplication->stage_id == '7' || $highestStageApplication->stage_id == '8') {
-
+                    } elseif (in_array($latestStage->stage_id, [7, 8])) {
                         $deal->stage_id = 4;
-                    } elseif ($highestStageApplication->stage_id == '9' || $highestStageApplication->stage_id == '10') {
-
+                    } elseif (in_array($latestStage->stage_id, [9, 10])) {
                         $deal->stage_id = 5;
-                    } elseif ($highestStageApplication->stage_id == '11') {
-
+                    } elseif ($latestStage->stage_id == 11) {
                         $deal->stage_id = 6;
-                    } elseif ($highestStageApplication->stage_id == '12') {
-
-                        $deal->stage_id = 7;
                     }
 
                     $deal->save();
                 } else {
+                    // No applications found → default stage
                     $deal->stage_id = 0;
                     $deal->save();
                 }
             }
+        }
 
             $lastStageHistory = StageHistory::where('type', 'application')
                 ->where('type_id', $applicationId)

@@ -1764,8 +1764,9 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:120',
             'email' => 'required|email|unique:users,email',
+            'reply_email' => 'nullable|email',
             'website_link' => 'required|url',
-            'drive_link' => 'required|url',
+            'drive_link' => 'nullable|url',
             'domain_link' => 'nullable|url',
             'project_director' => 'nullable|integer|exists:users,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -1823,6 +1824,9 @@ class UserController extends Controller
                 $user->avatar = 'EmployeeDocument/' . $imageName;
                 $user->save();
             }
+
+            $user->reply_email = $request->reply_email;
+            $user->save();
 
             // Utility Configurations
             Utility::chartOfAccountTypeData($user->id);
@@ -1909,6 +1913,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $request->id,
             'website_link' => 'required|url',
             'drive_link' => 'required|url',
+            'reply_email' => 'nullable|email',
         ]);
 
         if ($validator->fails()) {
@@ -1946,6 +1951,9 @@ class UserController extends Controller
                 $user->avatar = 'EmployeeDocument/' . $imageName;
                 $user->save();
             }
+
+            $user->reply_email = $request->reply_email;
+            $user->save();
 
             // Log changed fields only
             $changes = [];
@@ -2319,6 +2327,8 @@ class UserController extends Controller
             ]);
         }
 
+
+
         // Validation
         $validator = \Validator::make($request->all(), [
             'cv' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
@@ -2326,7 +2336,7 @@ class UserController extends Controller
             'academic_documents' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
             'profile_picture' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
             'avatar' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
-            'document_link' => 'required|file|mimes:jpg,jpeg,png,pdf|max:4096',
+            'document_link' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
 
             'id' => 'required|exists:users,id',
             'passport_expiry_date' => 'nullable|date',
