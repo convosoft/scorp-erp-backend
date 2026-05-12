@@ -2636,6 +2636,7 @@ class LeadController extends Controller
             ->get()->map(function ($discussion) {
                 return [
                     'id' => $discussion->id,
+                    'created_by' => $discussion->created_by,
                     'text' => htmlspecialchars_decode($discussion->description),
                     'author' => $discussion?->author?->name,
                     'time' => $discussion->created_at->diffForHumans(),
