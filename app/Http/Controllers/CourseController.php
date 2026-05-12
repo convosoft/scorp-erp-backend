@@ -46,7 +46,7 @@ class CourseController extends Controller
         }
 
         // Base query
-        $query = Course::with(['instalments','university', 'created_by'])
+        $query = Course::with(['instalments', 'university', 'created_by'])
             ->where('university_id', $request->university_id)->where('type', $request->type);
 
 
@@ -167,12 +167,12 @@ class CourseController extends Controller
         }
 
         // Optional: Log activity
-          $typetext = $request->type == 1 ? 'international' : 'home';
+        $typetext = $request->type == 1 ? 'international' : 'home';
         addLogActivity([
             'type' => 'success',
             'note' => json_encode([
-                'title' => 'Course: ' . $course->name. ' created in ' . $typetext . ' ' .$course->university->name ,
-                'message' => 'Course: ' . $course->name. ' created in ' .$typetext . ' ' . $course->university->name,
+                'title' => 'Course: ' . $course->name . ' created in ' . $typetext . ' ' . $course->university->name,
+                'message' => 'Course: ' . $course->name . ' created in ' . $typetext . ' ' . $course->university->name,
             ]),
             'module_id' => $course->university_id,
             'module_type' => 'university',
@@ -465,8 +465,8 @@ class CourseController extends Controller
 
             // Delete any installments not in the current request
             Instalment::where('course_id', $course->id)
-                      ->whereNotIn('id', $existingIds)
-                      ->delete();
+                ->whereNotIn('id', $existingIds)
+                ->delete();
 
             $updatedFields['installments'] = 'Updated installments data';
         }
@@ -474,11 +474,11 @@ class CourseController extends Controller
         // Log only if any field was actually changed
         if (!empty($updatedFields)) {
 
-              $typetext = $course->type == 1 ? 'international' : 'home';
+            $typetext = $course->type == 1 ? 'international' : 'home';
             addLogActivity([
                 'type' => 'info',
                 'note' => json_encode([
-                    'title' => $typetext . ' ' .'Course Updated',
+                    'title' => $typetext . ' ' . 'Course Updated',
                     'message' => 'The following fields were updated:',
                     'changes' => $updatedFields
                 ]),
@@ -499,140 +499,140 @@ class CourseController extends Controller
     }
 
     public function updateCourses(Request $request)
-{
-    if (!in_array(Auth::user()->type, ['Product Coordinator', 'super admin'])) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Permission Denied.'
-        ], 403);
-    }
-    $request->merge([
-        'OfferletterDownloadenabled' => filter_var($request->OfferletterDownloadenabled, FILTER_VALIDATE_BOOLEAN),
-    ]);
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|max:150',
-        'university_id' => 'required|exists:universities,id',
-        'id' => 'required|exists:courses,id',
-        'campus' => 'required',
-        'intake_month' => 'required',
-        'intakeYear' => 'required|integer|min:2000',
-        'duration' => 'required',
-        'gross_fees' => 'required|numeric|min:0',
-        'net_fees' => 'required|numeric|min:0',
-        'scholarship' => 'nullable|numeric|min:0',
-        'first_instalment' => 'nullable|numeric|min:0',
-        'second_instalment' => 'nullable|numeric|min:0',
-        'third_instalment' => 'nullable|numeric|min:0',
-        'final_instalment' => 'nullable|numeric|min:0',
-        'course_location' => 'nullable|string|max:200',
-        'course_information' => 'nullable|string|max:200',
-        'installments' => 'required|array',
-        'installments.*.id' => 'sometimes|integer',
-        'installments.*.fee' => 'required|numeric',
-        'OfferletterDownloadenabled' => 'nullable|boolean',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $validator->errors()
-        ], 422);
-    }
-
-    $id = $request->id;
-    $course = Course::findOrFail($id);
-    $updatedFields = [];
-
-    $fieldsToUpdate = [
-        'name' => $request->name,
-        'university_id' => $request->university_id,
-        'campus' => is_array($request->campus) ? implode(',', $request->campus) : $request->campus,
-        'intake_month' => is_array($request->intake_month) ? implode(',', $request->intake_month) : $request->intake_month,
-        'intakeYear' => $request->intakeYear,
-        'duration' => $request->duration,
-        'gross_fees' => $request->gross_fees,
-        'net_fees' => $request->net_fees,
-        'scholarship' => $request->scholarship,
-        'first_instalment' => $request->first_instalment,
-        'second_instalment' => $request->second_instalment,
-        'third_instalment' => $request->third_instalment,
-        'final_instalment' => $request->final_instalment,
-        'course_information' => $request->course_information,
-        'course_location' => $request->course_location,
-        'min_requirements' => $request->min_requirements,
-        'course_tags' => $request->course_tags,
-    ];
-
-    foreach ($fieldsToUpdate as $field => $newValue) {
-        if ($course->$field != $newValue) {
-            $updatedFields[$field] = [
-                'old' => $course->$field,
-                'new' => $newValue
-            ];
-            $course->$field = $newValue;
+    {
+        if (!in_array(Auth::user()->type, ['Product Coordinator', 'super admin'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Permission Denied.'
+            ], 403);
         }
-    }
-    $course->OfferletterDownloadenabled = $request->OfferletterDownloadenabled ? 1 : 0;
-    $course->save();
+        $request->merge([
+            'OfferletterDownloadenabled' => filter_var($request->OfferletterDownloadenabled, FILTER_VALIDATE_BOOLEAN),
+        ]);
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|max:150',
+            'university_id' => 'required|exists:universities,id',
+            'id' => 'required|exists:courses,id',
+            'campus' => 'required',
+            'intake_month' => 'required',
+            'intakeYear' => 'required|integer|min:2000',
+            'duration' => 'required',
+            'gross_fees' => 'required|numeric|min:0',
+            'net_fees' => 'required|numeric|min:0',
+            'scholarship' => 'nullable|numeric|min:0',
+            'first_instalment' => 'nullable|numeric|min:0',
+            'second_instalment' => 'nullable|numeric|min:0',
+            'third_instalment' => 'nullable|numeric|min:0',
+            'final_instalment' => 'nullable|numeric|min:0',
+            'course_location' => 'nullable|string|max:200',
+            'course_information' => 'nullable|string|max:200',
+            'installments' => 'required|array',
+            'installments.*.id' => 'sometimes|integer',
+            'installments.*.fee' => 'required|numeric',
+            'OfferletterDownloadenabled' => 'nullable|boolean',
+        ]);
 
-    // Handle Installments
-    if (!empty($request->installments)) {
-        $existingIds = [];
-
-        foreach ($request->installments as $installmentData) {
-            if (isset($installmentData['id'])) {
-                $installment = Instalment::updateOrCreate(
-                    ['id' => $installmentData['id'], 'course_id' => $course->id],
-                    ['fee' => $installmentData['fee']]
-                );
-                $existingIds[] = $installment->id;
-            } else {
-                $installment = new Instalment();
-                $installment->course_id = $course->id;
-                $installment->fee = $installmentData['fee'];
-                $installment->save();
-                $existingIds[] = $installment->id;
-            }
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
         }
 
-        Instalment::where('course_id', $course->id)
-                  ->whereNotIn('id', $existingIds)
-                  ->delete();
+        $id = $request->id;
+        $course = Course::findOrFail($id);
+        $updatedFields = [];
 
-        $updatedFields['installments'] = 'Installments were updated';
-    }
-
-    // Log Activity in the desired format
-    if (!empty($updatedFields)) {
-        $user = \Auth::user();
-        $universityName = University::where('id', $course->university_id)->value('name');
-        $fieldList = implode(', ', array_map('ucwords', array_keys($updatedFields)));
-          $typetext = $course->type == 1 ? 'international' : 'home';
-        $logDetails = [
-            'title' => "Course: {$course->name}  Updated in {$typetext} {$universityName}",
-            'message' => "Fields updated: {$fieldList}",
-            'changes' => $updatedFields
+        $fieldsToUpdate = [
+            'name' => $request->name,
+            'university_id' => $request->university_id,
+            'campus' => is_array($request->campus) ? implode(',', $request->campus) : $request->campus,
+            'intake_month' => is_array($request->intake_month) ? implode(',', $request->intake_month) : $request->intake_month,
+            'intakeYear' => $request->intakeYear,
+            'duration' => $request->duration,
+            'gross_fees' => $request->gross_fees,
+            'net_fees' => $request->net_fees,
+            'scholarship' => $request->scholarship,
+            'first_instalment' => $request->first_instalment,
+            'second_instalment' => $request->second_instalment,
+            'third_instalment' => $request->third_instalment,
+            'final_instalment' => $request->final_instalment,
+            'course_information' => $request->course_information,
+            'course_location' => $request->course_location,
+            'min_requirements' => $request->min_requirements,
+            'course_tags' => $request->course_tags,
         ];
 
-        addLogActivity([
-            'type' => 'info',
-            'note' => json_encode($logDetails),
-            'module_id' => $course->university_id,
-            'module_type' => 'university',
-            'notification_type' => 'Course Updated',
-            'created_by' => $user->id
+        foreach ($fieldsToUpdate as $field => $newValue) {
+            if ($course->$field != $newValue) {
+                $updatedFields[$field] = [
+                    'old' => $course->$field,
+                    'new' => $newValue
+                ];
+                $course->$field = $newValue;
+            }
+        }
+        $course->OfferletterDownloadenabled = $request->OfferletterDownloadenabled ? 1 : 0;
+        $course->save();
+
+        // Handle Installments
+        if (!empty($request->installments)) {
+            $existingIds = [];
+
+            foreach ($request->installments as $installmentData) {
+                if (isset($installmentData['id'])) {
+                    $installment = Instalment::updateOrCreate(
+                        ['id' => $installmentData['id'], 'course_id' => $course->id],
+                        ['fee' => $installmentData['fee']]
+                    );
+                    $existingIds[] = $installment->id;
+                } else {
+                    $installment = new Instalment();
+                    $installment->course_id = $course->id;
+                    $installment->fee = $installmentData['fee'];
+                    $installment->save();
+                    $existingIds[] = $installment->id;
+                }
+            }
+
+            Instalment::where('course_id', $course->id)
+                ->whereNotIn('id', $existingIds)
+                ->delete();
+
+            $updatedFields['installments'] = 'Installments were updated';
+        }
+
+        // Log Activity in the desired format
+        if (!empty($updatedFields)) {
+            $user = \Auth::user();
+            $universityName = University::where('id', $course->university_id)->value('name');
+            $fieldList = implode(', ', array_map('ucwords', array_keys($updatedFields)));
+            $typetext = $course->type == 1 ? 'international' : 'home';
+            $logDetails = [
+                'title' => "Course: {$course->name}  Updated in {$typetext} {$universityName}",
+                'message' => "Fields updated: {$fieldList}",
+                'changes' => $updatedFields
+            ];
+
+            addLogActivity([
+                'type' => 'info',
+                'note' => json_encode($logDetails),
+                'module_id' => $course->university_id,
+                'module_type' => 'university',
+                'notification_type' => 'Course Updated',
+                'created_by' => $user->id
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Course successfully updated.',
+            'data' => [
+                'course' => $course,
+                'university' => $course->university,
+            ]
         ]);
     }
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Course successfully updated.',
-        'data' => [
-            'course' => $course,
-            'university' => $course->university,
-        ]
-    ]);
-}
 
 
     /**
@@ -667,14 +667,14 @@ class CourseController extends Controller
         $course = Course::find($request->id);
 
 
-          $typetext = $course->type == 1 ? 'international' : 'home';
+        $typetext = $course->type == 1 ? 'international' : 'home';
 
         // Log the deletion
-         addLogActivity([
+        addLogActivity([
             'type' => 'warning',
             'note' => json_encode([
-                'title' => 'Course: ' . $course->name. ' deleted in ' .$typetext . ' ' . $course->university->name,
-                'message' => 'Course: ' . $course->name. ' deleted in ' .$typetext . ' ' . $course->university->name,
+                'title' => 'Course: ' . $course->name . ' deleted in ' . $typetext . ' ' . $course->university->name,
+                'message' => 'Course: ' . $course->name . ' deleted in ' . $typetext . ' ' . $course->university->name,
             ]),
             'module_id' => $course->university_id,
             'module_type' => 'university',
@@ -779,19 +779,19 @@ class CourseController extends Controller
     }
 
     public function pluckCourse(Request $request)
-        {
-            $Course = Course::pluck('name', 'id')->where('type',1)->toArray();
-            return response()->json([
-                'status' => 'success',
-                'data' => $Course
+    {
+        $Course = Course::pluck('name', 'id')->where('type', 1)->toArray();
+        return response()->json([
+            'status' => 'success',
+            'data' => $Course
 
-            ]);
-        }
+        ]);
+    }
 
 
-public function courseFinder(Request $request)
-{
-    $caseCountry = "
+    public function courseFinder(Request $request)
+    {
+        $caseCountry = "
         COALESCE(
             CASE
                 WHEN universities.country REGEXP '^[0-9]+$'
@@ -802,69 +802,69 @@ public function courseFinder(Request $request)
         )
     ";
 
-    $query = Course::query() 
-        ->leftJoin('universities', 'courses.university_id', '=', 'universities.id')
-        ->leftJoin('countries as c_id', 'universities.country', '=', 'c_id.id')
-        ->leftJoin('countries as c_name', 'universities.country', '=', 'c_name.name')
-        ->select(
-            'courses.*',
-            'universities.name as university_name',
-            'universities.country as raw_country',
-            'universities.campuses'
-        )
-        ->selectRaw("$caseCountry AS resolved_country_name");
+        $query = Course::query()
+            ->leftJoin('universities', 'courses.university_id', '=', 'universities.id')
+            ->leftJoin('countries as c_id', 'universities.country', '=', 'c_id.id')
+            ->leftJoin('countries as c_name', 'universities.country', '=', 'c_name.name')
+            ->select(
+                'courses.*',
+                'universities.name as university_name',
+                'universities.country as raw_country',
+                'universities.campuses'
+            )
+            ->selectRaw("$caseCountry AS resolved_country_name");
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | HARD FILTERS
     |--------------------------------------------------------------------------
     */
 
-    if ($request->filled('type')) {
-        $query->where('courses.type', $request->type);
-    }
+        if ($request->filled('type')) {
+            $query->where('courses.type', $request->type);
+        }
 
-     $selectedCountryNames = [];
-    if (!empty($request->countries)) {
-        $selectedCountryNames = \App\Models\Country::whereIn('id', $request->countries)
-            ->pluck('name')
-            ->map(fn($name) => strtolower(trim($name)))
-            ->toArray();
-    }
-    
+        $selectedCountryNames = [];
+        if (!empty($request->countries)) {
+            $selectedCountryNames = \App\Models\Country::whereIn('id', $request->countries)
+                ->pluck('name')
+                ->map(fn($name) => strtolower(trim($name)))
+                ->toArray();
+        }
 
-    if (!empty($selectedCountryNames)) {
 
-        $placeholders = implode(',', array_fill(0, count($selectedCountryNames), '?'));
+        if (!empty($selectedCountryNames)) {
 
-        $query->whereRaw("LOWER(TRIM($caseCountry)) IN ($placeholders)", $selectedCountryNames);
-    }
+            $placeholders = implode(',', array_fill(0, count($selectedCountryNames), '?'));
 
-    if ($request->filled('universities')) {
-        $query->whereIn('courses.university_id', (array)$request->universities);
-    }
+            $query->whereRaw("LOWER(TRIM($caseCountry)) IN ($placeholders)", $selectedCountryNames);
+        }
 
-    /*
+        if ($request->filled('universities')) {
+            $query->whereIn('courses.university_id', (array)$request->universities);
+        }
+
+        /*
     |--------------------------------------------------------------------------
     | FLEXIBLE FILTERS
     |--------------------------------------------------------------------------
     */
 
-    if ($request->is_intakeYear_flexible == 1 && $request->filled('intakeYear')) {
-        $query->whereIn('courses.intakeYear', (array)$request->intakeYear);
-    }
+        if ($request->is_intakeYear_flexible == 1 && $request->filled('intakeYear')) {
+            $query->whereIn('courses.intakeYear', (array)$request->intakeYear);
+        }
 
-    if ($request->is_intakeMonth_flexible == 1 && $request->filled('intake_month')) {
-        $months = (array)$request->intake_month;
+        if ($request->is_intakeMonth_flexible == 1 && $request->filled('intake_month')) {
+            $months = (array)$request->intake_month;
 
-        $query->where(function ($q) use ($months) {
-            foreach ($months as $month) {
-                $q->orWhereRaw("FIND_IN_SET(?, courses.intake_month)", [trim($month)]);
-            }
-        });
-    }
+            $query->where(function ($q) use ($months) {
+                foreach ($months as $month) {
+                    $q->orWhereRaw("FIND_IN_SET(?, courses.intake_month)", [trim($month)]);
+                }
+            });
+        }
 
-            $keywords = array_filter([
+        $keywords = array_filter([
             strtolower($request->course),
             strtolower($request->degree_level)
         ]);
@@ -877,142 +877,152 @@ public function courseFinder(Request $request)
             });
         }
 
-    if ($request->is_campus_flexible == 1 && $request->filled('campus')) {
-        $campuses = (array)$request->campus;
+        if ($request->is_campus_flexible == 1 && $request->filled('campus')) {
+            $campuses = (array)$request->campus;
 
-        $query->where(function ($q) use ($campuses) {
-            foreach ($campuses as $campus) {
-                $q->orWhere('courses.campus', 'LIKE', '%' . trim($campus) . '%');
+            $query->where(function ($q) use ($campuses) {
+                foreach ($campuses as $campus) {
+                    $q->orWhere('courses.campus', 'LIKE', '%' . trim($campus) . '%');
+                }
+            });
+        }
+
+        if ($request->is_budget_flexible == 1 && $request->filled('budget')) {
+            try {
+                [$min, $max] = explode('-', $request->budget);
+
+                $query->whereBetween(
+                    DB::raw('CAST(courses.gross_fees AS UNSIGNED)'),
+                    [(int)$min, (int)$max]
+                );
+            } catch (\Exception $e) {
             }
-        });
-    }
+        }
 
-    if ($request->is_budget_flexible == 1 && $request->filled('budget')) {
-        try {
-            [$min, $max] = explode('-', $request->budget);
-
-            $query->whereBetween(
-                DB::raw('CAST(courses.gross_fees AS UNSIGNED)'),
-                [(int)$min, (int)$max]
-            );
-        } catch (\Exception $e) {}
-    }
-
-    /*
+        /*
     |--------------------------------------------------------------------------
     | AI SCORING & ENRICHMENT
     |--------------------------------------------------------------------------
     */
 
-    $selectedUniversities = $request->universities ?? [];
+        $selectedUniversities = $request->universities ?? [];
 
-    // $sql = str_replace('?', "'%s'", $query->toSql());
-    // $sql = vsprintf($sql, $query->getBindings());
-    // dd($sql);   
+        $sql = str_replace('?', "'%s'", $query->toSql());
+        $sql = vsprintf($sql, $query->getBindings());
+        dd($sql);
 
-    $allCourses = $query->latest()->get();
+        $allCourses = $query->latest()->get();
 
-    $scoredCourses = $allCourses->map(function ($course) use ($request, $selectedUniversities, $selectedCountryNames) {
-        $score = 0;
+        $scoredCourses = $allCourses->map(function ($course) use ($request, $selectedUniversities, $selectedCountryNames) {
+            $score = 0;
 
-        // University Match (+30)
-        if (!empty($selectedUniversities) && in_array($course->university_id, $selectedUniversities)) {
-            $score += 30;
-        }
+            // University Match (+30)
+            if (!empty($selectedUniversities) && in_array($course->university_id, $selectedUniversities)) {
+                $score += 30;
+            }
 
-        // Country Match (+20)
-        if (!empty($selectedCountryNames) && in_array(strtolower(trim($course->resolved_country_name)), $selectedCountryNames)) {
-            $score += 20;
-        }
+            // Country Match (+20)
+            if (!empty($selectedCountryNames) && in_array(strtolower(trim($course->resolved_country_name)), $selectedCountryNames)) {
+                $score += 20;
+            }
 
-        // Budget Match (+20)
-        if ($request->filled('budget')) {
-            try {
-                [$min, $max] = explode('-', $request->budget);
-                if ($course->gross_fees >= $min && $course->gross_fees <= $max) {
-                    $score += 20;
+            // Budget Match (+20)
+            if ($request->filled('budget')) {
+                try {
+                    [$min, $max] = explode('-', $request->budget);
+                    if ($course->gross_fees >= $min && $course->gross_fees <= $max) {
+                        $score += 20;
+                    }
+                } catch (\Exception $e) {
                 }
-            } catch (\Exception $e) {}
-        }
+            }
 
-        // Course/Keyword Match (+15)
-        if ($request->filled('course') && str_contains(strtolower($course->name), strtolower($request->course))) {
-            $score += 15;
-        }
+            // Course/Keyword Match (+15)
+            if ($request->filled('course') && str_contains(strtolower($course->name), strtolower($request->course))) {
+                $score += 15;
+            }
 
-        // Campus Match (+10)
-        if ($request->filled('campus') && str_contains(strtolower($course->campus), strtolower(implode(',', (array)$request->campus)))) {
-            $score += 10;
-        }
+            // Campus Match (+10)
+            if ($request->filled('campus') && str_contains(strtolower($course->campus), strtolower(implode(',', (array)$request->campus)))) {
+                $score += 10;
+            }
 
-        // Intake Match (+5)
-        if ($request->filled('intake_month') && str_contains($course->intake_month, implode(',', (array)$request->intake_month))) {
-            $score += 5;
-        }
-        if ($request->filled('intakeYear') && str_contains($course->intakeYear, implode(',', (array)$request->intakeYear))) {
-            $score += 5;
-        }
+            // Intake Match (+5)
+            if ($request->filled('intake_month') && str_contains($course->intake_month, implode(',', (array)$request->intake_month))) {
+                $score += 5;
+            }
+            if ($request->filled('intakeYear') && str_contains($course->intakeYear, implode(',', (array)$request->intakeYear))) {
+                $score += 5;
+            }
 
-        $course->match_score = min($score, 100);
-        return $course;
-    });
+            $course->match_score = min($score, 100);
+            return $course;
+        });
 
-    // Sort ALL courses by match_score DESC
-    $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
-    
-    // Sort ALL courses by match_score DESC
-    $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
-    
-    $aiSummary = "";
-    $askAi = $request->ask_ai;
+        // Sort ALL courses by match_score DESC
+        $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
 
-    //dd($askAi);
+        // Sort ALL courses by match_score DESC
+        $sortedCourses = $scoredCourses->sortByDesc('match_score')->values();
 
-    // --- AI MODES (1: Recommendation, 2: PDF Generation) ---
-    if ($askAi == 1 || $askAi == 2) {
-        $selectedIds = (array)$request->selected_course_ids;
-       
+        $aiSummary = "";
+        $askAi = $request->ask_ai;
 
-        if ($askAi == 1) {
-             $topCandidates = collect();
-            // Recommendation Logic: Selected courses + Top Database matches (up to 10 total)
-            $selectedCourses = $sortedCourses->whereIn('id', $selectedIds)->take(10);
-            $remainingCount = 10 - $selectedCourses->count();
-            $otherTopCourses = $sortedCourses->whereNotIn('id', $selectedIds)->take($remainingCount);
-            $topCandidates = $selectedCourses->concat($otherTopCourses)->values();
-        } else {
+        //dd($askAi);
 
-             $topCandidates = collect();
-            
-            // PDF Logic: Only the manually selected courses
-            $topCandidates = $sortedCourses->whereIn('id', $selectedIds)->values();
+        // --- AI MODES (1: Recommendation, 2: PDF Generation) ---
+        if ($askAi == 1 || $askAi == 2) {
+            $selectedIds = (array)$request->selected_course_ids;
 
-           
-        }
 
-       
+            if ($askAi == 1) {
+                $topCandidates = collect();
+                // Recommendation Logic: Selected courses + Top Database matches (up to 10 total)
+                $selectedCourses = $sortedCourses->whereIn('id', $selectedIds)->take(10);
+                $remainingCount = 10 - $selectedCourses->count();
+                $otherTopCourses = $sortedCourses->whereNotIn('id', $selectedIds)->take($remainingCount);
+                $topCandidates = $selectedCourses->concat($otherTopCourses)->values();
+            } else {
 
-        if ($topCandidates->isNotEmpty()) {
-            $studentProfile = $request->only([
-                'full_name', 'last_qualification', 'department', 'degree_name', 
-                'cgpa', 'intakeYear', 'passingYear', 'language_test', 'total_bands', 
-                'intake_month', 'course', 'degree_level', 'budget'
-            ]);
+                $topCandidates = collect();
 
-            $coursesContext = $topCandidates->map(function($c) {
-                return [
-                    'id' => $c->id,
-                    'name' => $c->name,
-                    'university' => $c->university_name,
-                    'country' => $c->resolved_country_name,
-                    'info' => $c->course_information,
-                    'location' => $c->course_location,
-                    'fees' => $c->gross_fees,
-                    'requirements' => $c->min_requirements ?? ''
-                ];
-            })->toArray();
+                // PDF Logic: Only the manually selected courses
+                $topCandidates = $sortedCourses->whereIn('id', $selectedIds)->values();
+            }
 
-            $aiPrompt = "
+
+
+            if ($topCandidates->isNotEmpty()) {
+                $studentProfile = $request->only([
+                    'full_name',
+                    'last_qualification',
+                    'department',
+                    'degree_name',
+                    'cgpa',
+                    'intakeYear',
+                    'passingYear',
+                    'language_test',
+                    'total_bands',
+                    'intake_month',
+                    'course',
+                    'degree_level',
+                    'budget'
+                ]);
+
+                $coursesContext = $topCandidates->map(function ($c) {
+                    return [
+                        'id' => $c->id,
+                        'name' => $c->name,
+                        'university' => $c->university_name,
+                        'country' => $c->resolved_country_name,
+                        'info' => $c->course_information,
+                        'location' => $c->course_location,
+                        'fees' => $c->gross_fees,
+                        'requirements' => $c->min_requirements ?? ''
+                    ];
+                })->toArray();
+
+                $aiPrompt = "
             You are the SCORP AI Course Finder expert. Based on the student's profile and the matched courses, generate a personalized report.
             
             Student Profile:
@@ -1043,116 +1053,115 @@ public function courseFinder(Request $request)
             }
             ";
 
-            try {
-                $aiResponse = OpenAI::chat()->create([
-                    'model' => 'gpt-4o-mini',
-                    'messages' => [
-                        ['role' => 'system', 'content' => 'You are the SCORP AI Course Finder expert. Respond ONLY in JSON.'],
-                        ['role' => 'user', 'content' => $aiPrompt],
-                    ],
-                    'response_format' => ['type' => 'json_object'],
-                ]);
+                try {
+                    $aiResponse = OpenAI::chat()->create([
+                        'model' => 'gpt-4o-mini',
+                        'messages' => [
+                            ['role' => 'system', 'content' => 'You are the SCORP AI Course Finder expert. Respond ONLY in JSON.'],
+                            ['role' => 'user', 'content' => $aiPrompt],
+                        ],
+                        'response_format' => ['type' => 'json_object'],
+                    ]);
 
-                $aiData = json_decode($aiResponse->choices[0]->message->content, true);
-                $aiSummary = $aiData['greeting'] ?? "";
+                    $aiData = json_decode($aiResponse->choices[0]->message->content, true);
+                    $aiSummary = $aiData['greeting'] ?? "";
 
-                 
-                
-                // Map AI data back to candidates
-                $topCandidates = $topCandidates->map(function($course) use ($aiData,$askAi) {
-                    $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
-                    
-                    // Explode existing comma-separated tags from DB
-                    $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
-                    
-                    if ($aiMatch) {
-                        $course->ai_rationale = $aiMatch['rationale'];
-                         if ($askAi == 1 ) {
-                        $course->match_score = $aiMatch['match_percentage'];
-                         }
-                        // Add "TOP PICK" to the start of tags if AI identifies it as such
-                        if ($aiMatch['is_top_pick'] ?? false) {
-                            array_unshift($tagsArray, "TOP PICK");
+
+
+                    // Map AI data back to candidates
+                    $topCandidates = $topCandidates->map(function ($course) use ($aiData, $askAi) {
+                        $aiMatch = collect($aiData['recommendations'] ?? [])->firstWhere('course_id', $course->id);
+
+                        // Explode existing comma-separated tags from DB
+                        $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
+
+                        if ($aiMatch) {
+                            $course->ai_rationale = $aiMatch['rationale'];
+                            if ($askAi == 1) {
+                                $course->match_score = $aiMatch['match_percentage'];
+                            }
+                            // Add "TOP PICK" to the start of tags if AI identifies it as such
+                            if ($aiMatch['is_top_pick'] ?? false) {
+                                array_unshift($tagsArray, "TOP PICK");
+                            }
                         }
-                    }
-                    
-                    $course->course_tags = implode(', ', array_unique($tagsArray));
-                    return $course;
-                })->sortByDesc('match_score')->values();
-                 //dd($selectedIds,$askAi,count($topCandidates),count($aiData['recommendations']),count($aiData )); //ask ai 2  records are 2 
+
+                        $course->course_tags = implode(', ', array_unique($tagsArray));
+                        return $course;
+                    })->sortByDesc('match_score')->values();
+                    //dd($selectedIds,$askAi,count($topCandidates),count($aiData['recommendations']),count($aiData )); //ask ai 2  records are 2 
 
 
-                // dd($selectedIds,$askAi,$topCandidates);  ask ai 2  records are 42 
+                    // dd($selectedIds,$askAi,$topCandidates);  ask ai 2  records are 42 
 
-                return response()->json([
-                    'status' => 'success',
-                    'ai_summary' => $aiSummary,
-                    'courses' => $topCandidates,
-                ], 200);
-
-            } catch (\Exception $e) {
-                \Log::error("CourseFinder AI Enrichment failed: " . $e->getMessage());
+                    return response()->json([
+                        'status' => 'success',
+                        'ai_summary' => $aiSummary,
+                        'courses' => $topCandidates,
+                    ], 200);
+                } catch (\Exception $e) {
+                    \Log::error("CourseFinder AI Enrichment failed: " . $e->getMessage());
+                }
             }
         }
-    }
 
-    // Default Search Results: Return all (no AI) with tag cleaning
-    $sortedCourses = $sortedCourses->map(function ($course) {
-        $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
-        $course->course_tags = implode(', ', array_unique($tagsArray));
-        return $course;
-    });
+        // Default Search Results: Return all (no AI) with tag cleaning
+        $sortedCourses = $sortedCourses->map(function ($course) {
+            $tagsArray = $course->course_tags ? array_map('trim', explode(',', $course->course_tags)) : [];
+            $course->course_tags = implode(', ', array_unique($tagsArray));
+            return $course;
+        });
 
-    return response()->json([
-        'status' => 'success',
-        'courses' => $sortedCourses,
-    ], 200);
-}
-
-public function enrichCourseWithAI(Request $request)
-{
-   
-
-    // Fetch courses that are missing either information or location
-    $courses = Course::has('university')->with('university')
-        ->where(function($query) {
-            $query->whereNull('course_information')
-                  ->orWhere('course_information', '')
-                  ->orWhereNull('course_location')
-                  ->orWhere('course_location', '')
-                  ->orWhereNull('course_tags')
-                  ->orWhere('course_tags', '');
-        })
-        ->limit(50) // Limit to avoid request timeouts
-        ->get();
-
-    if ($courses->isEmpty()) {
         return response()->json([
             'status' => 'success',
-            'message' => 'No courses found needing enrichment.'
-        ]);
+            'courses' => $sortedCourses,
+        ], 200);
     }
 
+    public function enrichCourseWithAI(Request $request)
+    {
 
 
-    $updatedCount = 0;
-    $errors = [];
+        // Fetch courses that are missing either information or location
+        $courses = Course::has('university')->with('university')
+            ->where(function ($query) {
+                $query->whereNull('course_information')
+                    ->orWhere('course_information', '')
+                    ->orWhereNull('course_location')
+                    ->orWhere('course_location', '')
+                    ->orWhereNull('course_tags')
+                    ->orWhere('course_tags', '');
+            })
+            ->limit(50) // Limit to avoid request timeouts
+            ->get();
 
-    foreach ($courses as $course) {
-        $university = $course->university;
-        $countryName = '';
-        if ($university) {
-            if (is_numeric($university->country)) {
-                $country = \App\Models\Country::find($university->country);
-                $countryName = $country?->name ?? $university->country;
-            } else {
-                $countryName = $university->country;
-            }
+        if ($courses->isEmpty()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'No courses found needing enrichment.'
+            ]);
         }
 
-       // dd($countryName,$course,$university);
 
-        $prompt = "
+
+        $updatedCount = 0;
+        $errors = [];
+
+        foreach ($courses as $course) {
+            $university = $course->university;
+            $countryName = '';
+            if ($university) {
+                if (is_numeric($university->country)) {
+                    $country = \App\Models\Country::find($university->country);
+                    $countryName = $country?->name ?? $university->country;
+                } else {
+                    $countryName = $university->country;
+                }
+            }
+
+            // dd($countryName,$course,$university);
+
+            $prompt = "
         Provide a professional description (course information), specific campus address (course location), and 2-3 short professional tags (e.g., 'Research-Led', 'High Employability', 'Career-Focused') for the course '{$course->name}' at '{$university->name}' in '{$countryName}', specifically for the '{$course->campus}' campus.
         
         Constraints:
@@ -1161,39 +1170,36 @@ public function enrichCourseWithAI(Request $request)
         - Return the result in JSON format with exactly three keys: 'information', 'location', and 'tags'.
         ";
 
-        try {
-            $response = OpenAI::chat()->create([
-                'model' => 'gpt-4o-mini',
-                'messages' => [
-                    ['role' => 'system', 'content' => 'You are an expert in university courses. Respond only in JSON format.'],
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                'response_format' => ['type' => 'json_object'],
-            ]);
+            try {
+                $response = OpenAI::chat()->create([
+                    'model' => 'gpt-4o-mini',
+                    'messages' => [
+                        ['role' => 'system', 'content' => 'You are an expert in university courses. Respond only in JSON format.'],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'response_format' => ['type' => 'json_object'],
+                ]);
 
-            $content = json_decode($response->choices[0]->message->content, true);
+                $content = json_decode($response->choices[0]->message->content, true);
 
-            if (isset($content['information']) && isset($content['location']) && isset($content['tags'])) {
-                $course->course_information = substr($content['information'], 0, 200);
-                $course->course_location = substr($content['location'], 0, 200);
-                $course->course_tags = implode(', ', (array)$content['tags']);
-                $course->save();
-                $updatedCount++;
-            } else {
-                $errors[] = "Course ID {$course->id}: Invalid AI response.";
+                if (isset($content['information']) && isset($content['location']) && isset($content['tags'])) {
+                    $course->course_information = substr($content['information'], 0, 200);
+                    $course->course_location = substr($content['location'], 0, 200);
+                    $course->course_tags = implode(', ', (array)$content['tags']);
+                    $course->save();
+                    $updatedCount++;
+                } else {
+                    $errors[] = "Course ID {$course->id}: Invalid AI response.";
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Course ID {$course->id}: " . $e->getMessage();
             }
-
-        } catch (\Exception $e) {
-            $errors[] = "Course ID {$course->id}: " . $e->getMessage();
         }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Enrichment complete. Updated {$updatedCount} courses.",
+            'errors' => $errors
+        ]);
     }
-
-    return response()->json([
-        'status' => 'success',
-        'message' => "Enrichment complete. Updated {$updatedCount} courses.",
-        'errors' => $errors
-    ]);
-}
-
-
 }
