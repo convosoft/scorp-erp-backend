@@ -914,9 +914,9 @@ class CourseController extends Controller
 
         $selectedUniversities = $request->universities ?? [];
 
-        $sql = str_replace('?', "'%s'", $query->toSql());
-        $sql = vsprintf($sql, $query->getBindings());
-        dd($sql);
+        // $sql = str_replace('?', "'%s'", $query->toSql());
+        // $sql = vsprintf($sql, $query->getBindings());
+        // dd($sql);
 
         $allCourses = $query->latest()->get();
 
