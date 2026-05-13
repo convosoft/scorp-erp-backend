@@ -14,6 +14,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
+use App\Models\Branch;
 use App\Models\Agency;
 use App\Models\ExperienceCertificate;
 use App\Models\GenerateOfferLetter;
