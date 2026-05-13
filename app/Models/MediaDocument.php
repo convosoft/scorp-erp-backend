@@ -38,7 +38,7 @@ class MediaDocument extends Model
             return null;
         }
 
-        return \App\Models\Deal::select('id', 'name', 'stage_id')
+        return \App\Models\Deal::select('id', 'name', 'stage_id', 'created_by')
             ->find($this->admission_id);
     }
 }
