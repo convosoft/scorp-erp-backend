@@ -17,7 +17,7 @@ class MediaDocument extends Model
         'comments',
         'created_by',
     ];
-
+    protected $appends = ['deal'];
     protected $with = ['uploadedby:id,name', 'user:id,name', 'documentType:id,name']; // Always eager load this relationship
 
     public function user()
