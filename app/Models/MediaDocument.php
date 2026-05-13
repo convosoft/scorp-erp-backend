@@ -8,17 +8,17 @@ class MediaDocument extends Model
 {
 
     protected $fillable = [
-            'TypesDocumentID',
-            'type_id',
-            'admission_id',
-            'application_id',
-            'type',
-            'document_link',
-            'comments',
-            'created_by',
-        ];
+        'TypesDocumentID',
+        'type_id',
+        'admission_id',
+        'application_id',
+        'type',
+        'document_link',
+        'comments',
+        'created_by',
+    ];
 
-    protected $with = ['uploadedby:id,name','user:id,name','documentType:id,name']; // Always eager load this relationship
+    protected $with = ['uploadedby:id,name', 'user:id,name', 'documentType:id,name', 'deal:id,name,stage_id']; // Always eager load this relationship
 
     public function user()
     {
@@ -28,8 +28,13 @@ class MediaDocument extends Model
     {
         return $this->hasOne('App\Models\User', 'id', 'created_by');
     }
-     public function documentType()
+    public function documentType()
     {
         return $this->hasOne('App\Models\TypesDocument', 'id', 'TypesDocumentID');
+    }
+    public function deal()
+    {
+        return $this->hasOne(\App\Models\Deal::class, 'id', 'admission_id')
+            ->where('type', 'admission');
     }
 }
