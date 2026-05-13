@@ -32,9 +32,4 @@ class MediaDocument extends Model
     {
         return $this->hasOne('App\Models\TypesDocument', 'id', 'TypesDocumentID');
     }
-    public function deal()
-    {
-        return $this->hasOne(\App\Models\Deal::class, 'id', 'admission_id')
-            ->where('type', 'admission');
-    }
 }
