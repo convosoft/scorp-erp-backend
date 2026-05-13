@@ -18,7 +18,7 @@ class MediaDocument extends Model
         'created_by',
     ];
 
-    protected $with = ['uploadedby:id,name', 'user:id,name', 'documentType:id,name', 'deal:id,name,stage_id']; // Always eager load this relationship
+    protected $with = ['uploadedby:id,name', 'user:id,name', 'documentType:id,name']; // Always eager load this relationship
 
     public function user()
     {
