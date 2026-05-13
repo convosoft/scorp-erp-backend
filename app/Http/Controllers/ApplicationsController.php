@@ -2643,13 +2643,37 @@ class ApplicationsController extends Controller
         }
 
         // Get application
-        $application = DealApplication::find($request->application_id);
+        $application = DealApplication::with(['brand', 'branch', 'coursedetail', 'contact'])->find($request->application_id);
 
         if (!$application) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Application not found',
             ], 404);
+        }
+
+        if ($request->stage_id == 11) {
+            \DB::table('finance_student_files')->updateOrInsert(
+                ['application_id' => $application->id],
+                [
+                    'stage_id' => $request->stage_id,
+                    'expected_commission' => $request->expected_commission ?? 0,
+                    'gross_fee' => $application->coursedetail->gross_fees ?? 0,
+                    'net_fee' => $application->coursedetail->net_fees ?? 0,
+                    'school_id' => $application->university_id,
+                    'brand_id' => $application->brand_id,
+                    'branch_id' => $application->branch_id,
+                    'project_director_id' => $application->brand->project_director_id ?? 0,
+                    'project_manager_id' => $application->brand->project_manager_id ?? 0,
+                    'branch_manager_id' => $application->branch->branch_manager_id ?? 0,
+                    'admission_officer_id' => $application->assigned_to ?? 0,
+                    'agent_id' => $application->agent_id ?? 0,
+                    'created_by' => \Auth::id(),
+                    'updated_by' => \Auth::id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
 
         // Remove unwanted fields
