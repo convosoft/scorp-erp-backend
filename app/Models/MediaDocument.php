@@ -18,7 +18,7 @@ class MediaDocument extends Model
         'created_by',
     ];
 
-    protected $with = ['uploadedby:id,name', 'user:id,name', 'documentType:id,name', 'deal:id,name,stage_id']; // Always eager load this relationship
+    protected $with = ['uploadedby:id,name', 'user:id,name', 'documentType:id,name']; // Always eager load this relationship
 
     public function user()
     {
@@ -31,10 +31,5 @@ class MediaDocument extends Model
     public function documentType()
     {
         return $this->hasOne('App\Models\TypesDocument', 'id', 'TypesDocumentID');
-    }
-    public function deal()
-    {
-        return $this->hasOne(\App\Models\Deal::class, 'id', 'admission_id')
-            ->where($this->getTable() . '.type', 'admission');
     }
 }
