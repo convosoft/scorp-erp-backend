@@ -196,12 +196,17 @@ class LoginRegisterController extends Controller
         }
 
 
-        // if ($user->type == 'Agent') {
-        //     return response()->json([
-        //         'status' => 'failed',
-        //         'message' => 'Agent can not login from here'
-        //     ], 401);
-        // }
+        $origin = $request->header('Origin');
+        $referer = $request->header('Referer');
+
+        if (($origin && str_contains($origin, 'newerp')) || ($referer && str_contains($referer, 'newerp'))) {
+            if ($user->type == 'Agent') {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'Agent can not login from here'
+                ], 401);
+            }
+        }
 
         $user->update(
             [
