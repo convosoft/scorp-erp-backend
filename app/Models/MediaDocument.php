@@ -32,4 +32,12 @@ class MediaDocument extends Model
     {
         return $this->hasOne('App\Models\TypesDocument', 'id', 'TypesDocumentID');
     }
+    public function getDealAttribute()
+    {
+        if ($this->type !== 'admission') {
+            return null;
+        }
+
+        return \App\Models\Deal::find($this->admission_id);
+    }
 }
