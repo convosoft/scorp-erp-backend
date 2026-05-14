@@ -134,7 +134,7 @@ class GeneralController extends Controller
                 ->toArray();
 
             if (count($regions) === 1) {
-                $regions = ['0' => 'Select Region'] + $regions;
+                $regions = ['0' => 'Please Select Region'] + $regions;
             }
 
             // Return JSON response with regions
