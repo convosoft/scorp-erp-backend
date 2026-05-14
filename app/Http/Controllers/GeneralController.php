@@ -129,13 +129,13 @@ class GeneralController extends Controller
             $regions = Region::where('brands', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
             $regions = Region::where('brands', $id)
-                    ->orderBy('name', 'ASC')
-                    ->pluck('name', 'id')
-                    ->toArray();
+                ->orderBy('name', 'ASC')
+                ->pluck('name', 'id')
+                ->toArray();
 
-                if (count($regions) === 1) {
-                    $regions = ['' => 'Please Select'] + $regions;
-                }
+            if (count($regions) === 1) {
+                $regions = ['0' => 'Please Select'] + $regions;
+            }
 
             // Return JSON response with regions
             return response()->json([
@@ -146,9 +146,9 @@ class GeneralController extends Controller
             // Fetch branches based on the region ID
             $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
-             if (count($branches) === 1) {
-                    $branches = ['0' => 'Please Select'] + $branches;
-                }
+            if (count($branches) === 1) {
+                $branches = ['0' => 'Please Select'] + $branches;
+            }
 
             // Return JSON response with branches
             return response()->json([
@@ -196,7 +196,7 @@ class GeneralController extends Controller
             }
         }
     }
-   public function getRegionBrandsAllUser(Request $request)
+    public function getRegionBrandsAllUser(Request $request)
     {
 
         $validator = Validator::make($request->all(), [
@@ -220,13 +220,13 @@ class GeneralController extends Controller
             $regions = Region::where('brands', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
             $regions = Region::where('brands', $id)
-                    ->orderBy('name', 'ASC')
-                    ->pluck('name', 'id')
-                    ->toArray();
+                ->orderBy('name', 'ASC')
+                ->pluck('name', 'id')
+                ->toArray();
 
-                if (count($regions) === 1) {
-                    $regions = ['' => 'Please Select'] + $regions;
-                }
+            if (count($regions) === 1) {
+                $regions = ['' => 'Please Select'] + $regions;
+            }
 
             // Return JSON response with regions
             return response()->json([
@@ -237,9 +237,9 @@ class GeneralController extends Controller
             // Fetch branches based on the region ID
             $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
-             if (count($branches) === 1) {
-                    $branches = ['0' => 'Please Select'] + $branches;
-                }
+            if (count($branches) === 1) {
+                $branches = ['0' => 'Please Select'] + $branches;
+            }
 
             // Return JSON response with branches
             return response()->json([
@@ -289,188 +289,183 @@ class GeneralController extends Controller
     }
 
     public function getRegionBrandsByRole(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'id' => 'required|integer',
-        'type' => 'required|string',
-    ]);
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer',
+            'type' => 'required|string',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'errors' => $validator->errors()
-        ], 422);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-    $id   = $request->input('id');
-    $type = $request->input('type');
-    $user = \Auth::user();
-    $userType = $user->type;
+        $id   = $request->input('id');
+        $type = $request->input('type');
+        $user = \Auth::user();
+        $userType = $user->type;
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | BRANCH USERS
     |--------------------------------------------------------------------------
     */
-    if ($type == 'branch') {
+        if ($type == 'branch') {
 
-        // Restrict branch access for non-admin users
-        if (!in_array($userType, ['super admin','Admin Team','HR',  'Project Director','Project Manager','Region Manager']) && !$user->can('level 1')) {
+            // Restrict branch access for non-admin users
+            if (!in_array($userType, ['super admin', 'Admin Team', 'HR',  'Project Director', 'Project Manager', 'Region Manager']) && !$user->can('level 1')) {
 
-            if ($user->branch_id != $id) {
-                return response()->json([
-                    'status' => 'failure',
-                    'message' => 'Unauthorized access to branch.'
-                ]);
+                if ($user->branch_id != $id) {
+                    return response()->json([
+                        'status' => 'failure',
+                        'message' => 'Unauthorized access to branch.'
+                    ]);
+                }
             }
+
+            return FiltersBranchUsersFORTASK($id);
         }
 
-        return FiltersBranchUsersFORTASK($id);
-    }
-
-    /*
+        /*
     |--------------------------------------------------------------------------
     | BRAND → REGIONS
     |--------------------------------------------------------------------------
-    */
-    elseif ($type == 'brand') {
+    */ elseif ($type == 'brand') {
 
-        $query = Region::query()->orderBy('name', 'ASC');
+            $query = Region::query()->orderBy('name', 'ASC');
 
-        // Super Admin & HR
-        if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
-            $query->where('brands', $id);
+            // Super Admin & HR
+            if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
+                $query->where('brands', $id);
+            } elseif ($userType == 'Project Manager' || $user->can('level 2')) {
+                $query->where('brands', $user->brand_id);
+            }
+
+            // Company user
+            elseif ($userType == 'company') {
+                $query->where('brands', $user->id);
+            }
+
+            // Region Manager
+            elseif ($userType == 'Region Manager' || $user->can('level 3')) {
+                $query->where('id', $user->region_id);
+            }
+
+            // Branch Level Users
+            else {
+                $query->where('id', $user->region_id);
+            }
+
+            $regions = $query->pluck('name', 'id')->toArray();
+
+            if (count($regions) === 1) {
+                $regions = ['' => 'Please Select'] + $regions;
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'regions' => $regions,
+            ]);
         }
-        elseif ($userType == 'Project Manager' || $user->can('level 2')) {
-            $query->where('brands', $user->brand_id);
-        }
 
-        // Company user
-        elseif ($userType == 'company') {
-            $query->where('brands', $user->id);
-        }
-
-        // Region Manager
-        elseif ($userType == 'Region Manager' || $user->can('level 3')) {
-            $query->where('id', $user->region_id);
-        }
-
-        // Branch Level Users
-        else {
-            $query->where('id', $user->region_id);
-        }
-
-        $regions = $query->pluck('name', 'id')->toArray();
-
-        if (count($regions) === 1) {
-            $regions = ['' => 'Please Select'] + $regions;
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'regions' => $regions,
-        ]);
-    }
-
-    /*
+        /*
     |--------------------------------------------------------------------------
     | REGION → BRANCHES
     |--------------------------------------------------------------------------
-    */
-    elseif ($type == 'region') {
+    */ elseif ($type == 'region') {
 
-        $query = Branch::query()->orderBy('name', 'ASC');
+            $query = Branch::query()->orderBy('name', 'ASC');
 
-        if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
-            $query->where('region_id', $id);
-        } elseif ($userType == 'Project Manager' || $user->can('level 2')) {
-            $query->where('region_id', $id);
-             $query->where('brands', $user->brand_id);
-        }  elseif ($userType == 'Region Manager' || $user->can('level 3')) {
-            $query->where('region_id', $user->region_id);
-        }  elseif ($userType == 'Branch Manager' || $user->can('level 4')) {
-            $query->where('id', $user->branch_id);
-        } else {
-            $query->where('id', $user->branch_id);
+            if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
+                $query->where('region_id', $id);
+            } elseif ($userType == 'Project Manager' || $user->can('level 2')) {
+                $query->where('region_id', $id);
+                $query->where('brands', $user->brand_id);
+            } elseif ($userType == 'Region Manager' || $user->can('level 3')) {
+                $query->where('region_id', $user->region_id);
+            } elseif ($userType == 'Branch Manager' || $user->can('level 4')) {
+                $query->where('id', $user->branch_id);
+            } else {
+                $query->where('id', $user->branch_id);
+            }
+
+            $branches = $query->pluck('name', 'id')->toArray();
+
+            if (count($branches) === 1) {
+                $branches = ['' => 'Please Select'] + $branches;
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'branches' => $branches,
+            ]);
         }
 
-        $branches = $query->pluck('name', 'id')->toArray();
-
-        if (count($branches) === 1) {
-            $branches = ['' => 'Please Select'] + $branches;
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'branches' => $branches,
-        ]);
-    }
-
-    /*
+        /*
     |--------------------------------------------------------------------------
     | INSTITUTE
     |--------------------------------------------------------------------------
-    */
-    elseif ($type == 'institute') {
+    */ elseif ($type == 'institute') {
 
-        $institute = University::where('id', $id)->first();
+            $institute = University::where('id', $id)->first();
 
-        if (!$institute) {
+            if (!$institute) {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Institute not found.'
+                ]);
+            }
+
+            $intake_months = $institute->intake_months
+                ? explode(',', $institute->intake_months)
+                : [];
+
             return response()->json([
-                'status' => 'failure',
-                'message' => 'Institute not found.'
+                'status' => 'success',
+                'intake_months' => $intake_months,
             ]);
         }
 
-        $intake_months = $institute->intake_months
-            ? explode(',', $institute->intake_months)
-            : [];
-
-        return response()->json([
-            'status' => 'success',
-            'intake_months' => $intake_months,
-        ]);
-    }
-
-    /*
+        /*
     |--------------------------------------------------------------------------
     | REGION → BRANDS
     |--------------------------------------------------------------------------
-    */
-    else {
+    */ else {
 
-        $region = Region::find($id);
+            $region = Region::find($id);
 
-        if (!$region) {
+            if (!$region) {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Region not found.'
+                ]);
+            }
+
+            $brandIds = explode(',', $region->brands);
+
+            // Restrict brand access for non-admin users
+            if (!in_array($userType, ['super admin', 'Admin Team', 'HR']) && !$user->can('level 1')) {
+                $brandIds = array_intersect($brandIds, [$user->brand_id]);
+            }
+
+            $brands = User::whereIn('id', $brandIds)
+                ->where('type', 'company')
+                ->orderBy('name', 'ASC')
+                ->pluck('name', 'id')
+                ->toArray();
+
+            if (count($brands) === 1) {
+                $brands = ['' => 'Please Select'] + $brands;
+            }
+
             return response()->json([
-                'status' => 'failure',
-                'message' => 'Region not found.'
+                'status' => 'success',
+                'brands' => $brands,
             ]);
         }
-
-        $brandIds = explode(',', $region->brands);
-
-        // Restrict brand access for non-admin users
-        if (!in_array($userType, ['super admin','Admin Team','HR']) && !$user->can('level 1')) {
-            $brandIds = array_intersect($brandIds, [$user->brand_id]);
-        }
-
-        $brands = User::whereIn('id', $brandIds)
-            ->where('type', 'company')
-            ->orderBy('name', 'ASC')
-            ->pluck('name', 'id')
-            ->toArray();
-
-        if (count($brands) === 1) {
-            $brands = ['' => 'Please Select'] + $brands;
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'brands' => $brands,
-        ]);
     }
-}
 
 
 
@@ -491,9 +486,9 @@ class GeneralController extends Controller
         // ]);
 
 
-         $authuser = \Auth::user(); // Authenticated user
+        $authuser = \Auth::user(); // Authenticated user
 
-        if ( $authuser->type !='Agent') {
+        if ($authuser->type != 'Agent') {
             return response()->json([
                 'status' => 'error',
                 'errors' => 'Only Agent can access this.',
@@ -571,8 +566,8 @@ class GeneralController extends Controller
                 ->mapWithKeys(function ($branch) {
                     $key = $branch->id; // Use the branch's ID as the key
                     $value = $branch->name
-                            . ($branch->brand ? '-' . $branch->brand->name : '')
-                            . ($branch->region ? '-' . $branch->region->name : ''); // Safely concatenate brand and region names
+                        . ($branch->brand ? '-' . $branch->brand->name : '')
+                        . ($branch->region ? '-' . $branch->region->name : ''); // Safely concatenate brand and region names
                     return [$key => $value];
                 })
                 ->toArray();
@@ -582,7 +577,6 @@ class GeneralController extends Controller
                 'status' => 'success',
                 'branches' => $branches,
             ]);
-
         } elseif ($type == 'institute') {
             // Fetch institute details based on the ID
             $institute = University::where('id', $id)->first();
@@ -689,9 +683,9 @@ class GeneralController extends Controller
 
 
         $ProjectDirector = User::where('type', 'Project Director')
-                     ->orWhere('id', 3257)
-                     ->pluck('name', 'id')
-                     ->toArray();
+            ->orWhere('id', 3257)
+            ->pluck('name', 'id')
+            ->toArray();
 
         if ($ProjectDirector) {
 
@@ -854,7 +848,7 @@ class GeneralController extends Controller
 
     public function getapplicationStagesPluck()
     {
-         $stages = ApplicationStage::orderBy('id')->pluck('id', 'name')->toArray();
+        $stages = ApplicationStage::orderBy('id')->pluck('id', 'name')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $stages,
@@ -920,7 +914,7 @@ class GeneralController extends Controller
     public function TaskTag(Request $request)
     {
         if (Auth::check()) {
-             $tags = TaskTag::pluck('id', 'tag')->toArray();
+            $tags = TaskTag::pluck('id', 'tag')->toArray();
 
             return response()->json([
                 'status' => 'success',
@@ -938,8 +932,8 @@ class GeneralController extends Controller
         if (Auth::check()) {
             $user = Auth::user();
             $tags = [];
-            if($request->brand_id){
-               $tags = LeadTag::where('brand_id', $request->brand_id)->pluck('tag', 'id')->toArray();
+            if ($request->brand_id) {
+                $tags = LeadTag::where('brand_id', $request->brand_id)->pluck('tag', 'id')->toArray();
             }
 
             return response()->json([
@@ -1042,166 +1036,164 @@ class GeneralController extends Controller
             'status' => 'success',
             'data' => $Country,
         ], 200);
-
     }
 
     public function getAllcurrencies()
     {
         $currencyOptions = [
-                'USD' => ' $ USD - US Dollar',
-                'EUR' => ' € EUR - Euro',
-                'GBP' => ' £ GBP - British Pound',
-                'JPY' => ' ¥ JPY - Japanese Yen',
-                'CAD' => ' C$ CAD - Canadian Dollar',
-                'AUD' => ' A$ AUD - Australian Dollar',
-                'CHF' => ' CHF CHF - Swiss Franc',
-                'CNY' => ' ¥ CNY - Chinese Yuan',
-                'INR' => ' ₹ INR - Indian Rupee',
-                'RUB' => ' ₽ RUB - Russian Ruble',
-                'BRL' => ' R$ BRL - Brazilian Real',
-                'MXN' => ' $ MXN - Mexican Peso',
-                'KRW' => ' ₩ KRW - South Korean Won',
-                'TRY' => ' ₺ TRY - Turkish Lira',
-                'ZAR' => ' R ZAR - South African Rand',
-                'SEK' => ' kr SEK - Swedish Krona',
-                'NOK' => ' kr NOK - Norwegian Krone',
-                'DKK' => ' kr DKK - Danish Krone',
-                'PLN' => ' zł PLN - Polish Złoty',
-                'HUF' => ' Ft HUF - Hungarian Forint',
-                'CZK' => ' Kč CZK - Czech Koruna',
-                'ILS' => ' ₪ ILS - Israeli New Shekel',
-                'AED' => ' د.إ AED - UAE Dirham',
-                'SAR' => ' ﷼ SAR - Saudi Riyal',
-                'THB' => ' ฿ THB - Thai Baht',
-                'MYR' => ' RM MYR - Malaysian Ringgit',
-                'SGD' => ' S$ SGD - Singapore Dollar',
-                'HKD' => ' HK$ HKD - Hong Kong Dollar',
-                'NZD' => ' NZ$ NZD - New Zealand Dollar',
-                'PHP' => ' ₱ PHP - Philippine Peso',
-                'IDR' => ' Rp IDR - Indonesian Rupiah',
-                'VND' => ' ₫ VND - Vietnamese Dong',
-                'BDT' => ' ৳ BDT - Bangladeshi Taka',
-                'PKR' => ' ₨ PKR - Pakistani Rupee',
-                'EGP' => ' £ EGP - Egyptian Pound',
-                'NGN' => ' ₦ NGN - Nigerian Naira',
-                'KES' => ' KSh KES - Kenyan Shilling',
-                'GHS' => ' GH₵ GHS - Ghanaian Cedi',
-                'ETB' => ' Br ETB - Ethiopian Birr',
-                'COP' => ' $ COP - Colombian Peso',
-                'ARS' => ' $ ARS - Argentine Peso',
-                'CLP' => ' $ CLP - Chilean Peso',
-                'PEN' => ' S/ PEN - Peruvian Sol',
-                'UYU' => ' $ UYU - Uruguayan Peso',
-                'BOB' => ' Bs BOB - Bolivian Boliviano',
-                'PYG' => ' ₲ PYG - Paraguayan Guarani',
-                'CRC' => ' ₡ CRC - Costa Rican Colón',
-                'DOP' => ' RD$ DOP - Dominican Peso',
-                'GTQ' => ' Q GTQ - Guatemalan Quetzal',
-                'HNL' => ' L HNL - Honduran Lempira',
-                'NIO' => ' C$ NIO - Nicaraguan Córdoba',
-                'PAB' => ' B/. PAB - Panamanian Balboa',
-                'SVC' => ' $ SVC - Salvadoran Colón',
-                'TTD' => ' $ TTD - Trinidad and Tobago Dollar',
-                'JMD' => ' $ JMD - Jamaican Dollar',
-                'BSD' => ' $ BSD - Bahamian Dollar',
-                'BBD' => ' $ BBD - Barbados Dollar',
-                'BZD' => ' $ BZD - Belize Dollar',
-                'XCD' => ' $ XCD - East Caribbean Dollar',
-                'AWG' => ' ƒ AWG - Aruban Florin',
-                'ANG' => ' ƒ ANG - Netherlands Antillean Guilder',
-                'KYD' => ' $ KYD - Cayman Islands Dollar',
-                'BMD' => ' $ BMD - Bermudian Dollar',
-                'FJD' => ' $ FJD - Fijian Dollar',
-                'WST' => ' T WST - Samoan Tala',
-                'TOP' => ' T$ TOP - Tongan Paʻanga',
-                'SBD' => ' $ SBD - Solomon Islands Dollar',
-                'VUV' => ' Vt VUV - Vanuatu Vatu',
-                'XPF' => ' ₣ XPF - CFP Franc',
-                'KHR' => ' ៛ KHR - Cambodian Riel',
-                'LAK' => ' ₭ LAK - Lao Kip',
-                'MMK' => ' Ks MMK - Myanmar Kyat',
-                'MNT' => ' ₮ MNT - Mongolian Tugrik',
-                'BND' => ' $ BND - Brunei Dollar',
-                'LKR' => ' Rs LKR - Sri Lankan Rupee',
-                'MVR' => ' Rf MVR - Maldivian Rufiyaa',
-                'NPR' => ' Rs NPR - Nepalese Rupee',
-                'AFN' => ' ؋ AFN - Afghan Afghani',
-                'IRR' => ' ﷼ IRR - Iranian Rial',
-                'IQD' => ' ع.د IQD - Iraqi Dinar',
-                'JOD' => ' د.ا JOD - Jordanian Dinar',
-                'KWD' => ' د.ك KWD - Kuwaiti Dinar',
-                'LBP' => ' ل.ل LBP - Lebanese Pound',
-                'OMR' => ' ر.ع. OMR - Omani Rial',
-                'QAR' => ' ر.ق QAR - Qatari Riyal',
-                'SYP' => ' £ SYP - Syrian Pound',
-                'YER' => ' ﷼ YER - Yemeni Rial',
-                'BHD' => ' .د.ب BHD - Bahraini Dinar',
-                'KZT' => ' ₸ KZT - Kazakhstani Tenge',
-                'UZS' => ' UZS - Uzbekistani Som',
-                'AZN' => ' ₼ AZN - Azerbaijani Manat',
-                'GEL' => ' ₾ GEL - Georgian Lari',
-                'AMD' => ' ֏ AMD - Armenian Dram',
-                'BYN' => ' Br BYN - Belarusian Ruble',
-                'MDL' => ' L MDL - Moldovan Leu',
-                'RON' => ' lei RON - Romanian Leu',
-                'BGN' => ' лв BGN - Bulgarian Lev',
-                'ALL' => ' L ALL - Albanian Lek',
-                'MKD' => ' ден MKD - Macedonian Denar',
-                'RSD' => ' дин. RSD - Serbian Dinar',
-                'HRK' => ' kn HRK - Croatian Kuna',
-                'BAM' => ' KM BAM - Bosnia-Herzegovina Convertible Mark',
-                'ISK' => ' kr ISK - Icelandic Króna',
-                'UAH' => ' ₴ UAH - Ukrainian Hryvnia',
-                'GIP' => ' £ GIP - Gibraltar Pound',
-                'MOP' => ' MOP$ MOP - Macanese Pataca',
-                'TWD' => ' NT$ TWD - New Taiwan Dollar',
-                'PGK' => ' K PGK - Papua New Guinean Kina',
-                'MWK' => ' MK MWK - Malawian Kwacha',
-                'ZMW' => ' ZK ZMW - Zambian Kwacha',
-                'ZWL' => ' $ ZWL - Zimbabwean Dollar',
-                'NAD' => ' $ NAD - Namibian Dollar',
-                'BWP' => ' P BWP - Botswana Pula',
-                'LSL' => ' L LSL - Lesotho Loti',
-                'SZL' => ' E SZL - Swazi Lilangeni',
-                'MUR' => ' ₨ MUR - Mauritian Rupee',
-                'SCR' => ' ₨ SCR - Seychellois Rupee',
-                'MGA' => ' Ar MGA - Malagasy Ariary',
-                'CDF' => ' FC CDF - Congolese Franc',
-                'RWF' => ' FRw RWF - Rwandan Franc',
-                'BIF' => ' FBu BIF - Burundian Franc',
-                'DJF' => ' Fdj DJF - Djiboutian Franc',
-                'ERN' => ' Nfk ERN - Eritrean Nakfa',
-                'SOS' => ' Sh SOS - Somali Shilling',
-                'TZS' => ' Sh TZS - Tanzanian Shilling',
-                'UGX' => ' Sh UGX - Ugandan Shilling',
-                'MZN' => ' MT MZN - Mozambican Metical',
-                'STN' => ' Db STN - São Tomé and Príncipe Dobra',
-                'CVE' => ' $ CVE - Cape Verdean Escudo',
-                'KMF' => ' CF KMF - Comorian Franc',
-                'GMD' => ' D GMD - Gambian Dalasi',
-                'SLL' => ' Le SLL - Sierra Leonean Leone',
-                'LRD' => ' $ LRD - Liberian Dollar',
-                'GNF' => ' FG GNF - Guinean Franc',
-                'MRU' => ' UM MRU - Mauritanian Ouguiya',
-                'XOF' => ' CFA XOF - West African CFA Franc',
-                'XAF' => ' FCFA XAF - Central African CFA Franc',
-                'CUP' => ' $ CUP - Cuban Peso',
-                'CUC' => ' $ CUC - Cuban Convertible Peso',
-                'VED' => ' Bs VED - Venezuelan Bolívar Digital',
-                'UYW' => ' UYW - Uruguayan Nominal Wage Index Unit',
-                'CHE' => ' CHE - WIR Euro',
-                'CHW' => ' CHW - WIR Franc',
-                'COU' => ' COU - Colombian Real Value Unit',
-                'BOV' => ' BOV - Bolivian Mvdol',
-                'CLF' => ' CLF - Chilean Unit of Account (UF)',
-                'MXV' => ' MXV - Mexican Investment Unit',
-            ];
+            'USD' => ' $ USD - US Dollar',
+            'EUR' => ' € EUR - Euro',
+            'GBP' => ' £ GBP - British Pound',
+            'JPY' => ' ¥ JPY - Japanese Yen',
+            'CAD' => ' C$ CAD - Canadian Dollar',
+            'AUD' => ' A$ AUD - Australian Dollar',
+            'CHF' => ' CHF CHF - Swiss Franc',
+            'CNY' => ' ¥ CNY - Chinese Yuan',
+            'INR' => ' ₹ INR - Indian Rupee',
+            'RUB' => ' ₽ RUB - Russian Ruble',
+            'BRL' => ' R$ BRL - Brazilian Real',
+            'MXN' => ' $ MXN - Mexican Peso',
+            'KRW' => ' ₩ KRW - South Korean Won',
+            'TRY' => ' ₺ TRY - Turkish Lira',
+            'ZAR' => ' R ZAR - South African Rand',
+            'SEK' => ' kr SEK - Swedish Krona',
+            'NOK' => ' kr NOK - Norwegian Krone',
+            'DKK' => ' kr DKK - Danish Krone',
+            'PLN' => ' zł PLN - Polish Złoty',
+            'HUF' => ' Ft HUF - Hungarian Forint',
+            'CZK' => ' Kč CZK - Czech Koruna',
+            'ILS' => ' ₪ ILS - Israeli New Shekel',
+            'AED' => ' د.إ AED - UAE Dirham',
+            'SAR' => ' ﷼ SAR - Saudi Riyal',
+            'THB' => ' ฿ THB - Thai Baht',
+            'MYR' => ' RM MYR - Malaysian Ringgit',
+            'SGD' => ' S$ SGD - Singapore Dollar',
+            'HKD' => ' HK$ HKD - Hong Kong Dollar',
+            'NZD' => ' NZ$ NZD - New Zealand Dollar',
+            'PHP' => ' ₱ PHP - Philippine Peso',
+            'IDR' => ' Rp IDR - Indonesian Rupiah',
+            'VND' => ' ₫ VND - Vietnamese Dong',
+            'BDT' => ' ৳ BDT - Bangladeshi Taka',
+            'PKR' => ' ₨ PKR - Pakistani Rupee',
+            'EGP' => ' £ EGP - Egyptian Pound',
+            'NGN' => ' ₦ NGN - Nigerian Naira',
+            'KES' => ' KSh KES - Kenyan Shilling',
+            'GHS' => ' GH₵ GHS - Ghanaian Cedi',
+            'ETB' => ' Br ETB - Ethiopian Birr',
+            'COP' => ' $ COP - Colombian Peso',
+            'ARS' => ' $ ARS - Argentine Peso',
+            'CLP' => ' $ CLP - Chilean Peso',
+            'PEN' => ' S/ PEN - Peruvian Sol',
+            'UYU' => ' $ UYU - Uruguayan Peso',
+            'BOB' => ' Bs BOB - Bolivian Boliviano',
+            'PYG' => ' ₲ PYG - Paraguayan Guarani',
+            'CRC' => ' ₡ CRC - Costa Rican Colón',
+            'DOP' => ' RD$ DOP - Dominican Peso',
+            'GTQ' => ' Q GTQ - Guatemalan Quetzal',
+            'HNL' => ' L HNL - Honduran Lempira',
+            'NIO' => ' C$ NIO - Nicaraguan Córdoba',
+            'PAB' => ' B/. PAB - Panamanian Balboa',
+            'SVC' => ' $ SVC - Salvadoran Colón',
+            'TTD' => ' $ TTD - Trinidad and Tobago Dollar',
+            'JMD' => ' $ JMD - Jamaican Dollar',
+            'BSD' => ' $ BSD - Bahamian Dollar',
+            'BBD' => ' $ BBD - Barbados Dollar',
+            'BZD' => ' $ BZD - Belize Dollar',
+            'XCD' => ' $ XCD - East Caribbean Dollar',
+            'AWG' => ' ƒ AWG - Aruban Florin',
+            'ANG' => ' ƒ ANG - Netherlands Antillean Guilder',
+            'KYD' => ' $ KYD - Cayman Islands Dollar',
+            'BMD' => ' $ BMD - Bermudian Dollar',
+            'FJD' => ' $ FJD - Fijian Dollar',
+            'WST' => ' T WST - Samoan Tala',
+            'TOP' => ' T$ TOP - Tongan Paʻanga',
+            'SBD' => ' $ SBD - Solomon Islands Dollar',
+            'VUV' => ' Vt VUV - Vanuatu Vatu',
+            'XPF' => ' ₣ XPF - CFP Franc',
+            'KHR' => ' ៛ KHR - Cambodian Riel',
+            'LAK' => ' ₭ LAK - Lao Kip',
+            'MMK' => ' Ks MMK - Myanmar Kyat',
+            'MNT' => ' ₮ MNT - Mongolian Tugrik',
+            'BND' => ' $ BND - Brunei Dollar',
+            'LKR' => ' Rs LKR - Sri Lankan Rupee',
+            'MVR' => ' Rf MVR - Maldivian Rufiyaa',
+            'NPR' => ' Rs NPR - Nepalese Rupee',
+            'AFN' => ' ؋ AFN - Afghan Afghani',
+            'IRR' => ' ﷼ IRR - Iranian Rial',
+            'IQD' => ' ع.د IQD - Iraqi Dinar',
+            'JOD' => ' د.ا JOD - Jordanian Dinar',
+            'KWD' => ' د.ك KWD - Kuwaiti Dinar',
+            'LBP' => ' ل.ل LBP - Lebanese Pound',
+            'OMR' => ' ر.ع. OMR - Omani Rial',
+            'QAR' => ' ر.ق QAR - Qatari Riyal',
+            'SYP' => ' £ SYP - Syrian Pound',
+            'YER' => ' ﷼ YER - Yemeni Rial',
+            'BHD' => ' .د.ب BHD - Bahraini Dinar',
+            'KZT' => ' ₸ KZT - Kazakhstani Tenge',
+            'UZS' => ' UZS - Uzbekistani Som',
+            'AZN' => ' ₼ AZN - Azerbaijani Manat',
+            'GEL' => ' ₾ GEL - Georgian Lari',
+            'AMD' => ' ֏ AMD - Armenian Dram',
+            'BYN' => ' Br BYN - Belarusian Ruble',
+            'MDL' => ' L MDL - Moldovan Leu',
+            'RON' => ' lei RON - Romanian Leu',
+            'BGN' => ' лв BGN - Bulgarian Lev',
+            'ALL' => ' L ALL - Albanian Lek',
+            'MKD' => ' ден MKD - Macedonian Denar',
+            'RSD' => ' дин. RSD - Serbian Dinar',
+            'HRK' => ' kn HRK - Croatian Kuna',
+            'BAM' => ' KM BAM - Bosnia-Herzegovina Convertible Mark',
+            'ISK' => ' kr ISK - Icelandic Króna',
+            'UAH' => ' ₴ UAH - Ukrainian Hryvnia',
+            'GIP' => ' £ GIP - Gibraltar Pound',
+            'MOP' => ' MOP$ MOP - Macanese Pataca',
+            'TWD' => ' NT$ TWD - New Taiwan Dollar',
+            'PGK' => ' K PGK - Papua New Guinean Kina',
+            'MWK' => ' MK MWK - Malawian Kwacha',
+            'ZMW' => ' ZK ZMW - Zambian Kwacha',
+            'ZWL' => ' $ ZWL - Zimbabwean Dollar',
+            'NAD' => ' $ NAD - Namibian Dollar',
+            'BWP' => ' P BWP - Botswana Pula',
+            'LSL' => ' L LSL - Lesotho Loti',
+            'SZL' => ' E SZL - Swazi Lilangeni',
+            'MUR' => ' ₨ MUR - Mauritian Rupee',
+            'SCR' => ' ₨ SCR - Seychellois Rupee',
+            'MGA' => ' Ar MGA - Malagasy Ariary',
+            'CDF' => ' FC CDF - Congolese Franc',
+            'RWF' => ' FRw RWF - Rwandan Franc',
+            'BIF' => ' FBu BIF - Burundian Franc',
+            'DJF' => ' Fdj DJF - Djiboutian Franc',
+            'ERN' => ' Nfk ERN - Eritrean Nakfa',
+            'SOS' => ' Sh SOS - Somali Shilling',
+            'TZS' => ' Sh TZS - Tanzanian Shilling',
+            'UGX' => ' Sh UGX - Ugandan Shilling',
+            'MZN' => ' MT MZN - Mozambican Metical',
+            'STN' => ' Db STN - São Tomé and Príncipe Dobra',
+            'CVE' => ' $ CVE - Cape Verdean Escudo',
+            'KMF' => ' CF KMF - Comorian Franc',
+            'GMD' => ' D GMD - Gambian Dalasi',
+            'SLL' => ' Le SLL - Sierra Leonean Leone',
+            'LRD' => ' $ LRD - Liberian Dollar',
+            'GNF' => ' FG GNF - Guinean Franc',
+            'MRU' => ' UM MRU - Mauritanian Ouguiya',
+            'XOF' => ' CFA XOF - West African CFA Franc',
+            'XAF' => ' FCFA XAF - Central African CFA Franc',
+            'CUP' => ' $ CUP - Cuban Peso',
+            'CUC' => ' $ CUC - Cuban Convertible Peso',
+            'VED' => ' Bs VED - Venezuelan Bolívar Digital',
+            'UYW' => ' UYW - Uruguayan Nominal Wage Index Unit',
+            'CHE' => ' CHE - WIR Euro',
+            'CHW' => ' CHW - WIR Franc',
+            'COU' => ' COU - Colombian Real Value Unit',
+            'BOV' => ' BOV - Bolivian Mvdol',
+            'CLF' => ' CLF - Chilean Unit of Account (UF)',
+            'MXV' => ' MXV - Mexican Investment Unit',
+        ];
 
         return response()->json([
             'status' => 'success',
             'data' => $currencyOptions,
         ], 200);
-
     }
 
     public function CountryByCode()
@@ -1212,7 +1204,6 @@ class GeneralController extends Controller
             'status' => 'success',
             'data' => $Country,
         ], 200);
-
     }
     public function CountryByID()
     {
@@ -1222,207 +1213,204 @@ class GeneralController extends Controller
             'status' => 'success',
             'data' => $Country,
         ], 200);
-
     }
 
     public function getLogActivity_old(Request $request)
-{
-    // Validate input
-    $validator = Validator::make($request->all(), [
-        'id' => 'required|integer',
-        'type' => 'required|string|max:100',
-    ]);
+    {
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer',
+            'type' => 'required|string|max:100',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => false,
-            'message' => __('Validation Error.'),
-            'errors' => $validator->errors(),
-        ], 422);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => __('Validation Error.'),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-    // Fetch log activity records
-    if( $request->type=='user'){
+        // Fetch log activity records
+        if ($request->type == 'user') {
             $logs = LogActivity::with('createdBy:id,name')->where('created_by', $request->id)
                 ->orderBy('created_at', 'desc')
                 ->limit(500)
                 ->get();
-    }else{
-        $logs = LogActivity::with('createdBy:id,name')->where('module_id', $request->id)
+        } else {
+            $logs = LogActivity::with('createdBy:id,name')->where('module_id', $request->id)
                 ->where('module_type', $request->type)
                 ->orderBy('created_at', 'desc')
                 ->limit(500)
                 ->get();
-    }
+        }
 
-    return response()->json([
-        'status' => true,
-        'message' => 'Log activities fetched successfully.',
-        'data' => $logs
-    ]);
-}
-
-public function getLogActivity(Request $request)
-{
-    // Validate input
-    $validator = Validator::make($request->all(), [
-        'id' => 'required|integer',
-        'type' => 'required|string|max:100',
-        'perPage' => 'sometimes|integer|min:1|max:500',
-        'page' => 'sometimes|integer|min:1',
-        'date' => 'sometimes|string', // Accept as string to parse flexibly
-        'search' => 'sometimes|string|max:255',
-        'module_type' => 'sometimes|string|max:100',
-        'logtype' => 'sometimes|string|max:100',
-    ]);
-
-    if ($validator->fails()) {
         return response()->json([
-            'status' => false,
-            'message' => __('Validation Error.'),
-            'errors' => $validator->errors(),
-        ], 422);
+            'status' => true,
+            'message' => 'Log activities fetched successfully.',
+            'data' => $logs
+        ]);
     }
 
-    // Determine pagination size
-    $num_results_on_page = env("RESULTS_ON_PAGE", 50);
-    if ($request->has('perPage')) {
-        $num_results_on_page = (int)$request->get('perPage');
-    }
+    public function getLogActivity(Request $request)
+    {
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer',
+            'type' => 'required|string|max:100',
+            'perPage' => 'sometimes|integer|min:1|max:500',
+            'page' => 'sometimes|integer|min:1',
+            'date' => 'sometimes|string', // Accept as string to parse flexibly
+            'search' => 'sometimes|string|max:255',
+            'module_type' => 'sometimes|string|max:100',
+            'logtype' => 'sometimes|string|max:100',
+        ]);
 
-    // Base query
-    $query = LogActivity::with('createdBy:id,name')
-        ->orderBy('created_at', 'desc');
-
-    if ($request->type === 'user') {
-        $query->where('created_by', $request->id);
-        $query->where('module_type','!=', 'employeeprofile');
-    } else {
-        $query->where('module_id', $request->id) ;
-    }
-
-    // Apply start_date filter
-    if ($request->filled('date')) {
-        $rawDate = $request->date;
-
-        try {
-            $parsedDate = \Carbon\Carbon::parse($rawDate)->format('Y-m-d');
-            $query->whereDate('created_at', $parsedDate);
-        } catch (\Exception $e) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid start_date format. Please use a valid date.',
-                'errors' => [
-                    'start_date' => ['The start_date could not be parsed.']
-                ]
+                'message' => __('Validation Error.'),
+                'errors' => $validator->errors(),
             ], 422);
+        }
+
+        // Determine pagination size
+        $num_results_on_page = env("RESULTS_ON_PAGE", 50);
+        if ($request->has('perPage')) {
+            $num_results_on_page = (int)$request->get('perPage');
+        }
+
+        // Base query
+        $query = LogActivity::with('createdBy:id,name')
+            ->orderBy('created_at', 'desc');
+
+        if ($request->type === 'user') {
+            $query->where('created_by', $request->id);
+            $query->where('module_type', '!=', 'employeeprofile');
+        } else {
+            $query->where('module_id', $request->id);
+        }
+
+        // Apply start_date filter
+        if ($request->filled('date')) {
+            $rawDate = $request->date;
+
+            try {
+                $parsedDate = \Carbon\Carbon::parse($rawDate)->format('Y-m-d');
+                $query->whereDate('created_at', $parsedDate);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid start_date format. Please use a valid date.',
+                    'errors' => [
+                        'start_date' => ['The start_date could not be parsed.']
+                    ]
+                ], 422);
+            }
+        }
+
+        // module_type filter
+        if ($request->filled('type') && $request->type != 'user') {
+            $query->where('module_type', $request->type);
+        }
+
+        // type filter
+        if ($request->filled('logtype')) {
+            $query->where('type', $request->logtype);
+        }
+        // type filter
+        if ($request->filled('module_type')) {
+            $query->where('module_type', $request->module_type);
+        }
+
+        // search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('note', 'like', '%' . $search . '%')
+                    ->orWhereHas('createdBy', function ($subQuery) use ($search) {
+                        $subQuery->where('name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        // Total record count before pagination
+        $total_records = $query->count();
+
+        // Paginate
+        $logs = $query->paginate($num_results_on_page);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Log activities fetched successfully.',
+            'data' => $logs->items(),
+            'total_records' => $total_records,
+            'current_page' => $logs->currentPage(),
+            'last_page' => $logs->lastPage(),
+            'per_page' => $logs->perPage(),
+        ]);
+    }
+
+    public function getDistinctModuleTypes(Request $request)
+    {
+
+        // Base query
+        $query = LogActivity::query();
+
+
+        // Get distinct module types
+        $distinctModuleTypes = $query
+            ->select('module_type')
+            ->distinct()
+            ->orderBy('module_type')
+            ->pluck('module_type')
+            ->toArray();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Distinct module types fetched successfully.',
+            'data' => $distinctModuleTypes,
+        ]);
+    }
+
+
+    public function DeleteSavedFilter(Request $request)
+    {
+        // Validate the Request Data
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'id' => 'required|exists:saved_filters,id',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+
+        // Attempt to Find the Log Entry
+        $SavedFilter = SavedFilter::find($request->id);
+
+        if ($SavedFilter) {
+            $SavedFilter->delete();
+            // Return Success Response
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Filter successfully deleted!'),
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Filter Not Found'),
+            ], 404); // Using 404 for "not found" is more appropriate
         }
     }
 
-    // module_type filter
-    if ($request->filled('type') && $request->type != 'user') {
-        $query->where('module_type', $request->type);
-    }
-
-    // type filter
-    if ($request->filled('logtype')) {
-        $query->where('type', $request->logtype);
-    }
-    // type filter
-    if ($request->filled('module_type')) {
-        $query->where('module_type', $request->module_type);
-    }
-
-    // search filter
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function ($q) use ($search) {
-            $q->where('note', 'like', '%' . $search . '%')
-              ->orWhereHas('createdBy', function ($subQuery) use ($search) {
-                  $subQuery->where('name', 'like', '%' . $search . '%');
-              });
-        });
-    }
-
-    // Total record count before pagination
-    $total_records = $query->count();
-
-    // Paginate
-    $logs = $query->paginate($num_results_on_page);
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Log activities fetched successfully.',
-        'data' => $logs->items(),
-        'total_records' => $total_records,
-        'current_page' => $logs->currentPage(),
-        'last_page' => $logs->lastPage(),
-        'per_page' => $logs->perPage(),
-    ]);
-}
-
-public function getDistinctModuleTypes(Request $request)
-{
-
-    // Base query
-    $query = LogActivity::query();
-
-
-    // Get distinct module types
-    $distinctModuleTypes = $query
-        ->select('module_type')
-        ->distinct()
-        ->orderBy('module_type')
-        ->pluck('module_type')
-        ->toArray();
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Distinct module types fetched successfully.',
-        'data' => $distinctModuleTypes,
-    ]);
-}
-
-
-public function DeleteSavedFilter(Request $request)
-{
-    // Validate the Request Data
-    $validator = Validator::make(
-        $request->all(),
-        [
-            'id' => 'required|exists:saved_filters,id',
-        ]
-    );
-
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'errors' => $validator->errors(),
-        ], 400);
-    }
-
-    // Attempt to Find the Log Entry
-    $SavedFilter = SavedFilter::find($request->id);
-
-    if ($SavedFilter) {
-        $SavedFilter->delete();
-        // Return Success Response
-        return response()->json([
-            'status' => 'success',
-            'message' => __('Filter successfully deleted!'),
-        ], 200);
-    } else {
-        return response()->json([
-            'status' => 'error',
-            'message' => __('Filter Not Found'),
-        ], 404); // Using 404 for "not found" is more appropriate
-    }
-
-
-}
-
-public function UniversityByCountryCode(Request $request)
-{
+    public function UniversityByCountryCode(Request $request)
+    {
         $request->validate([
             'country' => 'required|string',
         ]);
@@ -1434,8 +1422,8 @@ public function UniversityByCountryCode(Request $request)
                 // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
 
                 // $universities = $universities->pluck('name', 'id')->toArray();
-                 $alluniversities = University::where('uni_status', '0') ;
-                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+                $alluniversities = University::where('uni_status', '0');
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country', $country_code->id);
 
                 $alluniversities = $alluniversities->get();
 
@@ -1464,10 +1452,10 @@ public function UniversityByCountryCode(Request $request)
                 'message' => $e->getMessage(),
             ], 500);
         }
-}
+    }
 
-public function UniversityByCountryid(Request $request)
-{
+    public function UniversityByCountryid(Request $request)
+    {
         $request->validate([
             'country' => 'required|string',
         ]);
@@ -1480,8 +1468,8 @@ public function UniversityByCountryid(Request $request)
 
                 // $universities = $universities->pluck('name', 'id')->toArray();
 
-                 $alluniversities = University::where('uni_status', '0') ;
-                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+                $alluniversities = University::where('uni_status', '0');
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country', $country_code->id);
 
                 $alluniversities = $alluniversities->get();
 
@@ -1510,129 +1498,128 @@ public function UniversityByCountryid(Request $request)
                 'message' => $e->getMessage(),
             ], 500);
         }
-}
-
-public function UniversityByMultiCountryid(Request $request)
-{
-    $request->validate([
-        'country' => 'required|array',
-        'country.*' => 'required|exists:countries,id',
-    ]);
-
-    try {
-        $countryIds = $request->country;
-
-        $countries = Country::whereIn('id', $countryIds)->get();
-
-        $query = University::where('uni_status', '0');
-
-        $query->where(function ($q) use ($countries) {
-            foreach ($countries as $country) {
-                $q->orWhereRaw("FIND_IN_SET(?, country)", [$country->name])
-                  ->orWhere('country', $country->id);
-            }
-        });
-
-        $alluniversities = $query->get();
-
-        $universities = [];
-
-        foreach ($alluniversities as $uni) {
-            if ($uni->uni_status == 0) {
-                $universities[$uni->id] = $uni->name;
-            }
-        }
-
-        return response()->json([
-            'status' => "success",
-            'data' => $universities,
-        ], 200);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => "error",
-            'message' => $e->getMessage(),
-        ], 500);
     }
-}
 
-public function GetBranchByType()
-{
-    ini_set('memory_limit', '256M');
-    $type = $_POST['type'] ?? null;
-    $BranchId = Auth::user()->type == 'super admin' ? 0 : Auth::user()->branch_id;
-    if (!$type) {
-        return json_encode([
-            'status' => 'error',
-            'message' => 'Type and Branch ID are required.',
+    public function UniversityByMultiCountryid(Request $request)
+    {
+        $request->validate([
+            'country' => 'required|array',
+            'country.*' => 'required|exists:countries,id',
         ]);
-    }
-    try {
-        switch ($type) {
-            case 'lead':
-                $leadsQuery = \App\Models\Lead::query();
-                $userType = \Auth::user()->type;
 
-                if ($userType === 'company') {
-                    $leadsQuery->where('brand_id', \Auth::user()->id);
-                } elseif ($userType === 'Region Manager' && !empty(\Auth::user()->region_id)) {
-                    $leadsQuery->where('region_id', \Auth::user()->region_id);
-                } elseif ($userType === 'Branch Manager' && !empty(\Auth::user()->branch_id)) {
-                    $leadsQuery->where('branch_id', \Auth::user()->branch_id);
-                } elseif ($userType === 'Agent') {
-                    $leadsQuery->where('agent_id', \Auth::user()->agent_id);
+        try {
+            $countryIds = $request->country;
+
+            $countries = Country::whereIn('id', $countryIds)->get();
+
+            $query = University::where('uni_status', '0');
+
+            $query->where(function ($q) use ($countries) {
+                foreach ($countries as $country) {
+                    $q->orWhereRaw("FIND_IN_SET(?, country)", [$country->name])
+                        ->orWhere('country', $country->id);
                 }
+            });
 
-                // Ensure data exists in the query result
-                $data = $leadsQuery->select('id', 'name')->pluck('name', 'id')->toArray();
-                break;
-            case 'organization':
-                $data = User::where('type', 'organization')->pluck('name', 'id')->toArray();
-                break;
+            $alluniversities = $query->get();
 
-            case 'deal':
-                $data = Deal::where('branch_id', $BranchId)->pluck('name', 'id')->toArray();
-                break;
+            $universities = [];
 
-            case 'application':
-                $data = DealApplication::join('deals', 'deals.id', '=', 'deal_applications.deal_id')
-                    ->where('deals.branch_id', $BranchId)
-                    ->pluck('deal_applications.name', 'deal_applications.id')
-                    ->toArray();
-                break;
+            foreach ($alluniversities as $uni) {
+                if ($uni->uni_status == 0) {
+                    $universities[$uni->id] = $uni->name;
+                }
+            }
 
-            case 'toolkit':
-                $data = University::pluck('name', 'id')->toArray();
-                break;
-
-            case 'agency':
-                $data = User::join('agencies', 'agencies.user_id', '=', 'users.id')
-                    ->where('approved_status', 2)
-                    ->pluck('agencies.organization_name', 'agencies.id')
-                    ->toArray();
-                break;
-
-            default:
-                $data = User::where('branch_id', $BranchId)
-                    ->where('type', 'organization')
-                    ->pluck('name', 'id')
-                    ->toArray();
-                break;
+            return response()->json([
+                'status' => "success",
+                'data' => $universities,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => "error",
+                'message' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'status' => "success",
-            'data' => $data,
-        ], 200);
-    } catch (\Exception $e) {
-        return json_encode([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ]);
     }
-}
 
- public function leadsrequireddata(Request $request)
+    public function GetBranchByType()
+    {
+        ini_set('memory_limit', '256M');
+        $type = $_POST['type'] ?? null;
+        $BranchId = Auth::user()->type == 'super admin' ? 0 : Auth::user()->branch_id;
+        if (!$type) {
+            return json_encode([
+                'status' => 'error',
+                'message' => 'Type and Branch ID are required.',
+            ]);
+        }
+        try {
+            switch ($type) {
+                case 'lead':
+                    $leadsQuery = \App\Models\Lead::query();
+                    $userType = \Auth::user()->type;
+
+                    if ($userType === 'company') {
+                        $leadsQuery->where('brand_id', \Auth::user()->id);
+                    } elseif ($userType === 'Region Manager' && !empty(\Auth::user()->region_id)) {
+                        $leadsQuery->where('region_id', \Auth::user()->region_id);
+                    } elseif ($userType === 'Branch Manager' && !empty(\Auth::user()->branch_id)) {
+                        $leadsQuery->where('branch_id', \Auth::user()->branch_id);
+                    } elseif ($userType === 'Agent') {
+                        $leadsQuery->where('agent_id', \Auth::user()->agent_id);
+                    }
+
+                    // Ensure data exists in the query result
+                    $data = $leadsQuery->select('id', 'name')->pluck('name', 'id')->toArray();
+                    break;
+                case 'organization':
+                    $data = User::where('type', 'organization')->pluck('name', 'id')->toArray();
+                    break;
+
+                case 'deal':
+                    $data = Deal::where('branch_id', $BranchId)->pluck('name', 'id')->toArray();
+                    break;
+
+                case 'application':
+                    $data = DealApplication::join('deals', 'deals.id', '=', 'deal_applications.deal_id')
+                        ->where('deals.branch_id', $BranchId)
+                        ->pluck('deal_applications.name', 'deal_applications.id')
+                        ->toArray();
+                    break;
+
+                case 'toolkit':
+                    $data = University::pluck('name', 'id')->toArray();
+                    break;
+
+                case 'agency':
+                    $data = User::join('agencies', 'agencies.user_id', '=', 'users.id')
+                        ->where('approved_status', 2)
+                        ->pluck('agencies.organization_name', 'agencies.id')
+                        ->toArray();
+                    break;
+
+                default:
+                    $data = User::where('branch_id', $BranchId)
+                        ->where('type', 'organization')
+                        ->pluck('name', 'id')
+                        ->toArray();
+                    break;
+            }
+
+            return response()->json([
+                'status' => "success",
+                'data' => $data,
+            ], 200);
+        } catch (\Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function leadsrequireddata(Request $request)
     {
         // Validate input
         $stages = LeadStage::pluck('name', 'id');
@@ -1649,7 +1636,6 @@ public function GetBranchByType()
                 ->where('users.is_active', 1)
                 ->selectRaw('COALESCE(agencies.organization_name, users.name) as display_name, agencies.id')
                 ->pluck('display_name', 'agencies.id');
-
         } else {
             $agencies = User::join('agencies', 'agencies.user_id', '=', 'users.id')
                 ->where('users.is_active', '1')
@@ -1657,21 +1643,21 @@ public function GetBranchByType()
         }
         $tags = [];
 
-            if (Auth::check()) {
-                $user = Auth::user();
+        if (Auth::check()) {
+            $user = Auth::user();
 
-                if (in_array($user->type, ['super admin', 'Admin Team'])) {
-                    $tags = LeadTag::pluck('tag', 'id');
-                } elseif (in_array($user->type, ['Project Director', 'Project Manager', 'Admissions Officer'])) {
-                    $tags = LeadTag::whereIn('brand_id', array_keys(FiltersBrands()))->pluck('tag', 'id');
-                } elseif (in_array($user->type, ['Region Manager'])) {
-                    $tags = LeadTag::where('region_id', $user->region_id)->pluck('tag', 'id');
-                } else {
-                    $tags = LeadTag::where('branch_id', $user->branch_id)->pluck('tag', 'id');
-                }
+            if (in_array($user->type, ['super admin', 'Admin Team'])) {
+                $tags = LeadTag::pluck('tag', 'id');
+            } elseif (in_array($user->type, ['Project Director', 'Project Manager', 'Admissions Officer'])) {
+                $tags = LeadTag::whereIn('brand_id', array_keys(FiltersBrands()))->pluck('tag', 'id');
+            } elseif (in_array($user->type, ['Region Manager'])) {
+                $tags = LeadTag::where('region_id', $user->region_id)->pluck('tag', 'id');
+            } else {
+                $tags = LeadTag::where('branch_id', $user->branch_id)->pluck('tag', 'id');
             }
+        }
 
-             $tasktags = TaskTag::pluck('tag', 'id')->toArray();
+        $tasktags = TaskTag::pluck('tag', 'id')->toArray();
 
         // Fetch countries
         $countries = countries();
@@ -1693,7 +1679,7 @@ public function GetBranchByType()
 
 
 
- public function getPluckSourses(Request $request)
+    public function getPluckSourses(Request $request)
     {
 
         $sources = Source::pluck('name', 'id');
@@ -1815,7 +1801,7 @@ public function GetBranchByType()
         return $finfo->buffer($binaryData);
     }
 
-     public function getemailTags(Request $request)
+    public function getemailTags(Request $request)
     {
         $type = $request->type;
 
@@ -1829,18 +1815,18 @@ public function GetBranchByType()
             'data' => $tags
         ]);
     }
-   public function getemailTagstype(Request $request)
-{
-    $tags = DB::table('email_tags')
-        ->where('type', '!=', 'universal')
-        ->distinct()
-        ->pluck('type'); // returns a flat array like ["employee", "leave", "attendance"]
+    public function getemailTagstype(Request $request)
+    {
+        $tags = DB::table('email_tags')
+            ->where('type', '!=', 'universal')
+            ->distinct()
+            ->pluck('type'); // returns a flat array like ["employee", "leave", "attendance"]
 
-    return response()->json([
-        'success' => true,
-        'data' => $tags
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'data' => $tags
+        ]);
+    }
 
     public function totalSummary(Request $request)
     {
@@ -1950,19 +1936,19 @@ public function GetBranchByType()
     {
 
         $validator = Validator::make($request->all(), [
-                    'user_id' => 'required|exists:users,id',
-                ]);
+            'user_id' => 'required|exists:users,id',
+        ]);
 
-                if ($validator->fails()) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => $validator->errors()
-                    ], 422);
-                }
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
 
-            $from = $request->input('from', date('Y-m-1'));
-            $to = $request->input('to', date('Y-m-31'));
-            $employeeId = $request->input('user_id');
+        $from = $request->input('from', date('Y-m-1'));
+        $to = $request->input('to', date('Y-m-31'));
+        $employeeId = $request->input('user_id');
 
         $records = DB::table('attendance_employees')
             ->where('employee_id', $request->user_id)
@@ -1971,74 +1957,74 @@ public function GetBranchByType()
             ->get();
 
         $data = $records->map(function ($record) {
-                $shiftStart = strtotime($record->shift_start);
-                $shiftEnd   = strtotime($record->shift_end);
-                $shiftDuration = $shiftEnd - $shiftStart;
+            $shiftStart = strtotime($record->shift_start);
+            $shiftEnd   = strtotime($record->shift_end);
+            $shiftDuration = $shiftEnd - $shiftStart;
 
-                $clockIn  = ($record->clock_in && $record->clock_in !== "00:00:00")
-                    ? strtotime($record->clock_in)
-                    : null;
+            $clockIn  = ($record->clock_in && $record->clock_in !== "00:00:00")
+                ? strtotime($record->clock_in)
+                : null;
 
-                $clockOut = ($record->clock_out && $record->clock_out !== "00:00:00")
-                    ? strtotime($record->clock_out)
-                    : null;
+            $clockOut = ($record->clock_out && $record->clock_out !== "00:00:00")
+                ? strtotime($record->clock_out)
+                : null;
 
-                $graceShiftStart = strtotime("+30 minutes", $shiftStart);
+            $graceShiftStart = strtotime("+30 minutes", $shiftStart);
 
-                $clockInStatus = $clockOutStatus = $overallStatus = null;
+            $clockInStatus = $clockOutStatus = $overallStatus = null;
 
-                // --- If both clockin and clockout missing ---
-                if (!$clockIn && !$clockOut) {
-                    $clockInStatus = ['label' => $record->status, 'badge' => 'blue'];
-                    $clockOutStatus = ['label' => $record->status, 'badge' => 'blue'];
-                    $overallStatus = ['label' => $record->status, 'badge' => 'blue'];
+            // --- If both clockin and clockout missing ---
+            if (!$clockIn && !$clockOut) {
+                $clockInStatus = ['label' => $record->status, 'badge' => 'blue'];
+                $clockOutStatus = ['label' => $record->status, 'badge' => 'blue'];
+                $overallStatus = ['label' => $record->status, 'badge' => 'blue'];
+            } else {
+                // Clock In Status
+                if (!$clockIn) {
+                    $clockInStatus = ['label' => $record->status, 'badge' => 'gray'];
+                } elseif ($clockIn <= $graceShiftStart) {
+                    $clockInStatus = ['label' => 'On Time', 'badge' => 'green'];
+                } elseif ($record->status === "Present") {
+                    $clockInStatus = ['label' => 'Present', 'badge' => 'green'];
                 } else {
-                    // Clock In Status
-                    if (!$clockIn) {
-                        $clockInStatus = ['label' => $record->status, 'badge' => 'gray'];
-                    } elseif ($clockIn <= $graceShiftStart) {
-                        $clockInStatus = ['label' => 'On Time', 'badge' => 'green'];
-                    } elseif ($record->status === "Present") {
-                        $clockInStatus = ['label' => 'Present', 'badge' => 'green'];
-                    } else {
-                        $clockInStatus = ['label' => 'Late', 'badge' => 'red'];
-                    }
+                    $clockInStatus = ['label' => 'Late', 'badge' => 'red'];
+                }
 
-                    // Clock Out Status
-                    if (!$clockOut || !$clockIn) {
-                        $clockOutStatus = ['label' => $record->status, 'badge' => 'gray'];
+                // Clock Out Status
+                if (!$clockOut || !$clockIn) {
+                    $clockOutStatus = ['label' => $record->status, 'badge' => 'gray'];
+                } else {
+                    $workedDuration = $clockOut - $clockIn;
+                    if ($workedDuration >= $shiftDuration) {
+                        $clockOutStatus = ['label' => 'Completed Shift', 'badge' => 'green'];
                     } else {
-                        $workedDuration = $clockOut - $clockIn;
-                        if ($workedDuration >= $shiftDuration) {
-                            $clockOutStatus = ['label' => 'Completed Shift', 'badge' => 'green'];
-                        } else {
-                            $minutes = round(($shiftDuration - $workedDuration) / 60);
-                            $clockOutStatus = ['label' => $minutes . ' min Short', 'badge' => 'red'];
-                        }
-                    }
-
-                    // --- Overall Status ---
-                    if (
-                        isset($clockInStatus['label'], $clockOutStatus['label']) &&
-                        $clockInStatus['label'] === 'On Time' &&
-                        $clockOutStatus['label'] === 'Completed Shift'
-                    ) {
-                        $overallStatus = ['label' => 'Good', 'badge' => 'green'];
-                    } else {
-                        $overallStatus = ['label' => 'Bad', 'badge' => 'red'];
+                        $minutes = round(($shiftDuration - $workedDuration) / 60);
+                        $clockOutStatus = ['label' => $minutes . ' min Short', 'badge' => 'red'];
                     }
                 }
 
-                return [
-                    'date' => $record->date,
-                    'clock_in' => $record->clock_in,
-                    'clock_in_status' => $clockInStatus,
-                    'clock_out' => $record->clock_out,
-                    'clock_out_status' => $clockOutStatus,
-                    'status' => $record->status,
-                    'overall_status' => $overallStatus,
-                ];
-            });
+                // --- Overall Status ---
+                if (
+                    isset($clockInStatus['label'], $clockOutStatus['label']) &&
+                    $clockInStatus['label'] === 'On Time' &&
+                    $clockOutStatus['label'] === 'Completed Shift'
+                ) {
+                    $overallStatus = ['label' => 'Good', 'badge' => 'green'];
+                } else {
+                    $overallStatus = ['label' => 'Bad', 'badge' => 'red'];
+                }
+            }
+
+            return [
+                'date' => $record->date,
+                'clock_in' => $record->clock_in,
+                'clock_in_status' => $clockInStatus,
+                'clock_out' => $record->clock_out,
+                'clock_out_status' => $clockOutStatus,
+                'status' => $record->status,
+                'overall_status' => $overallStatus,
+            ];
+        });
 
 
         return response()->json([
@@ -2075,30 +2061,30 @@ public function GetBranchByType()
         // Track changes
         $changes = [];
         $updatedFields = [];
-       // dd($post);
+        // dd($post);
         foreach ($post as $key => $data) {
             if (array_key_exists($key, $settings)) {
-                    if ($settings[$key] != $data) {
-                        $changes[$key] = [
-                            'old' => $settings[$key],
-                            'new' => $data
-                        ];
-                        $updatedFields[] = $key;
-                    }
-                 }
+                if ($settings[$key] != $data) {
+                    $changes[$key] = [
+                        'old' => $settings[$key],
+                        'new' => $data
+                    ];
+                    $updatedFields[] = $key;
+                }
+            }
 
-                DB::insert(
-                    'insert into settings (`value`, `name`,`created_by`,`created_at`,`updated_at`)
+            DB::insert(
+                'insert into settings (`value`, `name`,`created_by`,`created_at`,`updated_at`)
                      values (?, ?, ?, ?, ?)
                      ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
-                    [
-                        $data,
-                        $key,
-                        1,
-                        now(),
-                        now(),
-                    ]
-                );
+                [
+                    $data,
+                    $key,
+                    1,
+                    now(),
+                    now(),
+                ]
+            );
         }
 
         // 🔹 Log only if changes exist
@@ -2107,7 +2093,7 @@ public function GetBranchByType()
             addLogActivity([
                 'type' => 'info',
                 'note' => json_encode([
-                    'title' => $user->name. ucfirst($typeoflog) . ' updated ' ,
+                    'title' => $user->name . ucfirst($typeoflog) . ' updated ',
                     'message' => 'Fields updated: ' . implode(', ', $updatedFields),
                     'changes' => $changes
                 ]),
@@ -2146,7 +2132,7 @@ public function GetBranchByType()
         ], 200);
     }
 
-     public function getTables()
+    public function getTables()
     {
         try {
             $driver = DB::getDriverName();
@@ -2181,7 +2167,6 @@ public function GetBranchByType()
                 'driver' => $driver,
                 'tables' => $tables
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -2191,123 +2176,123 @@ public function GetBranchByType()
     }
 
 
-public function getTableData_old(Request $request)
-{
-    // ✅ Validation
-    $validator = Validator::make($request->all(), [
-        'table'     => 'required|string',
-        'last_sync' => 'nullable|date',
-        'per_page'  => 'nullable|integer|min:1|max:1000',
-        'filters'   => 'nullable|array',
-    ]);
+    public function getTableData_old(Request $request)
+    {
+        // ✅ Validation
+        $validator = Validator::make($request->all(), [
+            'table'     => 'required|string',
+            'last_sync' => 'nullable|date',
+            'per_page'  => 'nullable|integer|min:1|max:1000',
+            'filters'   => 'nullable|array',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => $validator->errors()
-        ], 422);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
 
-    $table    = $request->input('table');
-    $lastSync = $request->input('last_sync');
-    $perPage  = $request->input('per_page', 500);
-    $filters  = $request->input('filters', []);
+        $table    = $request->input('table');
+        $lastSync = $request->input('last_sync');
+        $perPage  = $request->input('per_page', 500);
+        $filters  = $request->input('filters', []);
 
-    // ✅ Check if table exists
-    if (!Schema::hasTable($table)) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => "Table '{$table}' does not exist."
-        ], 404);
-    }
+        // ✅ Check if table exists
+        if (!Schema::hasTable($table)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => "Table '{$table}' does not exist."
+            ], 404);
+        }
 
-    // ✅ Build query
-    $query = DB::table($table);
+        // ✅ Build query
+        $query = DB::table($table);
 
-    // Add last_sync condition (new + updated records)
-    if ($lastSync) {
-        $query->where(function ($q) use ($lastSync) {
-            $q->where('created_at', '>=', $lastSync)
-              ->orWhere('updated_at', '>=', $lastSync);
-        });
-    }
+        // Add last_sync condition (new + updated records)
+        if ($lastSync) {
+            $query->where(function ($q) use ($lastSync) {
+                $q->where('created_at', '>=', $lastSync)
+                    ->orWhere('updated_at', '>=', $lastSync);
+            });
+        }
 
-    // ✅ Apply filters safely (only existing columns)
-    if (!empty($filters)) {
-        foreach ($filters as $column => $value) {
-            if (Schema::hasColumn($table, $column)) {
-                $query->where($column, $value);
+        // ✅ Apply filters safely (only existing columns)
+        if (!empty($filters)) {
+            foreach ($filters as $column => $value) {
+                if (Schema::hasColumn($table, $column)) {
+                    $query->where($column, $value);
+                }
             }
         }
-    }
 
-    // ✅ Pagination
-    $data = $query->paginate($perPage);
+        // ✅ Pagination
+        $data = $query->paginate($perPage);
 
-    return response()->json([
-        'status'       => 'success',
-        'table'        => $table,
-        'last_sync'    => $lastSync,
-        'filters'      => $filters,
-        'total'        => $data->total(),
-        'per_page'     => $data->perPage(),
-        'current_page' => $data->currentPage(),
-        'last_page'    => $data->lastPage(),
-        'data'         => $data->items()
-    ]);
-}
-
-
-public function getTableData(Request $request)
-{
-    // ✅ Validation
-    $validator = Validator::make($request->all(), [
-        'table'     => 'required|string',
-        'last_sync' => 'nullable|date',
-        'per_page'  => 'nullable|integer|min:1|max:1000',
-        'filters'   => 'nullable|array',
-        'last_id'   => 'nullable|integer|min:0', // keyset pagination cursor
-    ]);
-
-    if ($validator->fails()) {
         return response()->json([
-            'status'  => 'error',
-            'message' => $validator->errors()
-        ], 422);
+            'status'       => 'success',
+            'table'        => $table,
+            'last_sync'    => $lastSync,
+            'filters'      => $filters,
+            'total'        => $data->total(),
+            'per_page'     => $data->perPage(),
+            'current_page' => $data->currentPage(),
+            'last_page'    => $data->lastPage(),
+            'data'         => $data->items()
+        ]);
     }
 
-    $table    = $request->input('table');
-    $lastSync = $request->input('last_sync');
-    $perPage  = $request->input('per_page', 500);
-    $filters  = $request->input('filters', []);
-    $lastId   = $request->input('last_id', 0);
 
-    // ✅ Check if table exists
-    if (!Schema::hasTable($table)) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => "Table '{$table}' does not exist."
-        ], 404);
-    }
+    public function getTableData(Request $request)
+    {
+        // ✅ Validation
+        $validator = Validator::make($request->all(), [
+            'table'     => 'required|string',
+            'last_sync' => 'nullable|date',
+            'per_page'  => 'nullable|integer|min:1|max:1000',
+            'filters'   => 'nullable|array',
+            'last_id'   => 'nullable|integer|min:0', // keyset pagination cursor
+        ]);
 
-    // ✅ Build query
-    $query = DB::table($table)->orderBy('id', 'asc');
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
 
-    // Apply keyset pagination
-    if ($lastId > 0) {
-        $query->where('id', '>', $lastId);
-    }
+        $table    = $request->input('table');
+        $lastSync = $request->input('last_sync');
+        $perPage  = $request->input('per_page', 500);
+        $filters  = $request->input('filters', []);
+        $lastId   = $request->input('last_id', 0);
 
-    // Add last_sync condition (new + updated records)
-    if ($lastSync) {
-        $query->where(function ($q) use ($lastSync) {
-            $q->where('created_at', '>=', $lastSync)
-              ->orWhere('updated_at', '>=', $lastSync);
-        });
-    }
+        // ✅ Check if table exists
+        if (!Schema::hasTable($table)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => "Table '{$table}' does not exist."
+            ], 404);
+        }
 
-    // ✅ Apply filters safely
-   // ✅ Apply filters safely
+        // ✅ Build query
+        $query = DB::table($table)->orderBy('id', 'asc');
+
+        // Apply keyset pagination
+        if ($lastId > 0) {
+            $query->where('id', '>', $lastId);
+        }
+
+        // Add last_sync condition (new + updated records)
+        if ($lastSync) {
+            $query->where(function ($q) use ($lastSync) {
+                $q->where('created_at', '>=', $lastSync)
+                    ->orWhere('updated_at', '>=', $lastSync);
+            });
+        }
+
+        // ✅ Apply filters safely
+        // ✅ Apply filters safely
         if (!empty($filters)) {
             foreach ($filters as $column => $value) {
                 if (Schema::hasColumn($table, $column)) {
@@ -2321,23 +2306,21 @@ public function getTableData(Request $request)
         }
 
 
-    // ✅ Fetch with +1 trick to detect "has_more"
-    $rows = $query->limit($perPage + 1)->get();
+        // ✅ Fetch with +1 trick to detect "has_more"
+        $rows = $query->limit($perPage + 1)->get();
 
-    $hasMore = $rows->count() > $perPage;
-    $data    = $rows->take($perPage);
+        $hasMore = $rows->count() > $perPage;
+        $data    = $rows->take($perPage);
 
-    return response()->json([
-        'status'       => 'success',
-        'table'        => $table,
-        'last_sync'    => $lastSync,
-        'filters'      => $filters,
-        'per_page'     => $perPage,
-        'next_id'      => $hasMore ? $data->last()->id : null, // 👈 cursor
-        'has_more'     => $hasMore,
-        'data'         => $data,
-    ]);
-}
-
-
+        return response()->json([
+            'status'       => 'success',
+            'table'        => $table,
+            'last_sync'    => $lastSync,
+            'filters'      => $filters,
+            'per_page'     => $perPage,
+            'next_id'      => $hasMore ? $data->last()->id : null, // 👈 cursor
+            'has_more'     => $hasMore,
+            'data'         => $data,
+        ]);
+    }
 }
