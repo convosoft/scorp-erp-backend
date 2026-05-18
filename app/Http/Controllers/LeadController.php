@@ -479,7 +479,7 @@ class LeadController extends Controller
         }
 
         // ✅ CSV Export - No joins needed!
-        if ($request->input('download_csv')) {
+        if ($request->input('download_csv') == 0) {
             $download_csv = $leadsQuery->where('is_converted', 0)->get();
 
             $headers = [
