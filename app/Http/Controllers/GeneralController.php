@@ -339,7 +339,7 @@ class GeneralController extends Controller
             // Super Admin & HR
             if ($userType == 'super admin' || $userType == 'Admin Team' || $userType == 'HR' || $user->can('level 1')) {
                 $query->where('brands', $id);
-            } elseif ($userType == 'Project Manager' || $user->can('level 2')) {
+            } elseif ($userType == 'Project Manager' || $userType == 'Project Director' || $user->can('level 2')) {
                 $query->where('brands', $user->brand_id);
             }
 
