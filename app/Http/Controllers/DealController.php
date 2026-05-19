@@ -232,7 +232,7 @@ class DealController extends Controller
 
         // Permissions logic
         $companies = FiltersBrands();
-                $brand_ids = array_keys($companies);
+        $brand_ids = array_keys($companies);
         if (!in_array($user->type, ['super admin', 'Admin Team']) && !$user->can('level 1')) {
             if ($user->type == 'company') {
                 $query->where('brand_id', $user->id);
@@ -251,83 +251,56 @@ class DealController extends Controller
 
 
 
-                // Filters from request
-            $filters = $this->dealFilters();
+        // Filters from request
+        $filters = $this->dealFilters();
 
-            foreach ($filters as $column => $value) {
+        foreach ($filters as $column => $value) {
 
-                if ($column === 'name') {
-                    $query->where('name', 'like', "%{$value}%");
+            if ($column === 'name') {
+                $query->where('name', 'like', "%{$value}%");
+            } elseif ($column === 'stage_id') {
+                $query->whereIn('stage_id', (array)$value);
+            } elseif ($column === 'users') {
+                $query->whereIn('created_by', (array)$value);
+            } elseif ($column === 'created_at') {
+                $query->whereDate('created_at', substr($value, 0, 10));
+            } elseif ($column === 'brand_id') {
+                $query->where('brand_id', $value);
+            } elseif ($column === 'region_id') {
+                $query->where('region_id', $value);
+            } elseif ($column === 'branch_id') {
+                $query->where('branch_id', $value);
+            } elseif ($column === 'created_by') {
+                $query->where('created_by', $value);
+            } elseif ($column === 'deal_assigned_user') {
+
+                if (is_array($value)) {
+                    $query->whereIn('assigned_to', $value);
+                } else {
+                    $query->where('assigned_to', $value);
                 }
+            } elseif ($column === 'created_at_from') {
+                $query->whereDate('created_at', '>=', $value);
+            } elseif ($column === 'created_at_to') {
+                $query->whereDate('created_at', '<=', $value);
+            } elseif ($column === 'tag') {
 
-                elseif ($column === 'stage_id') {
-                    $query->whereIn('stage_id', (array)$value);
-                }
-
-                elseif ($column === 'users') {
-                    $query->whereIn('created_by', (array)$value);
-                }
-
-                elseif ($column === 'created_at') {
-                    $query->whereDate('created_at', substr($value, 0, 10));
-                }
-
-                elseif ($column === 'brand_id') {
-                    $query->where('brand_id', $value);
-                }
-
-                elseif ($column === 'region_id') {
-                    $query->where('region_id', $value);
-                }
-
-                elseif ($column === 'branch_id') {
-                    $query->where('branch_id', $value);
-                }
-
-                elseif ($column === 'created_by') {
-                    $query->where('created_by', $value);
-                }
-
-                elseif ($column === 'deal_assigned_user') {
-
-                    if (is_array($value)) {
-                        $query->whereIn('assigned_to', $value);
-                    } else {
-                        $query->where('assigned_to', $value);
+                if (is_array($value)) {
+                    foreach ($value as $tag) {
+                        $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$tag]);
                     }
-
+                } else {
+                    $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$value]);
                 }
+            } elseif ($column === 'days_at_stage') {
 
-                elseif ($column === 'created_at_from') {
-                    $query->whereDate('created_at', '>=', $value);
-                }
-
-                elseif ($column === 'created_at_to') {
-                    $query->whereDate('created_at', '<=', $value);
-                }
-
-                elseif ($column === 'tag') {
-
-                    if (is_array($value)) {
-                        foreach ($value as $tag) {
-                            $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$tag]);
-                        }
-                    } else {
-                        $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$value]);
-                    }
-
-                }
-
-                elseif ($column === 'days_at_stage') {
-
-                    if ($value === '30+') {
-                        $query->where('days_at_stage', '>=', 30);
-                    } else {
-                        $query->where('days_at_stage', (int)$value);
-                    }
-
+                if ($value === '30+') {
+                    $query->where('days_at_stage', '>=', 30);
+                } else {
+                    $query->where('days_at_stage', (int)$value);
                 }
             }
+        }
 
         // fetcttype filter
         if ($request->filled('fetcttype')) {
@@ -341,10 +314,15 @@ class DealController extends Controller
         if ($request->filled('destination_id')) {
             $destination_id = array_map('intval', (array) $request->destination_id);
             $query->whereIn('destination_id', $destination_id);
+        }
 
-            //  $sql = str_replace('?', "'%s'", $query->toSql());
-            //     $sql = vsprintf($sql, $query->getBindings());
-            //      echo $sql;
+        if ($request->filled('intake_year')) {
+
+            $query->whereIn('intake_year', $intake_year);
+        }
+        if ($request->filled('intake_month')) {
+
+            $query->whereIn('intake_month', $intake_month);
         }
 
         // Search filter
@@ -352,12 +330,12 @@ class DealController extends Controller
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%")
-                ->orWhere('price', 'like', "%{$search}%")
-                ->orWhere('passport_number', 'like', "%{$search}%")
-                ->orWhere('lead_name', 'like', "%{$search}%")
-                ->orWhere('lead_email', 'like', "%{$search}%")
-                ->orWhere('lead_phone', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('price', 'like', "%{$search}%")
+                    ->orWhere('passport_number', 'like', "%{$search}%")
+                    ->orWhere('lead_name', 'like', "%{$search}%")
+                    ->orWhere('lead_email', 'like', "%{$search}%")
+                    ->orWhere('lead_phone', 'like', "%{$search}%");
             });
         }
 
@@ -366,11 +344,11 @@ class DealController extends Controller
             $dealsCsv = $query->get();
             $headers = [
                 'Content-Type' => 'text/csv',
-                'Content-Disposition' => 'attachment; filename="admissions_'.time().'.csv"',
+                'Content-Disposition' => 'attachment; filename="admissions_' . time() . '.csv"',
             ];
             $callback = function () use ($dealsCsv) {
                 $file = fopen('php://output', 'w');
-                fputcsv($file, ['ID','Name','Stage','Brand','Agent','Assigned','Client Passport','Lead Name','Lead Email','University','Price','Created At']);
+                fputcsv($file, ['ID', 'Name', 'Stage', 'Brand', 'Agent', 'Assigned', 'Client Passport', 'Lead Name', 'Lead Email', 'University', 'Price', 'Created At']);
                 foreach ($dealsCsv as $deal) {
                     fputcsv($file, [
                         $deal->id,
@@ -440,17 +418,17 @@ class DealController extends Controller
 
 
         $sql = str_replace('?', "'%s'", $query->toSql());
-                $sql = vsprintf($sql, $query->getBindings());
-                // echo $sql;
+        $sql = vsprintf($sql, $query->getBindings());
+        // echo $sql;
 
-                // echo "==========";
-                // echo $sql2;
-            // dd($sql , $brand_ids,$user);
-            // Sort by application count
-            if ($request->filled('sort_by_applications')) {
-                $direction = strtolower($request->get('sort_by_applications')) === 'asc' ? 'asc' : 'desc';
-                $query->orderBy('applications_count', $direction);
-            }
+        // echo "==========";
+        // echo $sql2;
+        // dd($sql , $brand_ids,$user);
+        // Sort by application count
+        if ($request->filled('sort_by_applications')) {
+            $direction = strtolower($request->get('sort_by_applications')) === 'asc' ? 'asc' : 'desc';
+            $query->orderBy('applications_count', $direction);
+        }
         // List view
         if (!$request->filled('sort_by_applications')) {
             $query->orderByDesc('id');
@@ -489,37 +467,37 @@ class DealController extends Controller
 
         $deal = Deal::with('clients')->where('id', $request->deal_id)->first();
 
-         // Calculate Lead Stage Progress
-            $stages  = Stage::orderBy('id')->get()->pluck('name', 'id')->toArray();
+        // Calculate Lead Stage Progress
+        $stages  = Stage::orderBy('id')->get()->pluck('name', 'id')->toArray();
 
 
-            // Fetch Related Data
-            $tasks = DealTask::where([
-                'related_to' => $deal->id,
-                'related_type' => 'deal',
-            ])->orderBy('status')->get();
+        // Fetch Related Data
+        $tasks = DealTask::where([
+            'related_to' => $deal->id,
+            'related_type' => 'deal',
+        ])->orderBy('status')->get();
 
-            // $branches = Branch::pluck('name', 'id');
-            // $users = allUsers();
-//$logActivities = getLogActivity($deal->id, 'deal');
+        // $branches = Branch::pluck('name', 'id');
+        // $users = allUsers();
+        //$logActivities = getLogActivity($deal->id, 'deal');
 
-            // Lead Stage History
-            $stageHistories = StageHistory::where('type', 'deal')
-                ->where('type_id', $deal->id)
-                ->pluck('stage_id')
-                ->toArray();
+        // Lead Stage History
+        $stageHistories = StageHistory::where('type', 'deal')
+            ->where('type_id', $deal->id)
+            ->pluck('stage_id')
+            ->toArray();
 
-            $applications = DealApplication::where('deal_id', $request->deal_id)->get();
+        $applications = DealApplication::where('deal_id', $request->deal_id)->get();
 
         return response()->json([
             'status' => 'success',
             'data' => $deal,
             'stageHistories' => $stageHistories,
-           // 'logActivities' => $logActivities,
+            // 'logActivities' => $logActivities,
             'tasks' => $tasks,
             'stages' => $stages,
             'applications' => $applications,
-        ],200);
+        ], 200);
 
         if (!$deal->is_active) {
             return response()->json(['status' => 'error', 'message' => 'Permission Denied.'], 403);
@@ -589,7 +567,7 @@ class DealController extends Controller
         $validator = \Validator::make($request->all(), [
             'id' => 'required|exists:deal_applications,id',
             'deal_id' => 'required|exists:deals,id',
-          //  'old_deal_id' => 'required|exists:deals,id',
+            //  'old_deal_id' => 'required|exists:deals,id',
         ]);
 
         if ($validator->fails()) {
@@ -599,7 +577,7 @@ class DealController extends Controller
             ]);
         }
 
-         $oldApplication = DealApplication::where('id', $request->id)->first();
+        $oldApplication = DealApplication::where('id', $request->id)->first();
 
         if (!$oldApplication) {
             return response()->json([
@@ -608,7 +586,7 @@ class DealController extends Controller
             ]);
         }
 
-          $request->old_deal_id = $oldApplication->deal_id;
+        $request->old_deal_id = $oldApplication->deal_id;
 
         if ($request->deal_id == $request->old_deal_id) {
             return response()->json([
@@ -617,9 +595,9 @@ class DealController extends Controller
             ]);
         }
 
-       // dd( $request->old_deal_id);
+        // dd( $request->old_deal_id);
 
-         $deal = Deal::find($request->deal_id);
+        $deal = Deal::find($request->deal_id);
 
         // Duplicate Application
         $newApplication = new DealApplication();
@@ -675,7 +653,7 @@ class DealController extends Controller
             $newTask->date = $task->date;
             $newTask->time = $task->time;
             $newTask->priority = $task->priority;
-            $newTask->status =$task->status;
+            $newTask->status = $task->status;
             $newTask->organization_id = $task->organization_id;
             $newTask->assigned_to = $task->assigned_to;
             $newTask->assigned_type = $task->assigned_type;
@@ -800,7 +778,7 @@ class DealController extends Controller
         $deal->save();
     }
 
-        public function dealStageHistory(Request $request)
+    public function dealStageHistory(Request $request)
     {
         // Validate Input
         $validator = \Validator::make($request->all(), [
@@ -826,11 +804,11 @@ class DealController extends Controller
         ], 200);
     }
 
-   public function updateAdmission(Request $request)
-{
-    $user = Auth::user();
+    public function updateAdmission(Request $request)
+    {
+        $user = Auth::user();
 
-            // Permission check
+        // Permission check
         if (!$user->can('edit deal') && $user->type != 'super admin') {
             return response()->json([
                 'status' => 'error',
@@ -840,197 +818,195 @@ class DealController extends Controller
             ], 422);
         }
 
-    // Validation
-    $validator = Validator::make($request->all(), [
-        'id' => 'required|exists:deals,id',
-        'name' => 'required',
-        'intake_month' => 'required',
-        'intake_year' => 'required',
-        'brand_id' => 'required|gt:0',
-        'region_id' => 'required|gt:0',
-        'lead_branch' => 'required|gt:0',
-        'assigned_to' => 'required|exists:users,id',
-        'pipeline_id' => 'required',
-        'drive_link' => 'nullable',
-        // 'gender' => 'required',
-        // 'nationality' => 'required',
-        // 'date_of_birth' => 'required',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $validator->errors()
-        ], 422);
-    }
-
-    // Get Deal
-    $deal = Deal::findOrFail($request->id);
-    $originalData = $deal->toArray(); // before update
-
-    // Check ownership permission (same logic preserved)
-    if (!$user->can('edit deal') && $deal->created_by != $user->ownerId() && $user->type != 'super admin') {
-        return response()->json([
-            'status' => 'error',
-            'message' => __('Permission Denied.')
-        ], 200);
-    }
-
-    // Get related user
-    $user_who_have_password = User::whereIn('id', function ($query) use ($request) {
-        $query->select('client_id')
-            ->from('client_deals')
-            ->where('deal_id', $request->id);
-    })->first();
-
-    // Passport validation (same logic preserved)
-    if ($user_who_have_password) {
-        $passportValidator = Validator::make($request->all(), [
-            'passport_number' => 'required|unique:users,passport_number,' . $user_who_have_password->id,
+        // Validation
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:deals,id',
+            'name' => 'required',
+            'intake_month' => 'required',
+            'intake_year' => 'required',
+            'brand_id' => 'required|gt:0',
+            'region_id' => 'required|gt:0',
+            'lead_branch' => 'required|gt:0',
+            'assigned_to' => 'required|exists:users,id',
+            'pipeline_id' => 'required',
+            'drive_link' => 'nullable',
+            // 'gender' => 'required',
+            // 'nationality' => 'required',
+            // 'date_of_birth' => 'required',
         ]);
 
-        if ($passportValidator->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => $passportValidator->errors()->first()
+                'message' => $validator->errors()
             ], 422);
         }
-    }
 
-    // Update Deal
-    $deal->name  = $request->name;
-     if ($request->filled('destination_id')) {
+        // Get Deal
+        $deal = Deal::findOrFail($request->id);
+        $originalData = $deal->toArray(); // before update
+
+        // Check ownership permission (same logic preserved)
+        if (!$user->can('edit deal') && $deal->created_by != $user->ownerId() && $user->type != 'super admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Permission Denied.')
+            ], 200);
+        }
+
+        // Get related user
+        $user_who_have_password = User::whereIn('id', function ($query) use ($request) {
+            $query->select('client_id')
+                ->from('client_deals')
+                ->where('deal_id', $request->id);
+        })->first();
+
+        // Passport validation (same logic preserved)
+        if ($user_who_have_password) {
+            $passportValidator = Validator::make($request->all(), [
+                'passport_number' => 'required|unique:users,passport_number,' . $user_who_have_password->id,
+            ]);
+
+            if ($passportValidator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $passportValidator->errors()->first()
+                ], 422);
+            }
+        }
+
+        // Update Deal
+        $deal->name  = $request->name;
+        if ($request->filled('destination_id')) {
             $destinationIds = $request->destination_id;
 
             $deal->destination_id = is_array($destinationIds)
                 ? implode(',', $destinationIds)
                 : $destinationIds;
         }
-    $deal->category = $request->input('category');
-    $deal->university_id = $request->input('university_id');
-    $deal->organization_id = $request->input('organization_id');
-    $deal->phone = $request->input('lead_phone');
-    $deal->brand_id = $request->input('brand_id');
-    $deal->region_id = $request->input('region_id');
-    $deal->branch_id = $request->input('lead_branch');
-    $deal->assigned_to = $request->input('assigned_to');
-    $deal->intake_month = $request->input('intake_month');
-    $deal->intake_year = $request->input('intake_year');
-    $deal->price = 0;
-    $deal->pipeline_id = $request->input('pipeline_id');
-    $deal->description = $request->input('deal_description');
-    $deal->tag_ids = $request->tag_ids ?? '';
-    //$deal->drive_link = $request->input('drive_link');
-    if ($request->filled('drive_link')) {
+        $deal->category = $request->input('category');
+        $deal->university_id = $request->input('university_id');
+        $deal->organization_id = $request->input('organization_id');
+        $deal->phone = $request->input('lead_phone');
+        $deal->brand_id = $request->input('brand_id');
+        $deal->region_id = $request->input('region_id');
+        $deal->branch_id = $request->input('lead_branch');
+        $deal->assigned_to = $request->input('assigned_to');
+        $deal->intake_month = $request->input('intake_month');
+        $deal->intake_year = $request->input('intake_year');
+        $deal->price = 0;
+        $deal->pipeline_id = $request->input('pipeline_id');
+        $deal->description = $request->input('deal_description');
+        $deal->tag_ids = $request->tag_ids ?? '';
+        //$deal->drive_link = $request->input('drive_link');
+        if ($request->filled('drive_link')) {
             $deal->drive_link = $request->input('drive_link');
         }
-    $deal->status = 'Active';
-    $deal->created_by = $deal->created_by;
-    $deal->save();
+        $deal->status = 'Active';
+        $deal->created_by = $deal->created_by;
+        $deal->save();
 
-    // Update User
-    if ($user_who_have_password) {
-        $user_who_have_password->passport_number = $request->passport_number;
-        $user_who_have_password->gender = $request->gender;
-        $user_who_have_password->nationality = $request->nationality;
-        $user_who_have_password->date_of_birth = $request->date_of_birth;
-        $user_who_have_password->save();
-    }
+        // Update User
+        if ($user_who_have_password) {
+            $user_who_have_password->passport_number = $request->passport_number;
+            $user_who_have_password->gender = $request->gender;
+            $user_who_have_password->nationality = $request->nationality;
+            $user_who_have_password->date_of_birth = $request->date_of_birth;
+            $user_who_have_password->save();
+        }
 
-    // Update or Create Lead
-    $lead = Lead::where('is_converted', $request->id)->first();
+        // Update or Create Lead
+        $lead = Lead::where('is_converted', $request->id)->first();
 
-    if (!empty($lead)) {
+        if (!empty($lead)) {
 
-        if (!empty($request->lead_email)) {
+            if (!empty($request->lead_email)) {
+                $lead->email = $request->lead_email;
+            }
+
+            if (!empty($request->lead_phone)) {
+                $lead->phone = $request->full_number;
+            }
+
+            $lead->save();
+        } else {
+
+            $lead = new Lead();
+            $lead->title = $request->name;
+            $lead->name = $request->name;
             $lead->email = $request->lead_email;
-        }
-
-        if (!empty($request->lead_phone)) {
             $lead->phone = $request->full_number;
+            $lead->mobile_phone = $request->full_number;
+            $lead->branch_id = $request->lead_branch;
+            $lead->brand_id = $request->brand_id;
+            $lead->region_id = $request->region_id;
+            $lead->organization_id = "--";
+            $lead->organization_link = "--";
+            $lead->sources = "--";
+            $lead->referrer_email = $request->lead_email;
+            $lead->street = "--";
+            $lead->city = "--";
+            $lead->state = "--";
+            $lead->postal_code = "--";
+            $lead->country = "--";
+            $lead->keynotes = "--";
+            $lead->tags = "--";
+            $lead->stage_id = "1";
+            $lead->subject = $request->name;
+            $lead->user_id = $deal->assigned_to;
+            $lead->tag_ids = "";
+            $lead->pipeline_id = "1";
+            $lead->created_by = $deal->created_by;
+            $lead->date = date('Y-m-d');
+            $lead->drive_link = "";
+            $lead->is_converted = $deal->id;
+            $lead->save();
         }
 
-        $lead->save();
+        // change tracking here
+        $changes = [];
+        $updatedFields = [];
 
-    } else {
+        foreach ($originalData as $field => $oldValue) {
 
-        $lead = new Lead();
-        $lead->title = $request->name;
-        $lead->name = $request->name;
-        $lead->email = $request->lead_email;
-        $lead->phone = $request->full_number;
-        $lead->mobile_phone = $request->full_number;
-        $lead->branch_id = $request->lead_branch;
-        $lead->brand_id = $request->brand_id;
-        $lead->region_id = $request->region_id;
-        $lead->organization_id = "--";
-        $lead->organization_link = "--";
-        $lead->sources = "--";
-        $lead->referrer_email = $request->lead_email;
-        $lead->street = "--";
-        $lead->city = "--";
-        $lead->state = "--";
-        $lead->postal_code = "--";
-        $lead->country = "--";
-        $lead->keynotes = "--";
-        $lead->tags = "--";
-        $lead->stage_id = "1";
-        $lead->subject = $request->name;
-        $lead->user_id = $deal->assigned_to;
-        $lead->tag_ids = "";
-        $lead->pipeline_id = "1";
-        $lead->created_by = $deal->created_by;
-        $lead->date = date('Y-m-d');
-        $lead->drive_link = "";
-        $lead->is_converted = $deal->id;
-        $lead->save();
+            if (in_array($field, ['created_at', 'updated_at'])) {
+                continue;
+            }
+
+            if ($deal->$field != $oldValue) {
+
+                $changes[$field] = [
+                    'old' => $oldValue,
+                    'new' => $deal->$field
+                ];
+
+                $updatedFields[] = $field;
+            }
+        }
+
+        if (!empty($changes)) {
+
+            addLogActivity([
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => 'Deal updated: ' . $deal->name,
+                    'message' => 'Fields updated: ' . implode(', ', $updatedFields),
+                    'changes' => $changes
+                ]),
+                'module_id' => $deal->id,
+                'module_type' => 'deal',
+                'notification_type' => 'Deal Updated'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'deal' => $deal,
+            'message' => __('Deal successfully updated!')
+        ]);
     }
 
-    // change tracking here
-$changes = [];
-$updatedFields = [];
-
-foreach ($originalData as $field => $oldValue) {
-
-    if (in_array($field, ['created_at', 'updated_at'])) {
-        continue;
-    }
-
-    if ($deal->$field != $oldValue) {
-
-        $changes[$field] = [
-            'old' => $oldValue,
-            'new' => $deal->$field
-        ];
-
-        $updatedFields[] = $field;
-    }
-}
-
-if (!empty($changes)) {
-
-    addLogActivity([
-        'type' => 'info',
-        'note' => json_encode([
-            'title' => 'Deal updated: ' . $deal->name,
-            'message' => 'Fields updated: ' . implode(', ', $updatedFields),
-            'changes' => $changes
-        ]),
-        'module_id' => $deal->id,
-        'module_type' => 'deal',
-        'notification_type' => 'Deal Updated'
-    ]);
-
-}
-
-    return response()->json([
-        'status' => 'success',
-        'deal' => $deal,
-        'message' => __('Deal successfully updated!')
-    ]);
-}
-
- public function GetadmissionNotes(Request $request)
+    public function GetadmissionNotes(Request $request)
     {
         $validator = Validator::make(
             $request->all(),
@@ -1079,7 +1055,7 @@ if (!empty($changes)) {
         ], 201);
     }
 
-       public function deleteAdmission(Request $request)
+    public function deleteAdmission(Request $request)
     {
         // Validate the Request Data
         $validator = Validator::make(
@@ -1109,11 +1085,11 @@ if (!empty($changes)) {
 
 
         $applications = DealApplication::where('deal_id', $request->id)
-                ->orderBy('stage_id', 'desc')
-                ->get();
+            ->orderBy('stage_id', 'desc')
+            ->get();
 
 
-         if (count($applications) > 0) {
+        if (count($applications) > 0) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('The application created for this admission cannot be deleted.'),
@@ -1125,8 +1101,8 @@ if (!empty($changes)) {
         $data = [
             'type' => 'warning',
             'note' => json_encode([
-                'title' => $deal->name .' admission Deleted',
-                'message' => $deal->name .' admission deleted successfully',
+                'title' => $deal->name . ' admission Deleted',
+                'message' => $deal->name . ' admission deleted successfully',
             ]),
             'module_id' => $deal->id,
             'module_type' => 'deal',
@@ -1135,16 +1111,15 @@ if (!empty($changes)) {
         addLogActivity($data);
 
         // Update or Create Lead
-            $lead = Lead::where('is_converted', $deal->id)->first();
+        $lead = Lead::where('is_converted', $deal->id)->first();
 
-            if (!empty($lead)) {
+        if (!empty($lead)) {
 
-                    $lead->is_converted = 0;
+            $lead->is_converted = 0;
 
 
-                $lead->save();
-
-            }
+            $lead->save();
+        }
 
         // Delete the deal
         $deal->delete();
@@ -1161,7 +1136,7 @@ if (!empty($changes)) {
     public function addAdmissionTags(Request $request)
     {
 
-      // Validate Input
+        // Validate Input
         $validator = \Validator::make($request->all(), [
             'selectedIds' => 'required|string', // Expecting comma-separated IDs
             'tagid' => 'required|string',
@@ -1183,8 +1158,8 @@ if (!empty($changes)) {
                 addLogActivity([
                     'type' => 'info',
                     'note' => json_encode([
-                        'title' => $Lead->name. ' Tag Updated for admission',
-                        'message' => $Lead->name. " Tag Updated for admission",
+                        'title' => $Lead->name . ' Tag Updated for admission',
+                        'message' => $Lead->name . " Tag Updated for admission",
                     ]),
                     'module_id' => $Lead->id,
                     'module_type' => 'deal',
@@ -1198,5 +1173,4 @@ if (!empty($changes)) {
             ]);
         }
     }
-
 }
