@@ -315,7 +315,6 @@ class LeadController extends Controller
             'per_page' => $leads->perPage(),
         ], 200);
     }
-
     public function getLeadsByView(Request $request)
     {
         // ... validation stays same ...
@@ -329,7 +328,7 @@ class LeadController extends Controller
             'brand' => 'nullable|integer|exists:users,id',
             'region_id' => 'nullable|integer',
             'branch_id' => 'nullable|integer',
-            'stage_id' => 'nullable|integer|exists:lead_stages,id',
+            'stage_id' => 'nullable',
             'users' => 'nullable|array',
             'lead_assigned_user' => 'sometimes|nullable',
             'created_by' => 'sometimes|nullable',
@@ -374,36 +373,6 @@ class LeadController extends Controller
             $leadsQuery->where('branch_id', $request->branch_id);
         }
 
-    if ($request->filled('stage_id')) {
-        $leadsQuery->where('stage_id', $request->stage_id);
-    }
-
-    if ($request->filled('tag')) {
-        $leadsQuery->whereRaw('FIND_IN_SET(?, tag_ids)', [$request->tag]);
-    }
-
-    if ($request->filled('lead_assigned_user')) {
-        $leadsQuery->where('user_id', $request->lead_assigned_user);
-    }
-
-    if ($request->filled('created_by')) {
-        $leadsQuery->where('created_by', $request->created_by);
-    }
-
-    if ($request->filled('created_at_from')) {
-        $leadsQuery->whereDate('created_at', '>=', $request->created_at_from);
-    }
-
-    if ($request->filled('created_at_to')) {
-        $leadsQuery->whereDate('created_at', '<=', $request->created_at_to);
-    }
-
-    // ✅ Days at stage filter - now super simple!
-    if ($request->filled('days_at_stage')) {
-        $days = $request->days_at_stage;
-
-        if ($days === '30+') {
-            $leadsQuery->where('days_at_stage', '>=', 30);
         if ($request->filled('stage_id')) {
             $leadsQuery->whereIn('stage_id', $request->stage_id);
         } else {
@@ -584,63 +553,6 @@ class LeadController extends Controller
                 ];
             }
 
-    // User permissions
-    $userType = $usr->type;
-    if ($userType === 'company') {
-        $leadsQuery->where('brand_id', $usr->id);
-    } elseif ($userType === 'Region Manager' && $usr->region_id) {
-        $leadsQuery->where('region_id', $usr->region_id);
-    } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
-        $leadsQuery->where('branch_id', $usr->branch_id);
-    } elseif ($userType === 'Agent') {
-        $leadsQuery->where('agent_id', $usr->agent_id);
-    }
-
-    // Search
-    if ($request->filled('search')) {
-        $search = $request->input('search');
-        $leadsQuery->where(function ($query) use ($search) {
-            $query->where('name', 'like', "%$search%")
-                ->orWhere('email', 'like', "%$search%")
-                ->orWhere('phone', 'like', "%$search%");
-        });
-    }
-
-    // ✅ CSV Export - No joins needed!
-    if ($request->input('download_csv')) {
-        $download_csv = $leadsQuery->where('is_converted', 0)->get();
-
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="leads_'.time().'.csv"',
-        ];
-
-        $callback = function () use ($download_csv) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, ['ID', 'Name', 'Email', 'Brand', 'Branch', 'AssignTo', 'Stage', 'Days at Stage']);
-
-            foreach ($download_csv as $lead) {
-                fputcsv($file, [
-                    $lead->id,
-                    $lead->name,
-                    $lead->email,
-                    $lead->brand_name,        // ✅ Already in view
-                    $lead->branch_name,       // ✅ Already in view
-                    $lead->assigned_to_name,  // ✅ Already in view
-                    $lead->stage_name,        // ✅ Already in view
-                    $lead->days_at_stage,     // ✅ Already calculated
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    // ✅ Kanban View
-    if ($view === 'kanban') {
-        $KANBAN_PER_PAGE = 1000;
             return response()->json([
                 'status' => 'success',
                 'view' => 'kanban',
@@ -672,23 +584,6 @@ class LeadController extends Controller
             'per_page' => $leads->perPage(),
         ], 200);
     }
-
-    // ✅ List View - Simple pagination
-    $leads = $leadsQuery
-        ->where('is_converted', 0)
-        ->orderBy('created_at', 'desc')
-        ->paginate($perPage, ['*'], 'page', $page);
-
-    return response()->json([
-        'status' => 'success',
-        'data' => $leads->items(), // ✅ Everything already loaded!
-        'current_page' => $leads->currentPage(),
-        'last_page' => $leads->lastPage(),
-        'total_records' => $leads->total(),
-        'per_page' => $leads->perPage(),
-    ], 200);
-}
-
     public function saveLead(Request $request)
     {
         $user = \Auth::user();
