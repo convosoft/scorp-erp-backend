@@ -325,6 +325,10 @@ class DealController extends Controller
             $months = array_map('strtoupper', (array) $request->intake_month);
 
             $query->whereIn('intake_month', $months);
+
+            $sql = str_replace('?', "'%s'", $query->toSql());
+            $sql = vsprintf($sql, $query->getBindings());
+            echo $sql;
         }
 
         // Search filter
