@@ -430,7 +430,9 @@ class LeadController extends Controller
         if ($request->fetcttype === 'agentleads') {
             $leadsQuery->whereNotNull('agent_id');
         } else {
-            $leadsQuery->whereNull('agent_id');
+            if ($usr->type !== 'Agent') {
+                $leadsQuery->whereNull('agent_id');
+            }
         }
 
         // // User permissions
@@ -561,9 +563,9 @@ class LeadController extends Controller
             ]);
         }
 
-        $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
-        $sql = vsprintf($sql, $leadsQuery->getBindings());
-        echo $sql;
+        // $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
+        // $sql = vsprintf($sql, $leadsQuery->getBindings());
+        // echo $sql;
 
         // echo "==========";
         // echo $sql2;
