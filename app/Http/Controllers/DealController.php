@@ -328,7 +328,7 @@ class DealController extends Controller
 
             $sql = str_replace('?', "'%s'", $query->toSql());
             $sql = vsprintf($sql, $query->getBindings());
-            echo $sql;
+            dd($sql);
         }
 
         // Search filter
