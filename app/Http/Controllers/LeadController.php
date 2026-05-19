@@ -463,8 +463,6 @@ class LeadController extends Controller
             $leadsQuery->where('branch_id', \Auth::user()->branch_id);
         } elseif ($userType === 'Agent') {
             $leadsQuery->where('agent_id', $usr->agent_id);
-            echo $usr->agent_id;
-            die;
         } else {
             $leadsQuery->where('user_id', \Auth::user()->id);
         }
@@ -563,9 +561,7 @@ class LeadController extends Controller
             ]);
         }
 
-        $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
-        $sql = vsprintf($sql, $leadsQuery->getBindings());
-        // echo $sql;
+
 
         // echo "==========";
         // echo $sql2;
@@ -576,6 +572,10 @@ class LeadController extends Controller
             ->where('is_converted', 0)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
+
+        $sql = str_replace('?', "'%s'", $leads->toSql());
+        $sql = vsprintf($sql, $leads->getBindings());
+        echo $sql;
 
         return response()->json([
             'status' => 'success',
