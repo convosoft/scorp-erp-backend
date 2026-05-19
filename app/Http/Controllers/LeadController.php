@@ -463,6 +463,8 @@ class LeadController extends Controller
             $leadsQuery->where('branch_id', \Auth::user()->branch_id);
         } elseif ($userType === 'Agent') {
             $leadsQuery->where('agent_id', $usr->agent_id);
+            echo $usr->agent_id;
+            die;
         } else {
             $leadsQuery->where('user_id', \Auth::user()->id);
         }
