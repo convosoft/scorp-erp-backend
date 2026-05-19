@@ -318,11 +318,11 @@ class DealController extends Controller
 
         if ($request->filled('intake_year')) {
 
-            $query->whereIn('intake_year',  (array) $request->intake_year);
+            $query->whereIn('intake_year',    $request->intake_year);
         }
         if ($request->filled('intake_month')) {
 
-            $query->whereIn('intake_month', (array) $request->intake_month);
+            $query->whereIn('intake_month',   $request->intake_month);
         }
 
         // Search filter
