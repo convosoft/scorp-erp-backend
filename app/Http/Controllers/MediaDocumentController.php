@@ -12,13 +12,13 @@ class MediaDocumentController extends Controller
 
 
 
-public function uploadMediaDocument(Request $request)
+    public function uploadMediaDocument(Request $request)
     {
 
 
         // ✅ Validation
         $validator = \Validator::make($request->all(), [
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,mp4|max:256000',
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,mp4,doc,docx|max:256000',
             'TypesDocumentID' => 'required|exists:types_document,id',
             'type' => 'required|in:lead,admission,application,product_home,product_international',
             'type_id' => 'required|integer',
@@ -75,7 +75,6 @@ public function uploadMediaDocument(Request $request)
                     ]
                 ], 500);
             }
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -135,7 +134,7 @@ public function uploadMediaDocument(Request $request)
     }
 
 
-public function getMediaDocument(Request $request)
+    public function getMediaDocument(Request $request)
     {
         // ✅ Validation test
         $validator = \Validator::make($request->all(), [
@@ -178,7 +177,7 @@ public function getMediaDocument(Request $request)
         ], 200);
     }
 
-public function deleteMediaDocument(Request $request)
+    public function deleteMediaDocument(Request $request)
     {
         // ✅ Check permission
         // if (!\Auth::user()->can('delete document')) {
@@ -254,7 +253,7 @@ public function deleteMediaDocument(Request $request)
     }
 
 
-public function updateMediaDocumentPosition(Request $request)
+    public function updateMediaDocumentPosition(Request $request)
     {
         // ✅ Validation
         $validator = \Validator::make(
@@ -288,7 +287,7 @@ public function updateMediaDocumentPosition(Request $request)
         $document->position = $request->position;
 
         // Optional: track updater (only if you want)
-         $document->updated_by = \Auth::id();
+        $document->updated_by = \Auth::id();
 
         $document->save();
 
@@ -455,5 +454,4 @@ public function updateMediaDocumentPosition(Request $request)
             'data' => $document
         ], 200);
     }
-
 } // class end here
