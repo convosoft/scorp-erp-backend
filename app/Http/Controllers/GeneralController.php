@@ -797,8 +797,15 @@ class GeneralController extends Controller
 
         // Validate incoming request parameters
         $validator = Validator::make($request->all(), [
-            'branch_id' => 'required|integer|exists:branches,id',
+            'file' => 'required|file|max:10240', // 10MB max file size
         ]);
+
+          if ($validator->fails()) {
+            return response()->json([
+                'status' => 'failure',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
         $url = uploadFileToS3($request->file('file'), 'uploads/misc');
 
