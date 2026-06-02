@@ -792,6 +792,22 @@ class GeneralController extends Controller
         ]);
     }
 
+    public function uploadToS3(Request $request)
+    {
+
+        // Validate incoming request parameters
+        $validator = Validator::make($request->all(), [
+            'branch_id' => 'required|integer|exists:branches,id',
+        ]);
+
+        $url = uploadFileToS3($request->file('file'), 'uploads/misc');
+
+        return response()->json([
+            'status' => 'success',
+            'url' => $url
+        ]);
+    }
+
 
     public function getSources()
     {

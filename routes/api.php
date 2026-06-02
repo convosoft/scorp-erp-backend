@@ -219,6 +219,7 @@ Route::get('/sendexpiredDocumentEmail', [UserController::class, 'sendexpiredDocu
 Route::get('/getCronAttendances', [AttendanceEmployeeController::class, 'getCronAttendances']);
 Route::get('/sendBirthdayAndAnniversaryEmails', [UserController::class, 'sendBirthdayAndAnniversaryEmails']);
 Route::get('/convertToBase64', [GeneralController::class, 'convertToBase64']);
+Route::post('/uploadToS3', [GeneralController::class, 'uploadToS3']);
 Route::post('/getTables', [GeneralController::class, 'getTables']);
 Route::post('/getTableData', [GeneralController::class, 'getTableData']);
 Route::post('/generateSop', [OpenAIController::class, 'generateSop']);

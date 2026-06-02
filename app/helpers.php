@@ -16,6 +16,8 @@ use App\Models\EmailTemplate;
 use App\Models\Utility;
 use App\Models\EmailSendingQueue;
 use App\Models\EmailTag;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 if (!function_exists('countries')) {
     function countries()
@@ -2254,5 +2256,33 @@ if (!function_exists('formatLocalDateReturntime')) {
                 'timezoneAbbr' => $timezoneAbbr,
             ];
         }
+    }
+}
+
+
+
+if (!function_exists('uploadFileToS3')) {
+
+    /**
+     * Upload file to S3 and return public URL
+     *
+     * @param UploadedFile $file
+     * @param string $folder
+     * @return string
+     * @throws \Exception
+     */
+    function uploadFileToS3(UploadedFile $file, string $folder = 'uploads')
+    {
+        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+        $path = $file->storeAs($folder, $filename, [
+            'disk' => 's3',
+        ]);
+
+        if (!$path) {
+            throw new \Exception('File upload to S3 failed.');
+        }
+
+        return Storage::disk('s3')->url($path);
     }
 }
