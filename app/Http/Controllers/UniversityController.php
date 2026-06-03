@@ -1852,7 +1852,7 @@ class UniversityController extends Controller
 
     public function pluckInstitutes(Request $request)
     {
-        $University = University::pluck('name', 'id')->toArray();
+        $University = University::pluck('name', 'id')->where('uni_status', '0')->toArray();
 
         return response()->json([
             'status' => 'success',
