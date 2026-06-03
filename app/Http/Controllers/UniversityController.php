@@ -2055,6 +2055,7 @@ class UniversityController extends Controller
         $data = DB::table('users as u')
             ->leftJoin('deals as d', 'd.brand_id', '=', 'u.id')
             ->leftJoin('deal_applications as a', 'd.id', '=', 'a.deal_id')
+            ->leftJoin('users as client', 'client.id', '=', 'a.contact_id')
 
             ->select(
                 'u.id',
