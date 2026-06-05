@@ -487,7 +487,11 @@ class ClientController extends Controller
                 return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
             }
 
-            $client = User::where('id', $request->id)->first();
+            $client = User::with([
+                'brand:id,name',
+                'region:id,name',
+                'branch:id,name',
+            ])->where('id', $request->id)->first();
           $clienthistory =  HistoryRequest::where('student_id', $request->id)->orderBy('created_at', 'desc')->get();
 
             if (!$client) {
