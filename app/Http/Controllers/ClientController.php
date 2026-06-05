@@ -850,7 +850,7 @@ class ClientController extends Controller
         ->join('users as Student', 'Student.id', '=', 'history_requests.student_id')
         ->join('users', 'users.id', '=', 'history_requests.student_id')
         ->where('users.type', 'client')
-        ->groupBy('Student.id');
+        ->distinct('Student.id');
 
     // Filter by name
     if ($request->filled('name')) {
