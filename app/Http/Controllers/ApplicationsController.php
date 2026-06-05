@@ -2661,8 +2661,8 @@ class ApplicationsController extends Controller
                     'gross_fee' => $application->coursedetail->gross_fees ?? 0,
                     'net_fee' => $application->coursedetail->net_fees ?? 0,
                     'school_id' => $application->university_id,
-                    'brand_id' => $application->brand_id,
-                    'branch_id' => $application->branch_id,
+                    'brand_id' => $application->deal->brand_id,
+                    'branch_id' => $application->deal->branch_id,
                     'project_director_id' => $application->brand->project_director_id ?? 0,
                     'project_manager_id' => $application->brand->project_manager_id ?? 0,
                     'branch_manager_id' => $application->branch->branch_manager_id ?? 0,
@@ -2674,7 +2674,23 @@ class ApplicationsController extends Controller
                     'updated_at' => now(),
                 ]
             );
-        }
+
+            $financeStudentFile = \DB::table('finance_student_files')
+                ->where('application_id', $application->id)
+                ->first();
+
+            addLogActivity([
+                'type' => 'success',
+                'note' => json_encode([
+                    'title' => $application->key . ' - Finance Student File Created',
+                    'message' => 'Finance student file created for application ID: ' . $application->id,
+                ]),
+                'module_id' => $financeStudentFile->id ?? null,
+                'module_type' => 'finanace_student_file',
+                'notification_type' => 'Finance Student File Created',
+            ]);
+
+            }
 
         // Remove unwanted fields
         $inputs = $request->except(['_token', '_method', 'submit', 'application_id', 'stage_id']);
