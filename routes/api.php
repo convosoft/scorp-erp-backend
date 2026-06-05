@@ -955,6 +955,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/blockClient', [ClientController::class, 'blockClient']);
     Route::post('/unBlockClient', [ClientController::class, 'unBlockClient']);
     Route::post('/updateUnblockRequestStatus', [ClientController::class, 'updateUnblockRequestStatus']);
+    Route::post('/contactHistoryRequest', [ClientController::class, 'contactHistoryRequest']);
 
     //     University Rules
     Route::post('/addUniversityRule', [UniversityRuleController::class, 'addUniversityRule']);
