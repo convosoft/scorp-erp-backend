@@ -1412,7 +1412,7 @@ return response()->json([
 
         return response()->json([
             'status' => 'success',
-            'data' => $emails
+            'message' => $emails
         ]);
 
     } catch (\Exception $e) {
