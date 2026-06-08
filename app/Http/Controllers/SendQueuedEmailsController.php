@@ -20,7 +20,8 @@ public function __construct()
             EmailSendingQueue::with('brand')->where('is_send', '0')
                 ->where('status', '1')
                 ->where('priority', '3')
-                ->take(350)
+                ->limit(350)
+                ->orderBy('id', 'asc')
                 ->chunk(25, function ($queues) use (&$sendcount, &$failcount) {
 
                     foreach ($queues as $queue) {
@@ -67,6 +68,11 @@ public function __construct()
                     }
 
                     gc_collect_cycles();
+
+                    // Stop chunking once 350 emails are processed
+                    if (($sendcount + $failcount) >= 350) {
+                        return false;
+                    }
                 });
 
             return response()->json([
@@ -84,7 +90,8 @@ public function __construct()
             EmailSendingQueue::with('brand')->where('is_send', '0')
                 ->where('status', '1')
                 ->where('priority', '2')
-                ->take(350)
+                ->limit(350)
+                ->orderBy('id', 'asc')
                 ->chunk(25, function ($queues) use (&$sendcount, &$failcount) {
 
                     foreach ($queues as $queue) {
@@ -131,6 +138,10 @@ public function __construct()
                     }
 
                     gc_collect_cycles();
+                    // Stop chunking once 350 emails are processed
+                    if (($sendcount + $failcount) >= 350) {
+                        return false;
+                    }
                 });
 
             return response()->json([

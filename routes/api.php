@@ -929,7 +929,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/deleteEmailTemplate', [EmailTemplateController::class, 'deleteEmailTemplate']);
     Route::post('email_template_submit_to_queue', [EmailTemplateController::class, 'email_template_submit_to_queue'])->name('email_template_submit_to_queue');
     Route::get('email-marketing-queue', [EmailTemplateController::class, 'email_marketing_queue'])->name('email_marketing_queue');
-    Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue');
+    Route::get('email_marketing_queue_list', [EmailTemplateController::class, 'email_marketing_queue_list'])->name('email_marketing_queue_list');
+    Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue_detail');
     Route::post('email-marketing-approved-reject', [EmailTemplateController::class, 'email_marketing_approved_reject'])->name('email_marketing_approved_reject');
     Route::post('getEmailTemplateDetail', [EmailTemplateController::class, 'getEmailTemplateDetail'])->name('getEmailTemplateDetail');
     //    Role

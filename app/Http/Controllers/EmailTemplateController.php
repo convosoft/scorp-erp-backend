@@ -1315,4 +1315,112 @@ return response()->json([
             }
 
     }
+
+
+    public function email_marketing_queue_list(Request $request)
+{
+    try {
+
+        $validator = \Validator::make($request->all(), [
+            'subject'   => 'required|string',
+            'sender_id' => 'required|exists:users,id',
+            'type'      => 'required|in:delivered,bounced,opened,clicked,processed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $query = EmailSendingQueue::select(
+                'email_sending_queues.id',
+                'email_sending_queues.subject',
+                'email_sending_queues.to',
+                'email_sending_queues.from_email',
+                'email_sending_queues.sender_id',
+                'email_sending_queues.status',
+                'email_sending_queues.delivered_at',
+                'email_sending_queues.opened_at',
+                'email_sending_queues.clicked_at',
+                'email_sending_queues.bounced_at',
+                'email_sending_queues.created_at',
+                'assigned_to.name as sender_name'
+            )
+            ->leftJoin(
+                'users as assigned_to',
+                'assigned_to.id',
+                '=',
+                'email_sending_queues.sender_id'
+            );
+
+        // Subject Filter
+        if ($request->filled('subject')) {
+            $query->where(
+                'email_sending_queues.subject',
+                'LIKE',
+                '%' . $request->subject . '%'
+            );
+        }
+
+        // Sender Filter
+        if ($request->filled('sender_id')) {
+            $query->where(
+                'email_sending_queues.sender_id',
+                $request->sender_id
+            );
+        }
+
+        /**
+         * type values:
+         * delivered
+         * bounced
+         * opened
+         * clicked
+         * processed
+         */
+        if ($request->filled('type')) {
+
+            switch ($request->type) {
+
+                case 'delivered':
+                    $query->whereNotNull('email_sending_queues.delivered_at');
+                    break;
+
+                case 'bounced':
+                    $query->whereNotNull('email_sending_queues.bounced_at');
+                    break;
+
+                case 'opened':
+                    $query->whereNotNull('email_sending_queues.opened_at');
+                    break;
+
+                case 'clicked':
+                    $query->whereNotNull('email_sending_queues.clicked_at');
+                    break;
+
+                case 'processed':
+                    $query->whereNotNull('email_sending_queues.processed_at');
+                    break;
+            }
+        }
+
+        $emails = $query
+            ->orderBy('email_sending_queues.id', 'DESC')
+            ->paginate($request->per_page ?? 20);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $emails
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
 }
