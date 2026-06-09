@@ -359,12 +359,24 @@ class ApplicationsController extends Controller
             ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
 
-        if ($request->filled('country')) {
-            if(is_array($request->country) && in_array(252, $request->country)) {
-                $app_query->where('u.home_status', 1);
-            } else {
-                $app_query->whereIn('u.country', $request->country);
-            }
+        if ($request->filled('country') && is_array($request->country)) {
+
+            $countries = $request->country;
+
+            $app_query->where(function ($query) use ($countries) {
+
+                // Home country (252)
+                if (in_array(252, $countries)) {
+                    $query->orWhere('u.home_status', 1);
+                }
+
+                // Other countries
+                $otherCountries = array_diff($countries, [252]);
+
+                if (!empty($otherCountries)) {
+                    $query->orWhereIn('u.country', $otherCountries);
+                }
+            });
         }
 
         if ($request->filled('intake_month')) {
