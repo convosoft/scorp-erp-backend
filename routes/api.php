@@ -100,6 +100,7 @@ use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
 use App\Http\Controllers\SendQueuedSmsController;
 use App\Http\Controllers\TaskTagController;
+use App\Http\Controllers\ToolkitPathController;
 use App\Http\Controllers\TypesDocumentController;
 
 /*
