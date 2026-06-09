@@ -1749,6 +1749,15 @@ class GeneralController extends Controller
         ]);
     }
 
+    public function DealTagPluck_new()
+    {
+        $LeadTag = LeadTag::pluck('tag', 'id')->toArray();
+        return response()->json([
+            'status' => 'success',
+            'data' => $LeadTag
+        ]);
+    }
+
     public function DealStagPluck()
     {
         $Stage = Stage::pluck('name', 'id')->toArray();

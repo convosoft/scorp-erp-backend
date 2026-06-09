@@ -1106,6 +1106,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getCitiesOnid', [GeneralController::class, 'getCitiesOnid']);
 
     Route::post('/DealTagPluck', [GeneralController::class, 'DealTagPluck']);
+    Route::post('/DealTagPluck_new', [GeneralController::class, 'DealTagPluck_new']);
     Route::post('/DealStagPluck', [GeneralController::class, 'DealStagPluck']);
     Route::post('/ApplicationStagPluck', [GeneralController::class, 'ApplicationStagPluck']);
     Route::post('/getemailTags', [GeneralController::class, 'getemailTags']);
