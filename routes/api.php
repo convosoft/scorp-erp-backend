@@ -427,7 +427,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateMediaDocumentPosition', [MediaDocumentController::class, 'updateMediaDocumentPosition']);
     Route::post('/updateMediaDocument', [MediaDocumentController::class, 'updateMediaDocument']);
     Route::post('/downloadMediaDocument', [MediaDocumentController::class, 'downloadMediaDocument']);
-    Route::post('/generateS3DownloadUrl', [MediaDocumentController::class, 'generateS3DownloadUrl']);
+    Route::post('/generateS3DownloadUrl/{fullUrl}', [MediaDocumentController::class, 'generateS3DownloadUrl']);
 
 
     // trainers
