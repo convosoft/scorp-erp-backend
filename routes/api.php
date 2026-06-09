@@ -117,6 +117,8 @@ Route::get('/NotificationFifteenDays', function () {
     return App\Models\Notification::where('created_at', '<', now()->subDays(15))->delete();
 });
 
+    Route::get('/downloadMediaDocument', [MediaDocumentController::class, 'downloadMediaDocument']);
+
 Route::get('/enrichCourseWithAI', [CourseController::class, 'enrichCourseWithAI']);
 
 Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
@@ -426,7 +428,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/deleteMediaDocument', [MediaDocumentController::class, 'deleteMediaDocument']);
     Route::post('/updateMediaDocumentPosition', [MediaDocumentController::class, 'updateMediaDocumentPosition']);
     Route::post('/updateMediaDocument', [MediaDocumentController::class, 'updateMediaDocument']);
-    Route::get('/downloadMediaDocument', [MediaDocumentController::class, 'downloadMediaDocument']);
     Route::get('/generateS3DownloadUrl/{fullUrl}', [MediaDocumentController::class, 'generateS3DownloadUrl']);
 
 
