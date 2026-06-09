@@ -1101,6 +1101,7 @@ class UniversityController extends Controller
             'agency' => 'required|string',
             'website_link' => 'string',
             // 'product_coordinator_id' => 'nullable|exists:users,id',
+            'toolkit_path_id' => 'nullable|exists:toolkit_paths,id',
             'territory.*' => 'required|string',
             'campuses' => 'required|array|min:1',
             'campuses.*' => 'required|string',
@@ -1145,6 +1146,7 @@ class UniversityController extends Controller
         }
 
         $university->resource_drive_link = $request->resource_drive_link;
+        $university->toolkit_path_id = $request->toolkit_path_id;
 
 
         $university->save();

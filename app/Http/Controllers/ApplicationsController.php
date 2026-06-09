@@ -360,7 +360,11 @@ class ApplicationsController extends Controller
 
 
         if ($request->filled('country')) {
-            $app_query->whereIn('u.country', $request->country);
+            if(is_array($request->country) && in_array(252, $request->country)) {
+                $app_query->where('u.home_status', 1);
+            } else {
+                $app_query->whereIn('u.country', $request->country);
+            }
         }
 
         if ($request->filled('intake_month')) {
