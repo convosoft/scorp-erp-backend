@@ -1742,7 +1742,7 @@ class GeneralController extends Controller
 
     public function DealTagPluck()
     {
-        $LeadTag = LeadTag::pluck('tag', 'id')->toArray();
+        $LeadTag = LeadTag::pluck('id', 'tag')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $LeadTag
