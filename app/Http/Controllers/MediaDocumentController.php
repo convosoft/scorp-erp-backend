@@ -171,10 +171,52 @@ class MediaDocumentController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
+            $documents = $documents->map(function ($doc) {
+            // Generate a temporary signed URL (valid for 5 minutes)
+            $path = parse_url($doc->document_link, PHP_URL_PATH);
+            $path = ltrim($path, '/');
+
+            try {
+                $doc->download_url = Storage::disk('s3')->temporaryUrl($path, now()->addMinutes(5));
+            } catch (\Exception $e) {
+                $doc->download_url = $doc->document_link; // fallback
+            }
+
+            return $doc;
+        });
+
         return response()->json([
             'status' => 'success',
             'data' => $documents,
         ], 200);
+    }
+
+    public function downloadMediaDocument(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|integer|exists:media_documents,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        $document = MediaDocument::findOrFail($request->id);
+
+        $url      = $document->document_link;
+        $filename = basename(parse_url($url, PHP_URL_PATH));
+
+        // Stream the S3 file back to the client
+        $fileContent = file_get_contents($url);
+
+        return response($fileContent, 200, [
+            'Content-Type'        => 'application/octet-stream',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length'      => strlen($fileContent),
+        ]);
     }
 
     public function deleteMediaDocument(Request $request)
