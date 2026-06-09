@@ -1138,4 +1138,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/uploadStudentAdvice', [StudentAdviceController::class, 'uploadAdvice']);
     Route::post('/getStudentAdvice', [StudentAdviceController::class, 'getAdvice']);
     Route::post('/deleteStudentAdvice', [StudentAdviceController::class, 'deleteAdvice']);
+
+    // Toolkit Path
+    Route::post('/addToolkitPath', [ToolkitPathController::class, 'addToolkitPath']);
+    Route::get('/getToolkitPathPluck', [ToolkitPathController::class, 'getToolkitPathPluck']);
+    Route::get('/getToolkitPaths', [ToolkitPathController::class, 'getToolkitPaths']);
+    Route::post('/updateToolkitPath', [ToolkitPathController::class, 'updateToolkitPath']);
+    Route::post('/deleteToolkitPath', [ToolkitPathController::class, 'deleteToolkitPath']);
 });
