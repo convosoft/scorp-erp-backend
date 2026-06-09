@@ -1751,10 +1751,13 @@ class GeneralController extends Controller
 
     public function DealTagPluck_new()
     {
-        $LeadTag = LeadTag::pluck('tag', 'id')->toArray();
+       $data = LeadTag::with('branch:id,name')->get()->mapWithKeys(function ($tag) {
+                $branchName = $tag->branch ? $tag->branch->name : 'No Branch';
+                return [$tag->id => $tag->tag . " ($branchName)"];
+            })->toArray();
         return response()->json([
             'status' => 'success',
-            'data' => $LeadTag
+            'data' => $data
         ]);
     }
 
