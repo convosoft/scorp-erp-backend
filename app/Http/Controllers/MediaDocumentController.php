@@ -171,24 +171,33 @@ class MediaDocumentController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-            $documents = $documents->map(function ($doc) {
-            // Generate a temporary signed URL (valid for 5 minutes)
-            $path = parse_url($doc->document_link, PHP_URL_PATH);
-            $path = ltrim($path, '/');
+         $documents = $documents->map(function ($doc) {
+                $doc->download_url = $this->generateS3DownloadUrl($doc->document_link);
+                return $doc;
+            });
 
-            try {
-                $doc->download_url = Storage::disk('s3')->temporaryUrl($path, now()->addMinutes(5));
-            } catch (\Exception $e) {
-                $doc->download_url = $doc->document_link; // fallback
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $documents,
+                ], 200);
             }
 
-            return $doc;
-        });
+    private function generateS3DownloadUrl(string $fullUrl): string
+    {
+        try {
+            // Extract just the S3 key from the full URL
+            // e.g. "https://scorp-media-documents-bucket.s3.us-east-1.amazonaws.com/media_documents/product_international/2026/04/file.pdf"
+            // → "media_documents/product_international/2026/04/file.pdf"
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $documents,
-        ], 200);
+            $parsedPath = parse_url($fullUrl, PHP_URL_PATH); // "/media_documents/product_international/..."
+            $s3Key      = ltrim($parsedPath, '/');            // "media_documents/product_international/..."
+
+            return Storage::disk('s3')->temporaryUrl($s3Key, now()->addMinutes(5));
+
+        } catch (\Exception $e) {
+            \Log::error('S3 signed URL failed: ' . $e->getMessage(), ['url' => $fullUrl]);
+            return $fullUrl; // fallback to original
+        }
     }
 
     public function downloadMediaDocument(Request $request)
