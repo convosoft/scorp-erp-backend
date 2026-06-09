@@ -17,4 +17,14 @@ class LeadTag extends Model
         'created_by',
     ];
 
+      public function branch()
+    {
+        return $this->hasOne('App\Models\Branch', 'id', 'branch_id');
+    }
+
+     public function region()
+    {
+        return $this->hasOne('App\Models\Region', 'id', 'region_id');
+    }
+
 }
