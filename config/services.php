@@ -37,4 +37,7 @@ return [
             'from' => env('TWILIO_FROM'),
         ],
 
-];
+    'mailboxlayer' => [
+        'key' => env('MAILBOXLAYER_KEY'),
+    ],
+    ];

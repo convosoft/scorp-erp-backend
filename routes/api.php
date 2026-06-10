@@ -85,6 +85,7 @@ use App\Http\Controllers\EducationLevelsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
+use App\Http\Controllers\EmailValidationController;
 use App\Http\Controllers\LeadTagController;
 use App\Http\Controllers\MediaDocumentController;
 use App\Models\InterviewSchedule;
@@ -118,7 +119,7 @@ Route::get('/NotificationFifteenDays', function () {
     return App\Models\Notification::where('created_at', '<', now()->subDays(15))->delete();
 });
 
-    Route::get('/downloadMediaDocument', [MediaDocumentController::class, 'downloadMediaDocument']);
+Route::get('/downloadMediaDocument', [MediaDocumentController::class, 'downloadMediaDocument']);
 
 Route::get('/enrichCourseWithAI', [CourseController::class, 'enrichCourseWithAI']);
 
@@ -1146,4 +1147,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getToolkitPaths', [ToolkitPathController::class, 'getToolkitPaths']);
     Route::post('/updateToolkitPath', [ToolkitPathController::class, 'updateToolkitPath']);
     Route::post('/deleteToolkitPath', [ToolkitPathController::class, 'deleteToolkitPath']);
+
+    // Email validation (mailboxlayer)
+    Route::post('/validate-email', [EmailValidationController::class, 'validate']);
+    Route::get('/is-email-valid',  [EmailValidationController::class, 'isValid']);
 });
