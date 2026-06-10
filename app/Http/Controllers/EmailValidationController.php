@@ -7,10 +7,7 @@ use App\Services\EmailValidationService;
 
 class EmailValidationController extends Controller
 {
-    /**
-     * @var EmailValidationService
-     */
-    protected $emailValidator;
+    protected EmailValidationService $emailValidator;
 
     public function __construct(EmailValidationService $emailValidator)
     {
@@ -18,22 +15,24 @@ class EmailValidationController extends Controller
     }
 
     /**
-     * Validate an e‑mail address using mailboxlayer and return the full payload.
+     * Validate an e-mail address using mailboxlayer.
+     * Returns the full mailboxlayer payload.
      *
-     * POST /api/validate-email { "email": "user@example.com" }
+     * POST /api/validate-email
+     * Body: { "email": "user@example.com" }
      */
     public function validate(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string|max:255',
         ]);
 
         $result = $this->emailValidator->validate($request->email);
 
         if (is_null($result)) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validation service unavailable',
+                'status'  => 'error',
+                'message' => 'Email validation service unavailable. Check MAILBOXLAYER_KEY in .env or see Laravel logs.',
             ], 503);
         }
 
@@ -44,22 +43,22 @@ class EmailValidationController extends Controller
     }
 
     /**
-     * Simple boolean check – returns true if the address looks valid.
+     * Quick boolean email validity check.
      *
      * GET /api/is-email-valid?email=user@example.com
      */
     public function isValid(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string|max:255',
         ]);
 
         $valid = $this->emailValidator->isValid($request->email);
 
         return response()->json([
             'status' => 'success',
+            'email'  => $request->email,
             'valid'  => $valid,
         ], 200);
     }
 }
-?>

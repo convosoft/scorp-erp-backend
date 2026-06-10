@@ -40,4 +40,4 @@ return [
     'mailboxlayer' => [
         'key' => env('MAILBOXLAYER_KEY'),
     ],
-    ];
+];
