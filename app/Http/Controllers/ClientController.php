@@ -106,7 +106,8 @@ class ClientController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($subQuery) use ($request) {
                 $subQuery->where('users.name', 'like', '%' . $request->search . '%')
-                    ->orWhere('users.passport_number', 'like', '%' . $request->search . '%');
+                    ->orWhere('users.passport_number', 'like', '%' . $request->search . '%')
+                    ->orWhere('users.email', 'like', '%' . $request->search . '%');
             });
         }
 
