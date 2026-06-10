@@ -21,7 +21,7 @@ class EmailValidationController extends Controller
      * POST /api/validate-email
      * Body: { "email": "user@example.com" }
      */
-    public function validate(Request $request)
+    public function checkEmail(Request $request)
     {
         $request->validate([
             'email' => 'required|string|max:255',

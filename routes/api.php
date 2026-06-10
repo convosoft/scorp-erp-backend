@@ -1149,6 +1149,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/deleteToolkitPath', [ToolkitPathController::class, 'deleteToolkitPath']);
 
     // Email validation (mailboxlayer)
-    Route::post('/validate-email', [EmailValidationController::class, 'validate']);
+    Route::post('/validate-email', [EmailValidationController::class, 'checkEmail']);
     Route::get('/is-email-valid',  [EmailValidationController::class, 'isValid']);
 });
