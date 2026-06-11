@@ -44,7 +44,7 @@ class EmailValidationService
                     'access_key' => $this->apiKey,
                     'email'      => $email,
                     'smtp'       => 1,
-                    'format'     => 'json',
+                    'format'     => 1,
                 ],
             ]);
 
