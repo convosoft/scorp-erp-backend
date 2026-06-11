@@ -1150,5 +1150,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Email validation (mailboxlayer)
     Route::post('/validate-email', [EmailValidationController::class, 'checkEmail']);
-    Route::get('/is-email-valid',  [EmailValidationController::class, 'isValid']);
+    Route::post('/is-email-valid',  [EmailValidationController::class, 'isValid']);
 });
