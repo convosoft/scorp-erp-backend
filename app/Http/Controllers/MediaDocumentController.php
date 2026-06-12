@@ -173,13 +173,15 @@ class MediaDocumentController extends Controller
 
          $documents->transform(function ($document) {
 
-            $fileExtension = pathinfo($document->document_link, PATHINFO_EXTENSION);
+            $documentTypeName = $document->document_type?->name ?? 'Document';
+
+            $extension = pathinfo($document->document_link, PATHINFO_EXTENSION);
 
             $fileName = str_replace(
                 [' ', '/', '\\'],
                 '_',
-                $document->document_type->name
-            ) . '.' . $fileExtension;
+                $documentTypeName
+            ) . '.' . $extension;
 
             $path = parse_url($document->document_link, PHP_URL_PATH);
             $path = ltrim($path, '/');
