@@ -972,6 +972,72 @@ class UniversityController extends Controller
         ]);
     }
 
+    public function addtofavorites(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:universities,id',
+            // 'rank_id' => 'required|exists:university_ranks,id', //
+            'is_favorite' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if (! Auth::user()->can('edit university')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Permission Denied.',
+            ], 403);
+        }
+
+        $university = University::where('id', $request->id)->first();
+        $originalData = $university->toArray();
+
+        // Update fields
+        $university->is_favorite = $request->is_favorite;
+        $university->save();
+
+        // Log changed fields only
+        $changes = [];
+        $updatedFields = [];
+        foreach ($originalData as $field => $oldValue) {
+            if (in_array($field, ['created_at', 'updated_at'])) {
+                continue;
+            }
+            if ($oldValue != $university->$field) {
+                $changes[$field] = [
+                    'old' => $oldValue,
+                    'new' => $university->$field,
+                ];
+                $updatedFields[] = $field;
+            }
+        }
+
+        if (! empty($changes)) {
+            addLogActivity([
+                'type' => 'info',
+                'note' => json_encode([
+                    'title' => $university->name . ' favorit updated ',
+                    'message' => 'Fields updated: ' . implode(', ', $updatedFields),
+                    'changes' => $changes,
+                ]),
+                'module_id' => $university->id,
+                'module_type' => 'university',
+                'notification_type' => 'University Updated',
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'University updated successfully.',
+            'data' => $university
+        ]);
+    }
+
     public function updateUniversitiesByKey(Request $request)
     {
         // Validate request

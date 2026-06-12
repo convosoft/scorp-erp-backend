@@ -99,6 +99,7 @@ use Carbon\Carbon;
 use App\Http\Controllers\StudentAdviceController;
 use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
+// use App\Http\Controllers\EmailitWebhookController;
 use App\Http\Controllers\SendQueuedSmsController;
 use App\Http\Controllers\TaskTagController;
 use App\Http\Controllers\ToolkitPathController;
@@ -128,6 +129,7 @@ Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']); 
 Route::get('/sendQueuedEmailsCrm', [SendQueuedEmailsController::class, 'handleCrm']); //  email sendng compain cron
 Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sms sendng  all  cron
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
+// Route::post('/emailit/webhook', [EmailitWebhookController::class, 'handle']);
 
 Route::post('/brandDetailPublic', [UserController::class, 'brandDetailPublic']);
 
@@ -793,6 +795,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pluckUniversities', [UniversityController::class, 'pluckInstitutes']);
     Route::post('/addUniversities', [UniversityController::class, 'addUniversities']);
     Route::post('/updateUniversities', [UniversityController::class, 'updateUniversities']);
+    Route::post('/addtofavorites', [UniversityController::class, 'addtofavorites']);
     Route::post('/deleteUniversities', [UniversityController::class, 'deleteUniversities']);
     Route::post('/universityDetail', [UniversityController::class, 'universityDetail']);
     Route::post('/applicationCountByUniversty', [UniversityController::class, 'applicationCountByUniversty']);
