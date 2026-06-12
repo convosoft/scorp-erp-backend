@@ -171,10 +171,29 @@ class MediaDocumentController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-         $documents = $documents->map(function ($doc) {
-                $doc->download_url = $this->generateS3DownloadUrl($doc->document_link);
-                return $doc;
-            });
+         $documents->transform(function ($document) {
+
+            $fileExtension = pathinfo($document->document_link, PATHINFO_EXTENSION);
+
+            $fileName = str_replace(
+                [' ', '/', '\\'],
+                '_',
+                $document->document_type->name
+            ) . '.' . $fileExtension;
+
+            $path = parse_url($document->document_link, PHP_URL_PATH);
+            $path = ltrim($path, '/');
+
+            $document->download_url = Storage::disk('s3')->temporaryUrl(
+                $path,
+                now()->addMinutes(5),
+                [
+                    'ResponseContentDisposition' => 'inline; filename="' . $fileName . '"'
+                ]
+            );
+
+            return $document;
+        });
 
                 return response()->json([
                     'status' => 'success',
