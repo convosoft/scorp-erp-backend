@@ -173,9 +173,11 @@ class MediaDocumentController extends Controller
 
          $documents->transform(function ($document) {
 
-         dd($document);
 
-            $documentTypeName = $document->document_type?->name ?? 'Document';
+
+            $documentTypeName = $document->documentType?->name ?? 'Document';
+
+             dd($documentTypeName);
 
             $extension = pathinfo($document->document_link, PATHINFO_EXTENSION);
 
