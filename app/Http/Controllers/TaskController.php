@@ -362,7 +362,6 @@ class TaskController extends Controller
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
                 if($status!='All'){
-                    dd($status,'asdf');
                     if ($status == '1') {
                         $tasksQuery->where('deal_tasks.tasks_type_status', "1");
                                 //  ->where('deal_tasks.status', 1);
@@ -628,7 +627,6 @@ class TaskController extends Controller
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
                 if($status!='All'){
-                    dd($status,'dddd');
                     if ($status == '1') {
                     $finalQuery->where('deal_tasks.tasks_type_status', "1")
                               ;
@@ -667,7 +665,7 @@ class TaskController extends Controller
 
              $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
             $sql2 = vsprintf($sql2, $finalQuery->getBindings());
-            // echo $sql;
+             echo $sql;
 
             // echo "==========";
             // echo $sql2;
