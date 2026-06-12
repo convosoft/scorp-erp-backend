@@ -443,9 +443,7 @@ class TaskController extends Controller
             $sql = vsprintf($sql, $tasksQuery->getBindings());
 
 
-             echo $sql;
 
-             die();
 
 
 
@@ -670,7 +668,9 @@ class TaskController extends Controller
 
              $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
             $sql2 = vsprintf($sql2, $finalQuery->getBindings());
-            // echo $sql;
+             echo $sql2;
+
+             die();
 
             // echo "==========";
             // echo $sql2;
