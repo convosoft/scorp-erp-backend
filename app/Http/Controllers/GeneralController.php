@@ -2349,4 +2349,15 @@ class GeneralController extends Controller
             'data'         => $data,
         ]);
     }
+
+    public function getCitiesOnid(Request $request)
+    {
+        $countryCode = $request->input('code');
+        $country_code = Country::where('id', $countryCode)->first()?->country_code;
+        $cities = City::where('country_code', $country_code)->pluck('name', 'id')->toArray();
+        return response()->json([
+            'status' => 'success',
+            'data' => $cities
+        ]);
+    }
 }

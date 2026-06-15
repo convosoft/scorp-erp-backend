@@ -1150,4 +1150,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Email validation (mailboxlayer)
     Route::post('/validate-email', [EmailValidationController::class, 'checkEmail']);
     Route::post('/is-email-valid',  [EmailValidationController::class, 'isValid']);
+
+
+    Route::post('/getCitiesOnid', [GeneralController::class, 'getCitiesOnid']);
 });
