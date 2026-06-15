@@ -799,7 +799,7 @@ class GeneralController extends Controller
             'file' => 'required|file|max:10240', // 10MB max file size
         ]);
 
-          if ($validator->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'failure',
                 'errors' => $validator->errors(),
@@ -1694,9 +1694,12 @@ class GeneralController extends Controller
                 'agencies' => $agencies,
                 'countries' => $countries,
                 'tags' => $tags,
+                'tasktags' => $tasktags,
             ]
         ]);
     }
+
+
 
 
 
@@ -1738,10 +1741,10 @@ class GeneralController extends Controller
 
     public function DealTagPluck_new()
     {
-       $data = LeadTag::with('branch:id,name')->get()->mapWithKeys(function ($tag) {
-                $branchName = $tag->branch ? $tag->branch->name : 'No Branch';
-                return [$tag->id => $tag->tag . " ($branchName)"];
-            })->toArray();
+        $data = LeadTag::with('branch:id,name')->get()->mapWithKeys(function ($tag) {
+            $branchName = $tag->branch ? $tag->branch->name : 'No Branch';
+            return [$tag->id => $tag->tag . " ($branchName)"];
+        })->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $data
