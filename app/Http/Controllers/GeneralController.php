@@ -27,6 +27,7 @@ use App\Mail\SendDealEmail;
 use App\Models\ActivityLog;
 use App\Models\CustomField;
 use App\Models\SavedFilter;
+use App\Models\TaskTag;
 use App\Models\Notification;
 use App\Models\StageHistory;
 use Illuminate\Http\Request;
