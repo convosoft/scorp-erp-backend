@@ -12,13 +12,13 @@ class MediaDocumentController extends Controller
 
 
 
-public function uploadMediaDocument(Request $request)
+    public function uploadMediaDocument(Request $request)
     {
 
 
         // ✅ Validation
         $validator = \Validator::make($request->all(), [
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,mp4|max:256000',
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,mp4,doc,docx|max:256000',
             'TypesDocumentID' => 'required|exists:types_document,id',
             'type' => 'required|in:lead,admission,application,product_home,product_international',
             'type_id' => 'required|integer',
@@ -75,7 +75,6 @@ public function uploadMediaDocument(Request $request)
                     ]
                 ], 500);
             }
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -135,7 +134,7 @@ public function uploadMediaDocument(Request $request)
     }
 
 
-public function getMediaDocument(Request $request)
+    public function getMediaDocument(Request $request)
     {
         // ✅ Validation test
         $validator = \Validator::make($request->all(), [
@@ -172,13 +171,89 @@ public function getMediaDocument(Request $request)
             ->orderBy('id', 'desc')
             ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $documents,
-        ], 200);
+         $documents->transform(function ($document) {
+
+
+
+            $documentTypeName = $document->documentType?->name ?? 'Document';
+
+
+
+            $extension = pathinfo($document->document_link, PATHINFO_EXTENSION);
+
+            $fileName = str_replace(
+                [' ', '/', '\\'],
+                '_',
+                $documentTypeName
+            ) . '.' . $extension;
+
+            $path = parse_url($document->document_link, PHP_URL_PATH);
+            $path = ltrim($path, '/');
+
+            $document->download_url = Storage::disk('s3')->temporaryUrl(
+                $path,
+                now()->addMinutes(5),
+                [
+                    'ResponseContentDisposition' => 'inline; filename="' . $fileName . '"'
+                ]
+            );
+
+            return $document;
+        });
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $documents,
+                ], 200);
+            }
+
+    private function generateS3DownloadUrl(string $fullUrl): string
+    {
+        try {
+            // Extract just the S3 key from the full URL
+            // e.g. "https://scorp-media-documents-bucket.s3.us-east-1.amazonaws.com/media_documents/product_international/2026/04/file.pdf"
+            // → "media_documents/product_international/2026/04/file.pdf"
+
+            $parsedPath = parse_url($fullUrl, PHP_URL_PATH); // "/media_documents/product_international/..."
+            $s3Key      = ltrim($parsedPath, '/');            // "media_documents/product_international/..."
+
+            return Storage::disk('s3')->temporaryUrl($s3Key, now()->addMinutes(5));
+
+        } catch (\Exception $e) {
+            \Log::error('S3 signed URL failed: ' . $e->getMessage(), ['url' => $fullUrl]);
+            return $fullUrl; // fallback to original
+        }
     }
 
-public function deleteMediaDocument(Request $request)
+    public function downloadMediaDocument(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|integer|exists:media_documents,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        $document = MediaDocument::findOrFail($request->id);
+
+        $url      = $document->document_link;
+        $filename = basename(parse_url($url, PHP_URL_PATH));
+
+        // Stream the S3 file back to the client
+        $fileContent = file_get_contents($url);
+
+        return response($fileContent, 200, [
+            'Content-Type'        => 'application/octet-stream',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length'      => strlen($fileContent),
+        ]);
+    }
+
+    public function deleteMediaDocument(Request $request)
     {
         // ✅ Check permission
         // if (!\Auth::user()->can('delete document')) {
@@ -254,7 +329,7 @@ public function deleteMediaDocument(Request $request)
     }
 
 
-public function updateMediaDocumentPosition(Request $request)
+    public function updateMediaDocumentPosition(Request $request)
     {
         // ✅ Validation
         $validator = \Validator::make(
@@ -288,7 +363,7 @@ public function updateMediaDocumentPosition(Request $request)
         $document->position = $request->position;
 
         // Optional: track updater (only if you want)
-         $document->updated_by = \Auth::id();
+        $document->updated_by = \Auth::id();
 
         $document->save();
 
@@ -455,5 +530,4 @@ public function updateMediaDocumentPosition(Request $request)
             'data' => $document
         ], 200);
     }
-
 } // class end here

@@ -1914,6 +1914,7 @@ class UserController extends Controller
             'website_link' => 'required|url',
             'drive_link' => 'required|url',
             'reply_email' => 'nullable|email',
+            'from_email' => 'nullable|email',
         ]);
 
         if ($validator->fails()) {
@@ -1953,6 +1954,7 @@ class UserController extends Controller
             }
 
             $user->reply_email = $request->reply_email;
+            $user->from_email = $request->from_email;
             $user->save();
 
             // Log changed fields only

@@ -311,10 +311,21 @@ class DealController extends Controller
         if ($request->filled('destination_id')) {
             $destination_id = array_map('intval', (array) $request->destination_id);
             $query->whereIn('destination_id', $destination_id);
+        }
 
-            //  $sql = str_replace('?', "'%s'", $query->toSql());
-            //     $sql = vsprintf($sql, $query->getBindings());
-            //      echo $sql;
+        if ($request->filled('intake_year')) {
+
+            $query->whereIn('intake_year',    $request->intake_year);
+        }
+        if ($request->filled('intake_month')) {
+
+            $months = array_map('strtoupper', (array) $request->intake_month);
+
+            $query->whereIn('intake_month', $months);
+
+            // $sql = str_replace('?', "'%s'", $query->toSql());
+            // $sql = vsprintf($sql, $query->getBindings());
+            // dd($sql);
         }
 
         // Search filter
@@ -479,7 +490,7 @@ class DealController extends Controller
             ->pluck('stage_id')
             ->toArray();
 
-        $applications = DealApplication::where('deal_id', $deal->id)->get();
+        $applications = DealApplication::where('deal_id', $request->deal_id)->get();
 
         return response()->json([
             'status' => 'success',
@@ -887,6 +898,11 @@ class DealController extends Controller
         $deal->price = 0;
         $deal->pipeline_id = $request->input('pipeline_id');
         $deal->description = $request->input('deal_description');
+        $deal->tag_ids = $request->tag_ids ?? '';
+        //$deal->drive_link = $request->input('drive_link');
+        if ($request->filled('drive_link')) {
+            $deal->drive_link = $request->input('drive_link');
+        }
         $deal->status = 'Active';
         $deal->created_by = $deal->created_by;
         $deal->save();

@@ -25,4 +25,12 @@ class HistoryRequest extends Model
         'admin_action_attachments',
     ];
 
+     protected $with = ['createdBy:id,name'];
+
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by'); // Ensure 'created_by' matches your DB column
+    }
+
 }

@@ -343,13 +343,15 @@ class TaskController extends Controller
 
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
-                if ($status == '1') {
-                    $tasksQuery->where('deal_tasks.tasks_type_status', "1")
-                        ->where('deal_tasks.status', 1);
-                } elseif ($status == '2') {
-                    $tasksQuery->where('deal_tasks.tasks_type_status', "2");
-                } else {
-                    $tasksQuery->where('deal_tasks.tasks_type_status', "0");
+                if($status!='All'){
+                    if ($status == '1') {
+                        $tasksQuery->where('deal_tasks.tasks_type_status', "1");
+                                //  ->where('deal_tasks.status', 1);
+                    } elseif ($status == '2') {
+                        $tasksQuery->where('deal_tasks.tasks_type_status', "2");
+                    } else {
+                        $tasksQuery->where('deal_tasks.tasks_type_status', "0");
+                    }
                 }
             } elseif (!$request->has('status')) {
                 $tasksQuery->where('deal_tasks.status', 0)
@@ -359,6 +361,57 @@ class TaskController extends Controller
             if ($request->filled('assigned_by_me') && $request->assigned_by_me == true) {
                 $tasksQuery->where('deal_tasks.created_by', \Auth::id());
             }
+
+              // Filter by origin country if provided
+            if ($request->filled('country')) {
+                $country =  $request->country;
+
+                // Fetch country details
+                $country_code = Country::where('country_code', $country)->first();
+
+                if ($country_code) {
+                    $tasksQuery->where('uni_status', '0')
+                               ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+                }
+            }
+
+              // Additional filters
+            if ($request->filled('fetcttype')) {
+                $fetcttype  =   $request->fetcttype;
+
+                if( $fetcttype=='assignedbyme'){
+                    $tasksQuery->where('deal_tasks.created_by', \Auth::id());
+                }
+
+                if( $fetcttype=='yourtask'){
+                    $tasksQuery->where('deal_tasks.assigned_to', \Auth::id());
+                }
+
+                if( $fetcttype=='Quality'){
+                    $tasksQuery->where('deal_tasks.tasks_type', 'Quality');
+                }
+
+                if( $fetcttype=='Compliance'){
+                    $tasksQuery->where('deal_tasks.tasks_type', 'Compliance');
+                }
+
+
+
+            }
+
+            if ($request->fetcttype == 'agenttask') {
+                $tasksQuery->whereNotNull('deal_tasks.agent_id');
+            } else {
+                $tasksQuery->whereNull('deal_tasks.agent_id');
+            }
+
+            $sql = str_replace('?', "'%s'", $tasksQuery->toSql());
+            $sql = vsprintf($sql, $tasksQuery->getBindings());
+
+
+
+
+
 
             // Get Scorp tasks and merge with main tasks
             $scorpTasks = $this->GetScorpTasks();
@@ -516,14 +569,17 @@ class TaskController extends Controller
                 $finalQuery->where('deal_tasks.tasks_type', $_GET['tasks_type']);
             }
 
-            if (!empty($_GET['tasks_type_status'])) {
-                $status = $_GET['tasks_type_status'];
-                if ($status == '1') {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "1");
-                } elseif ($status == '2') {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "2");
-                } else {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "0");
+            if ($request->filled('tasks_type_status')) {
+                $status = $request->tasks_type_status;
+                if($status!='All'){
+                    if ($status == '1') {
+                    $finalQuery->where('deal_tasks.tasks_type_status', "1")
+                              ;
+                    } elseif ($status == '2') {
+                        $finalQuery->where('deal_tasks.tasks_type_status', "2");
+                    } else {
+                        $finalQuery->where('deal_tasks.tasks_type_status', "0");
+                    }
                 }
             } elseif (!isset($_GET['status'])) {
                 $finalQuery->where('deal_tasks.status', 0)
@@ -545,6 +601,17 @@ class TaskController extends Controller
                     ->where('deal_tasks.tasks_type_status', "0");
             }
 
+             $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
+            $sql2 = vsprintf($sql2, $finalQuery->getBindings());
+            //  echo $sql2; sdf
+
+            //  die();
+
+            // echo "==========";
+            // echo $sql2;
+           // dd($sql,$sql2 );
+
+            //  get tasks
             // Paginate results
             $paginatedTasks = $finalQuery->paginate($perPage);
 

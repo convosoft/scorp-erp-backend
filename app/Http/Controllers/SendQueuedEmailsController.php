@@ -18,11 +18,12 @@ class SendQueuedEmailsController extends Controller
         $sendcount = 0;
         $failcount = 0;
 
-        EmailSendingQueue::with('brand')->where('is_send', '0')
-            ->where('status', '1')
-            ->where('priority', '3')
-            ->take(350)
-            ->chunk(25, function ($queues) use (&$sendcount, &$failcount) {
+            EmailSendingQueue::with('brand')->where('is_send', '0')
+                ->where('status', '1')
+                ->where('priority', '3')
+                ->limit(350)
+                ->orderBy('id', 'asc')
+                ->chunk(25, function ($queues) use (&$sendcount, &$failcount) {
 
                 foreach ($queues as $queue) {
 
@@ -38,8 +39,71 @@ class SendQueuedEmailsController extends Controller
                         }
 
 
-                        if ($queue->cc) {
-                            $mail->cc(explode(',', $queue->cc));
+                    gc_collect_cycles();
+
+                    // Stop chunking once 350 emails are processed
+                    if (($sendcount + $failcount) >= 350) {
+                        return false;
+                    }
+                });
+
+            return response()->json([
+                'status' => 'completed',
+                'sendcount' => $sendcount,
+                'failcount' => $failcount,
+            ]);
+        }
+
+        public function handleCrm(Request $request)
+        {
+            $sendcount = 0;
+            $failcount = 0;
+
+            EmailSendingQueue::with('brand')->where('is_send', '0')
+                ->where('status', '1')
+                ->where('priority', '2')
+                ->limit(350)
+                ->orderBy('id', 'asc')
+                ->chunk(25, function ($queues) use (&$sendcount, &$failcount) {
+
+                    foreach ($queues as $queue) {
+
+                        try {
+
+                            $mail = Mail::to($queue->to);
+                            // ✅ Only set reply-to if exists
+                            if (!empty($queue->brand?->reply_email)) {
+                                $mail->replyTo(
+                                    $queue->brand->reply_email,
+                                    $queue->brand->name ?? 'Support'
+                                );
+                            }
+
+
+                            if ($queue->cc) {
+                                $mail->cc(explode(',', $queue->cc));
+                            }
+
+                            if ($queue->bcc) {
+                                $mail->bcc(explode(',', $queue->bcc));
+                            }
+
+                            $mail->send(new CampaignEmail($queue));
+
+                            $queue->update(['is_send' => '1']);
+
+                            $sendcount++;
+
+                            unset($mail);
+
+                        } catch (\Exception $e) {
+
+                            $failcount++;
+
+                            $queue->update([
+                                'status' => '2',
+                                'mailerror' => $e->getMessage()
+                            ]);
                         }
 
                         if ($queue->bcc) {
@@ -63,8 +127,12 @@ class SendQueuedEmailsController extends Controller
                         ]);
                     }
 
-                    unset($queue);
-                }
+                    gc_collect_cycles();
+                    // Stop chunking once 350 emails are processed
+                    if (($sendcount + $failcount) >= 350) {
+                        return false;
+                    }
+                });
 
                 gc_collect_cycles();
             });

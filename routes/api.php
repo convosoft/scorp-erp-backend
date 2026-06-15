@@ -85,6 +85,7 @@ use App\Http\Controllers\EducationLevelsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
+use App\Http\Controllers\EmailValidationController;
 use App\Http\Controllers\LeadTagController;
 use App\Http\Controllers\MediaDocumentController;
 use App\Models\InterviewSchedule;
@@ -98,8 +99,10 @@ use Carbon\Carbon;
 use App\Http\Controllers\StudentAdviceController;
 use App\Http\Controllers\SendQueuedEmailsController;
 use App\Http\Controllers\SendGridWebhookController;
+// use App\Http\Controllers\EmailitWebhookController;
 use App\Http\Controllers\SendQueuedSmsController;
 use App\Http\Controllers\TaskTagController;
+use App\Http\Controllers\ToolkitPathController;
 use App\Http\Controllers\TypesDocumentController;
 
 /*
@@ -118,6 +121,8 @@ Route::get('/NotificationFifteenDays', function () {
     return App\Models\Notification::where('created_at', '<', now()->subDays(15))->delete();
 });
 
+Route::get('/downloadMediaDocument', [MediaDocumentController::class, 'downloadMediaDocument']);
+
 Route::get('/enrichCourseWithAI', [CourseController::class, 'enrichCourseWithAI']);
 
 Route::post('/getPublicUniversitiesTiles', [UniversityController::class, 'getPublicUniversitiesTiles']);
@@ -125,6 +130,7 @@ Route::get('/sendQueuedEmails', [SendQueuedEmailsController::class, 'handle']); 
 Route::get('/sendQueuedEmailsCrm', [SendQueuedEmailsController::class, 'handleCrm']); //  email sendng compain cron
 Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sms sendng  all  cron
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
+// Route::post('/emailit/webhook', [EmailitWebhookController::class, 'handle']);
 
 Route::post('/brandDetailPublic', [UserController::class, 'brandDetailPublic']);
 
@@ -220,6 +226,7 @@ Route::get('/sendexpiredDocumentEmail', [UserController::class, 'sendexpiredDocu
 Route::get('/getCronAttendances', [AttendanceEmployeeController::class, 'getCronAttendances']);
 Route::get('/sendBirthdayAndAnniversaryEmails', [UserController::class, 'sendBirthdayAndAnniversaryEmails']);
 Route::get('/convertToBase64', [GeneralController::class, 'convertToBase64']);
+Route::post('/uploadToS3', [GeneralController::class, 'uploadToS3']);
 Route::post('/getTables', [GeneralController::class, 'getTables']);
 Route::post('/getTableData', [GeneralController::class, 'getTableData']);
 Route::post('/generateSop', [OpenAIController::class, 'generateSop']);
@@ -424,6 +431,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/deleteMediaDocument', [MediaDocumentController::class, 'deleteMediaDocument']);
     Route::post('/updateMediaDocumentPosition', [MediaDocumentController::class, 'updateMediaDocumentPosition']);
     Route::post('/updateMediaDocument', [MediaDocumentController::class, 'updateMediaDocument']);
+    Route::get('/generateS3DownloadUrl/{fullUrl}', [MediaDocumentController::class, 'generateS3DownloadUrl']);
 
 
     // trainers
@@ -786,6 +794,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pluckUniversities', [UniversityController::class, 'pluckInstitutes']);
     Route::post('/addUniversities', [UniversityController::class, 'addUniversities']);
     Route::post('/updateUniversities', [UniversityController::class, 'updateUniversities']);
+    Route::post('/addtofavorites', [UniversityController::class, 'addtofavorites']);
     Route::post('/deleteUniversities', [UniversityController::class, 'deleteUniversities']);
     Route::post('/universityDetail', [UniversityController::class, 'universityDetail']);
     Route::post('/applicationCountByUniversty', [UniversityController::class, 'applicationCountByUniversty']);
@@ -824,12 +833,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/deleteAnnouncement', [AnnouncementController::class, 'deleteAnnouncement']);
     Route::post('/announcementDetail', [AnnouncementController::class, 'announcementDetail']);
 
-    //   Institute Category
+    //   tag
     Route::post('/addTag', [TagController::class, 'addTag']);
     Route::post('/getTagPluck', [TagController::class, 'getTagPluck']);
     Route::get('/getTagsbytype', [TagController::class, 'getTags']);
     Route::post('/updateTag', [TagController::class, 'updateTag']);
     Route::post('/deleteTag', [TagController::class, 'deleteTag']);
+    //   lead tag
+    Route::post('/addLeadTag', [LeadTagController::class, 'addLeadTag']);
+    Route::post('/getLeadTags', [LeadTagController::class, 'getLeadTags']);
+    Route::post('/updateLeadTag', [LeadTagController::class, 'updateLeadTag']);
+    Route::post('/deleteLeadTag', [LeadTagController::class, 'deleteLeadTag']);
+    Route::post('/deleteBulkLeadTags', [LeadTagController::class, 'deleteBulkLeadTags']);
+    //   task tag
+    Route::post('/addTaskTag', [TaskTagController::class, 'addTaskTag']);
+    Route::post('/getTaskTags', [TaskTagController::class, 'getTaskTags']);
+    Route::post('/updateTaskTag', [TaskTagController::class, 'updateTaskTag']);
+    Route::post('/deleteTaskTag', [TaskTagController::class, 'deleteTaskTag']);
+    Route::post('/deleteBulkTaskTags', [TaskTagController::class, 'deleteBulkTaskTags']);
+    //   Agency tag
+    Route::post('/addAgencyTag', [AgencyTagController::class, 'addAgencyTag']);
+    Route::post('/getAgencyTags', [AgencyTagController::class, 'getAgencyTags']);
+    Route::post('/updateAgencyTag', [AgencyTagController::class, 'updateAgencyTag']);
+    Route::post('/deleteAgencyTag', [AgencyTagController::class, 'deleteAgencyTag']);
+    Route::post('/deleteBulkAgencyTags', [AgencyTagController::class, 'deleteBulkAgencyTags']);
 
     //   Designation
     Route::post('/addDesignation', [DesignationController::class, 'addDesignation']);
@@ -909,7 +936,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/deleteEmailTemplate', [EmailTemplateController::class, 'deleteEmailTemplate']);
     Route::post('email_template_submit_to_queue', [EmailTemplateController::class, 'email_template_submit_to_queue'])->name('email_template_submit_to_queue');
     Route::get('email-marketing-queue', [EmailTemplateController::class, 'email_marketing_queue'])->name('email_marketing_queue');
-    Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue');
+    Route::post('email_marketing_queue_list', [EmailTemplateController::class, 'email_marketing_queue_list'])->name('email_marketing_queue_list');
+    Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue_detail');
     Route::post('email-marketing-approved-reject', [EmailTemplateController::class, 'email_marketing_approved_reject'])->name('email_marketing_approved_reject');
     Route::post('getEmailTemplateDetail', [EmailTemplateController::class, 'getEmailTemplateDetail'])->name('getEmailTemplateDetail');
     //    Role
@@ -935,6 +963,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/blockClient', [ClientController::class, 'blockClient']);
     Route::post('/unBlockClient', [ClientController::class, 'unBlockClient']);
     Route::post('/updateUnblockRequestStatus', [ClientController::class, 'updateUnblockRequestStatus']);
+    Route::post('/contactHistoryRequest', [ClientController::class, 'contactHistoryRequest']);
 
     //     University Rules
     Route::post('/addUniversityRule', [UniversityRuleController::class, 'addUniversityRule']);
@@ -1021,6 +1050,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/storeApplication', [ApplicationsController::class, 'storeApplication']);
     Route::post('/deleteApplication', [ApplicationsController::class, 'deleteApplication']);
     Route::post('/updateApplicationStage', [ApplicationsController::class, 'updateApplicationStage']);
+    Route::post('/updateApplicationStageForAllUniversity', [ApplicationsController::class, 'updateApplicationStageForAllUniversity']);
     Route::post('/manualUpdateApplicationStage', [ApplicationsController::class, 'manualUpdateApplicationStage']);
     Route::post('/DeleteApplicationNotes', [ApplicationsController::class, 'DeleteApplicationNotes']);
     Route::post('/addApplicationTags', [ApplicationsController::class, 'addApplicationTags']);
@@ -1080,6 +1110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/getCitiesOnCode', [GeneralController::class, 'getCitiesOnCode']);
 
     Route::post('/DealTagPluck', [GeneralController::class, 'DealTagPluck']);
+    Route::post('/DealTagPluck_new', [GeneralController::class, 'DealTagPluck_new']);
     Route::post('/DealStagPluck', [GeneralController::class, 'DealStagPluck']);
     Route::post('/ApplicationStagPluck', [GeneralController::class, 'ApplicationStagPluck']);
     Route::post('/getemailTags', [GeneralController::class, 'getemailTags']);
@@ -1108,4 +1139,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/uploadStudentAdvice', [StudentAdviceController::class, 'uploadAdvice']);
     Route::post('/getStudentAdvice', [StudentAdviceController::class, 'getAdvice']);
     Route::post('/deleteStudentAdvice', [StudentAdviceController::class, 'deleteAdvice']);
+
+    // Toolkit Path
+    Route::post('/addToolkitPath', [ToolkitPathController::class, 'addToolkitPath']);
+    Route::get('/getToolkitPathPluck', [ToolkitPathController::class, 'getToolkitPathPluck']);
+    Route::get('/getToolkitPaths', [ToolkitPathController::class, 'getToolkitPaths']);
+    Route::post('/updateToolkitPath', [ToolkitPathController::class, 'updateToolkitPath']);
+    Route::post('/deleteToolkitPath', [ToolkitPathController::class, 'deleteToolkitPath']);
+
+    // Email validation (mailboxlayer)
+    Route::post('/validate-email', [EmailValidationController::class, 'checkEmail']);
+    Route::post('/is-email-valid',  [EmailValidationController::class, 'isValid']);
 });

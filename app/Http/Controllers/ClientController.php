@@ -105,7 +105,8 @@ class ClientController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($subQuery) use ($request) {
                 $subQuery->where('users.name', 'like', '%' . $request->search . '%')
-                    ->orWhere('users.passport_number', 'like', '%' . $request->search . '%');
+                    ->orWhere('users.passport_number', 'like', '%' . $request->search . '%')
+                    ->orWhere('users.email', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -486,7 +487,11 @@ class ClientController extends Controller
                 return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
             }
 
-            $client = User::where('id', $request->id)->first();
+            $client = User::with([
+                'brand:id,name',
+                'region:id,name',
+                'branch:id,name',
+            ])->where('id', $request->id)->first();
           $clienthistory =  HistoryRequest::where('student_id', $request->id)->orderBy('created_at', 'desc')->get();
 
             if (!$client) {
@@ -753,86 +758,67 @@ class ClientController extends Controller
 
 
 
-    public function HistoryRequest()
-    {
-        if (\Auth::user()->can('manage client') || \Auth::user()->type == 'super admin') {
-            $user    = \Auth::user();
-
-            $start = 0;
-            $num_results_on_page = env("RESULTS_ON_PAGE", 50);
-            if (isset($_GET['page'])) {
-                $page = $_GET['page'];
-                $num_of_result_per_page = isset($_GET['num_results_on_page']) ? $_GET['num_results_on_page'] : $num_results_on_page;
-                $start = ($page - 1) * $num_results_on_page;
-            } else {
-                $num_results_on_page = isset($_GET['num_results_on_page']) ? $_GET['num_results_on_page'] : $num_results_on_page;
-            }
-
-            // $HistoryRequest = new \App\Models\HistoryRequest();
-
-            $HistoryRequest = HistoryRequest::select(
-                'history_requests.*',
-                'Student.name as StudentName',
-                'Student.email as StudentEmail',
-                'Student.id as StudentId',
-                'history_requests.status as RequestsStatus',
-            )
-                ->join('users as Student', 'Student.id', '=', 'history_requests.student_id')
-                ->join('users', 'users.id', '=', 'history_requests.student_id')
-                ->where('users.type', 'client')
-                ->groupBy('Student.id');
-            // dd( $HistoryRequest->get());
-
-            if (!empty($_GET['name'])) {
-                $HistoryRequest->where('users.name', 'like', '%' . $_GET['name'] . '%');
-            }
-
-            if (!empty($_GET['email'])) {
-                $HistoryRequest->where('users.email', 'like', '%' . $_GET['email'] . '%');
-            }
-
-            if (isset($_GET['search']) && !empty($_GET['search'])) {
-                $g_search = $_GET['search'];
-                $HistoryRequest->where(function ($query) use ($g_search) {
-                    $query->where('users.name', 'like', '%' . $g_search . '%')
-                        ->orWhere('users.passport_number', 'like', '%' . $g_search . '%');
-                });
-            }
-
-            $total_records = $HistoryRequest->count();
-
-
-            $total_records = $HistoryRequest->count();
-
-            // Paginate the results
-            $clients = $HistoryRequest
-                ->orderBy('users.created_at', 'DESC')
-                ->skip($start)
-                ->limit($num_results_on_page)
-                ->get();
-
-
-            // $clients = User::where('created_by', '=', $user->creatorId())->where('type', '=', 'client')->skip($start)->limit($num_results_on_page)->get();
-
-            if (isset($_GET['ajaxCall']) && $_GET['ajaxCall'] == 'true') {
-                $html = view('blocking_system.history_clients_list_ajax', compact('clients', 'total_records'))->render();
-                $pagination_html = view('layouts.pagination', [
-                    'total_pages' => $total_records,
-                    'num_results_on_page' =>  $num_results_on_page
-                ])->render();
-                return json_encode([
-                    'status' => 'success',
-                    'html' => $html,
-                    'pagination_html' => $pagination_html
-                ]);
-            }
-
-            return view('blocking_system.history_index', compact('clients', 'total_records'));
-        } else {
-
-            return redirect()->back()->with('error', __('Permission Denied.'));
-        }
+ public function contactHistoryRequest(Request $request)
+{
+    if (!auth()->user()->can('manage client') && auth()->user()->type != 'super admin') {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Permission Denied.'
+        ], 403);
     }
+
+    $perPage = $request->get('num_results_on_page', env('RESULTS_ON_PAGE', 50));
+
+    $historyRequest = HistoryRequest::select(
+        'history_requests.*',
+        'Student.name as StudentName',
+        'Student.email as StudentEmail',
+        'Student.id as StudentId',
+        'history_requests.status as RequestsStatus'
+    )
+        ->join('users as Student', 'Student.id', '=', 'history_requests.student_id')
+        ->join('users', 'users.id', '=', 'history_requests.student_id')
+        ->where('users.type', 'client')
+        ->distinct('Student.id');
+
+    // Filter by name
+    if ($request->filled('name')) {
+        $historyRequest->where('users.name', 'like', '%' . $request->name . '%');
+    }
+
+    // Filter by email
+    if ($request->filled('email')) {
+        $historyRequest->where('users.email', 'like', '%' . $request->email . '%');
+    }
+
+    // Global search
+    if ($request->filled('search')) {
+        $search = $request->search;
+
+        $historyRequest->where(function ($query) use ($search) {
+            $query->where('users.name', 'like', '%' . $search . '%')
+                ->orWhere('users.passport_number', 'like', '%' . $search . '%');
+        });
+    }
+
+    $clients = $historyRequest
+        ->orderBy('users.created_at', 'DESC')
+        ->paginate($perPage);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'History requests fetched successfully.',
+        'data' => $clients->items(),
+        'pagination' => [
+            'current_page' => $clients->currentPage(),
+            'last_page' => $clients->lastPage(),
+            'per_page' => $clients->perPage(),
+            'total' => $clients->total(),
+            'from' => $clients->firstItem(),
+            'to' => $clients->lastItem(),
+        ]
+    ]);
+}
 
     public function HistoryclientDetail($id)
     {

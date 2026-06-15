@@ -127,6 +127,15 @@ class GeneralController extends Controller
             // Fetch regions based on the brand ID
             $regions = Region::where('brands', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
 
+            $regions = Region::where('brands', $id)
+                ->orderBy('name', 'ASC')
+                ->pluck('name', 'id')
+                ->toArray();
+
+            if (count($regions) === 1) {
+                $regions = ['0' => 'Please Select Region'] + $regions;
+            }
+
             // Return JSON response with regions
             return response()->json([
                 'status' => 'success',
@@ -135,6 +144,10 @@ class GeneralController extends Controller
         } elseif ($type == 'region') {
             // Fetch branches based on the region ID
             $branches = Branch::where('region_id', $id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+            if (count($branches) === 1) {
+                $branches = ['0' => 'Please Select'] + $branches;
+            }
 
             // Return JSON response with branches
             return response()->json([
@@ -182,13 +195,6 @@ class GeneralController extends Controller
             }
         }
     }
-
-
-
-
-
-
-
     public function getRegionBrandsAllUser(Request $request)
     {
 
@@ -459,7 +465,6 @@ class GeneralController extends Controller
             ]);
         }
     }
-
 
 
 
@@ -786,6 +791,29 @@ class GeneralController extends Controller
         ]);
     }
 
+    public function uploadToS3(Request $request)
+    {
+
+        // Validate incoming request parameters
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|max:10240', // 10MB max file size
+        ]);
+
+          if ($validator->fails()) {
+            return response()->json([
+                'status' => 'failure',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $url = uploadFileToS3($request->file('file'), 'uploads/misc');
+
+        return response()->json([
+            'status' => 'success',
+            'url' => $url
+        ]);
+    }
+
 
     public function getSources()
     {
@@ -842,7 +870,7 @@ class GeneralController extends Controller
 
     public function getapplicationStagesPluck()
     {
-        $stages = ApplicationStage::orderBy('id')->pluck('name', 'id')->toArray();
+        $stages = ApplicationStage::orderBy('id')->pluck('id', 'name')->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $stages,
@@ -893,6 +921,22 @@ class GeneralController extends Controller
             } else {
                 $tags = LeadTag::where('branch_id', $user->branch_id)->pluck('tag', 'id')->toArray();
             }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $tags,
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 'false',
+            'message' => 'Unauthorized',
+        ], 401);
+    }
+    public function TaskTag(Request $request)
+    {
+        if (Auth::check()) {
+            $tags = TaskTag::pluck('id', 'tag')->toArray();
 
             return response()->json([
                 'status' => 'success',
@@ -1183,6 +1227,15 @@ class GeneralController extends Controller
             'data' => $Country,
         ], 200);
     }
+    public function CountryByID()
+    {
+        $Country = Country::orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $Country,
+        ], 200);
+    }
 
     public function getLogActivity_old(Request $request)
     {
@@ -1387,13 +1440,75 @@ class GeneralController extends Controller
             $country = $request->get('country');
             $country_code = Country::where('country_code', $country)->first();
             if ($country_code) {
-                $universities = University::where('uni_status', '0')
-                    ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
-                    ->pluck('name', 'id')
-                    ->toArray();
-                $universities = $universities;
+                // $universities = University::where('uni_status', '0') ;
+                // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                // $universities = $universities->pluck('name', 'id')->toArray();
+                $alluniversities = University::where('uni_status', '0');
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country', $country_code->id);
+
+                $alluniversities = $alluniversities->get();
+
+                // $alluniversities = University::where('uni_status', '0')
+                //     ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                //     ->orWhere('country', $country_code->id)
+                //     ->get(); // get collection first
+
+                $universities = [];
+
+                foreach ($alluniversities as $uni) {
+                    if ($uni->uni_status == 0) {
+                        $universities[$uni->id] = $uni->name;
+                    }
+                }
             } else {
-                $universities = [''];
+                $universities = [];
+            }
+            return response()->json([
+                'status' => "success",
+                'data' => $universities,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => "success",
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function UniversityByCountryid(Request $request)
+    {
+        $request->validate([
+            'country' => 'required|string',
+        ]);
+        try {
+            $country = $request->get('country');
+            $country_code = Country::where('id', $country)->first();
+            if ($country_code) {
+                // $universities = University::where('uni_status', '0') ;
+                // $universities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+
+                // $universities = $universities->pluck('name', 'id')->toArray();
+
+                $alluniversities = University::where('uni_status', '0');
+                $alluniversities->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country', $country_code->id);
+
+                $alluniversities = $alluniversities->get();
+
+                // $alluniversities = University::where('uni_status', '0')
+                //     ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])
+                //     ->orWhere('country', $country_code->id)
+                //     ->get(); // get collection first
+
+                $universities = [];
+
+                foreach ($alluniversities as $uni) {
+                    if ($uni->uni_status == 0) {
+                        $universities[$uni->id] = $uni->name;
+                    }
+                }
+            } else {
+                $universities = [];
             }
             return response()->json([
                 'status' => "success",
@@ -1564,6 +1679,8 @@ class GeneralController extends Controller
             }
         }
 
+        $tasktags = TaskTag::pluck('tag', 'id')->toArray();
+
         // Fetch countries
         $countries = countries();
 
@@ -1616,6 +1733,18 @@ class GeneralController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $LeadTag
+        ]);
+    }
+
+    public function DealTagPluck_new()
+    {
+       $data = LeadTag::with('branch:id,name')->get()->mapWithKeys(function ($tag) {
+                $branchName = $tag->branch ? $tag->branch->name : 'No Branch';
+                return [$tag->id => $tag->tag . " ($branchName)"];
+            })->toArray();
+        return response()->json([
+            'status' => 'success',
+            'data' => $data
         ]);
     }
 

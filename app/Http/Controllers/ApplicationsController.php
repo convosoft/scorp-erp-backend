@@ -355,11 +355,28 @@ class ApplicationsController extends Controller
             ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
             ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
             ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
+            ->leftJoin('users as client', 'client.id', '=', 'da.contact_id')
             ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
 
-        if ($request->filled('country')) {
-            $app_query->whereIn('u.country', $request->country);
+        if ($request->filled('country') && is_array($request->country)) {
+
+            $countries = $request->country;
+
+            $app_query->where(function ($query) use ($countries) {
+
+                // Home country (252)
+                if (in_array(252, $countries)) {
+                    $query->orWhere('u.home_status', 1);
+                }
+
+                // Other countries
+                $otherCountries = array_diff($countries, [252]);
+
+                if (!empty($otherCountries)) {
+                    $query->orWhereIn('u.country', $otherCountries);
+                }
+            });
         }
 
         if ($request->filled('intake_month')) {
@@ -424,6 +441,14 @@ class ApplicationsController extends Controller
             } elseif ($request->fetcttype === 'agentapplications') {
                 $app_query->whereNotNull('da.agent_id');
             }
+        }
+
+        // fetcttype (FIXED LOGIC)
+        if ($request->filled('fetcttype') && $request->fetcttype == 'blocked') {
+            $app_query->where('client.blocked_status', '=', '1');
+            $app_query->where('client.unblock_status', '!=', '1');
+        } else {
+            $app_query->where('client.blocked_status', '=', '0');
         }
 
         // Filters
@@ -764,6 +789,15 @@ class ApplicationsController extends Controller
             ['stage_id', '=', 5]
         ])->get();
 
+        $deal_details = Deal::where('id',  $application->deal_id)->first();
+
+        $course = Course::find($application->courses_id);
+        if (!empty($course)) {
+            $coursedetail = $course;
+        } else {
+            $coursedetail = [];
+        }
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -920,6 +954,7 @@ class ApplicationsController extends Controller
             }
             $user = User::find($user_id); // Single object, not plural
             $university = University::select('name')->where('id', (int)$request->university)->first(); // Fixed missing semicolon
+            $universitydetails = University::where('id', (int)$request->university)->first(); // Fixed missing semicolon
             // Validation rules
             $validator = \Validator::make($request->all(), [
                 'university' => [
@@ -1176,7 +1211,7 @@ class ApplicationsController extends Controller
         $application->deal_id = $application->deal_id;
         $application->university_id = $request->university;
         $application->course = $courseName;
-        $application->stage_id = $request->status;
+        // $application->stage_id = $request->status;
         $application->external_app_id = $request->application_key;
         $application->intake = $request->intake_month;
         $application->name = "{$deal->name}-{$courseName}-{$university_name}-{$request->application_key}";
@@ -1190,7 +1225,7 @@ class ApplicationsController extends Controller
         $application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
         $application->intakeYear = $request->intakeYear;
         $application->course_id = $request->courses_id ?? "0";
-        $application->course_id = $request->courses_id ?? "0";
+        // $application->course_id = $request->courses_id ?? "0";
         $application->save();
 
         if (!empty($changes)) {
@@ -1222,7 +1257,7 @@ class ApplicationsController extends Controller
                 default => 0,
             };
         } else {
-            $deal->stage_id = 0;
+            // $deal->stage_id = 0;
         }
         $deal->save();
 
@@ -1269,6 +1304,14 @@ class ApplicationsController extends Controller
                 'status' => 'error',
                 'message' => __('Application not found.')
             ], 404);
+        }
+
+        // Prevent deletion if stage_id is between 5 and 11
+        if ($dealApplication->stage_id >= 5 && $dealApplication->stage_id <= 11) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Application cannot be deleted after deposited stage.')
+            ], 400);
         }
 
         $dealId = $dealApplication->deal_id;
@@ -1632,6 +1675,380 @@ class ApplicationsController extends Controller
             'module_type' => 'application',
             'notification_type' => 'application stage update',
         ]);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Application stage updated successfully',
+        ], 200);
+    }
+
+    public function updateApplicationStageForAllUniversity()
+    {
+        $application_id = (int)($_POST['application_id'] ?? 0);
+        $stage_id = (int)($_POST['stage_id'] ?? 0);
+
+        if (!$application_id || !$stage_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid application ID or stage ID',
+            ], 200);
+        }
+
+        // Fetch the application
+        $application = DealApplication::find($application_id);
+
+        if (!$application) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Application not found',
+            ], 200);
+        }
+
+        $current_stage = $application->stage_id;
+
+        $hasUncompletedTasks = \App\Models\DealTask::where([
+            'related_to' => $application_id,
+            'related_type' => 'application',
+        ])->where('tasks_type', 'Quality')->latest()->first();
+
+        $hasUncompletedTasksCompliance = \App\Models\DealTask::where([
+            'related_to' => $application_id,
+            'related_type' => 'application',
+        ])->where('tasks_type', 'Compliance')->latest()->first();
+
+        $tasksStatusInvalid =
+            isset($hasUncompletedTasks->tasks_type_status) &&
+            in_array($hasUncompletedTasks->tasks_type_status, ['2', '0']);
+
+        $request_stage = explode(',', trim($application->request_stage ?? '', ','));
+
+        $stages = [
+            'initial' => [0, 1, 2, 3, 4, 5, 6],
+            'final' => [7, 8, 9, 10, 11, 12]
+        ];
+
+        if (in_array($stage_id, [1, 6]) && $tasksStatusInvalid) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot move to stages 1 or 6 with uncompleted tasks',
+            ], 200);
+        }
+
+        $initial_stages = [0, 1, 2, 3, 4, 5, 6];
+        $final_stages = [7, 8, 9, 10, 11, 12];
+
+        if (in_array($stage_id, $initial_stages)) {
+
+            if ($stage_id < 12 && $current_stage !== 12) {
+
+                if (!in_array($current_stage, [2, 3, 4])) {
+
+                    if ($current_stage > $stage_id) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Stage  cannot be decreased',
+                        ], 200);
+                    }
+                }
+
+                $request_stage = explode(',', trim($application->request_stage ?? '', ','));
+
+                if (!in_array(1, $request_stage) || $tasksStatusInvalid) {
+
+                    if (!isset($hasUncompletedTasks->tasks_type_status)) {
+
+                        $newStage = ApplicationStage::find($stage_id);
+
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Quality Check is mandatory before moving to stage ' . ($newStage->name ?? ''),
+                        ], 200);
+                    } elseif (
+                        isset($hasUncompletedTasks->tasks_type_status) &&
+                        $hasUncompletedTasks->tasks_type_status != '1'
+                    ) {
+
+                        $newStage = ApplicationStage::find($stage_id);
+
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Quality Check is mandatory before moving to stage ' . ($newStage->name ?? ''),
+                        ], 200);
+                    }
+                }
+
+                // Update application stage
+                $application->update([
+                    'stage_id' => $stage_id,
+                    'request_stage' => null,
+                ]);
+            } else {
+
+                $request_stage = explode(',', trim($application->request_stage ?? '', ','));
+
+                if (!in_array(1, $request_stage) || $tasksStatusInvalid) {
+
+                    if (!isset($hasUncompletedTasks->tasks_type_status)) {
+
+                        $newStage = ApplicationStage::find($stage_id);
+
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Quality Check is mandatory before moving to stage ' . ($newStage->name ?? ''),
+                        ], 200);
+                    } elseif (
+                        isset($hasUncompletedTasks->tasks_type_status) &&
+                        $hasUncompletedTasks->tasks_type_status != '1'
+                    ) {
+
+                        $newStage = ApplicationStage::find($stage_id);
+
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Quality Check is mandatory before moving to stage ' . ($newStage->name ?? ''),
+                        ], 200);
+                    }
+                }
+
+                if (
+                    !empty($hasUncompletedTasksCompliance) &&
+                    $hasUncompletedTasksCompliance->tasks_type == 'Quality'
+                ) {
+
+                    StageHistory::where('type_id', $application->id)
+                        ->where('type', 'application')
+                        ->whereIn('stage_id', ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'])
+                        ->delete();
+                }
+
+                if (
+                    !empty($hasUncompletedTasksCompliance) &&
+                    $hasUncompletedTasksCompliance->tasks_type_status != '1' &&
+                    $hasUncompletedTasksCompliance->tasks_type_status != '2'
+                ) {
+
+                    $hasUncompletedTasksCompliance->tasks_type_status = '0';
+                    $hasUncompletedTasksCompliance->stage_request = '';
+                    $hasUncompletedTasksCompliance->save();
+
+                    $application->request_stage = '';
+                } elseif (
+                    !empty($hasUncompletedTasksCompliance) &&
+                    $hasUncompletedTasksCompliance->tasks_type == 'Compliance'
+                ) {
+
+                    $application->request_stage = '1,';
+
+                    StageHistory::where('type_id', $application->id)
+                        ->where('type', 'application')
+                        ->whereIn('stage_id', ['7', '8', '9', '10', '11'])
+                        ->delete();
+
+                    $hasUncompletedTasksCompliance->tasks_type_status = '0';
+                    $hasUncompletedTasksCompliance->stage_request = '';
+                    $hasUncompletedTasksCompliance->save();
+                }
+
+                $application->save();
+
+                $application->update([
+                    'stage_id' => $stage_id
+                ]);
+            }
+        } elseif (in_array($stage_id, $final_stages)) {
+
+            if ($stage_id < 12 && $current_stage !== 12) {
+
+                $request_stage = explode(',', trim($application->request_stage ?? '', ','));
+
+                $complianceInvalid =
+                    empty($hasUncompletedTasksCompliance) ||
+                    $hasUncompletedTasksCompliance->tasks_type_status != '1';
+
+                // REMOVED UNIVERSITY CHECK
+                if ($complianceInvalid) {
+
+                    $newStage = ApplicationStage::find($stage_id);
+
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "Compliance Checks is mandatory before moving to stage " . ($newStage->name ?? ''),
+                    ], 200);
+                }
+
+                if ($current_stage >= $stage_id) {
+
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "Stage  cannot be decreased.",
+                    ], 200);
+                }
+
+                // REMOVED UNIVERSITY 380 BYPASS
+                if (
+                    ($stage_id < 11 && $stage_id === $current_stage + 1) ||
+                    ($stage_id >= 11 && $current_stage >= 10)
+                ) {
+
+                    $application->update([
+                        'stage_id' => $stage_id
+                    ]);
+                } else {
+
+                    $newStagemove = ApplicationStage::find($stage_id);
+                    $oldStagemove = ApplicationStage::find(($current_stage + 1));
+
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "Stage $oldStagemove->name is required before moving to stage $newStagemove->name.",
+                    ], 200);
+                }
+            } else {
+
+                if ($current_stage != 11) {
+
+                    if (in_array($stage_id, [7, 8, 9, 10, 11])) {
+
+                        if ($current_stage > $stage_id) {
+
+                            return response()->json([
+                                'status' => 'error',
+                                'message' => 'Stage  cannot be decreased.',
+                            ], 200);
+                        }
+                    }
+
+                    if (
+                        !empty($hasUncompletedTasks) &&
+                        $hasUncompletedTasks->tasks_type == 'Quality'
+                    ) {
+
+                        StageHistory::where('type_id', $application->id)
+                            ->where('type', 'application')
+                            ->whereIn('stage_id', ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'])
+                            ->delete();
+                    }
+
+                    if (
+                        !empty($hasUncompletedTasks) &&
+                        $hasUncompletedTasks->tasks_type_status != '1' &&
+                        $hasUncompletedTasks->tasks_type_status != '2'
+                    ) {
+
+                        $hasUncompletedTasks->tasks_type_status = '0';
+                        $hasUncompletedTasks->stage_request = null;
+                        $hasUncompletedTasks->save();
+
+                        $application->request_stage = '';
+                    } elseif (
+                        !empty($hasUncompletedTasks) &&
+                        $hasUncompletedTasks->tasks_type == 'Compliance'
+                    ) {
+
+                        $application->request_stage = '1,';
+
+                        StageHistory::where('type_id', $application->id)
+                            ->where('type', 'application')
+                            ->whereIn('stage_id', ['7', '8', '9', '10', '11'])
+                            ->delete();
+
+                        $hasUncompletedTasks->tasks_type_status = '0';
+                        $hasUncompletedTasks->stage_request = '';
+                        $hasUncompletedTasks->save();
+                    }
+
+                    $application->save();
+
+                    $application->update([
+                        'stage_id' => $stage_id
+                    ]);
+                } else {
+
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Enrolled application has been completed and is now locked in the system.',
+                    ], 200);
+                }
+            }
+        } else {
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid stage transition',
+            ], 200);
+        }
+
+        $deal = Deal::find($application->deal_id);
+
+        if ($deal) {
+
+            // Get all applications of this deal
+            $applications = DealApplication::where('deal_id', $application->deal_id)->get();
+
+            // Check if ALL applications are lost (stage_id = 12)
+            $allLost = $applications->every(function ($app) {
+                return $app->stage_id == 12;
+            });
+
+            if ($allLost) {
+
+                $deal->stage_id = 7;
+                $deal->save();
+            }
+
+            // Ignore lost apps and get latest NON-lost stage
+            $latestStage = $applications
+                ->where('stage_id', '!=', 12)
+                ->sortByDesc('stage_id')
+                ->first();
+
+            if ($latestStage) {
+
+                if ($latestStage->stage_id == '0') {
+
+                    $deal->stage_id = 0;
+                } elseif (in_array($latestStage->stage_id, [1, 2])) {
+
+                    $deal->stage_id = 1;
+                } elseif (in_array($latestStage->stage_id, [3, 4])) {
+
+                    $deal->stage_id = 2;
+                } elseif (in_array($latestStage->stage_id, [5, 6])) {
+
+                    $deal->stage_id = 3;
+                } elseif (in_array($latestStage->stage_id, [7, 8])) {
+
+                    $deal->stage_id = 4;
+                } elseif (in_array($latestStage->stage_id, [9, 10])) {
+
+                    $deal->stage_id = 5;
+                } elseif ($latestStage->stage_id == 11) {
+
+                    $deal->stage_id = 6;
+                }
+
+                $deal->save();
+            }
+        }
+
+        // Add Stage History
+        addLeadHistory([
+            'stage_id' => $stage_id,
+            'type_id' => $application_id,
+            'type' => 'application',
+        ]);
+
+        // Log activity
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => 'Stage Updated',
+                'message' => 'Application stage updated successfully.',
+            ]),
+            'module_id' => $application_id,
+            'module_type' => 'application',
+            'notification_type' => 'application stage update',
+        ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Application stage updated successfully',
@@ -2076,6 +2493,7 @@ class ApplicationsController extends Controller
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
+            $dealTask->tasks_type = 'Compliance';
             $dealTask->save();
         } else {
             $dealTask = new \App\Models\DealTask();
@@ -2117,6 +2535,7 @@ class ApplicationsController extends Controller
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
+            $dealTask->tasks_type = 'Compliance';
             $dealTask->save();
         }
 
@@ -2130,6 +2549,19 @@ class ApplicationsController extends Controller
             'module_id' => $id,
             'module_type' => 'application',
             'notification_type' => 'Application Updated'
+        ];
+        addLogActivity($logData);
+
+        // Add activity log (from the first API version)
+        $logData = [
+            'type' => 'succes',
+            'note' => json_encode([
+                'title' => 'Compliance Task created',
+                'message' => 'Compliance Task created'
+            ]),
+            'module_id' => $dealTask->id,
+            'module_type' => 'task',
+            'notification_type' => 'task created'
         ];
         addLogActivity($logData);
 
@@ -2580,6 +3012,42 @@ class ApplicationsController extends Controller
             }
             $dealTask->save();
         }
+        $inputs = $request->except(['_token', '_method', 'submit']);
+        foreach ($inputs as $key => $value) {
+            if (is_array($value)) {
+                $value = json_encode($value);
+            }
+
+            \DB::table('meta')->updateOrInsert(
+                ['created_by' => \Auth::id(), 'parent_id' => $application->id, 'stage_id' => $request->stage_id, 'meta_key' => $key],
+                ['meta_value' => $value]
+            );
+        }
+        // Add activity log (from the first API version)
+        $logData = [
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => 'Application Updated',
+                'message' => 'Application stage request and deposit details were updated successfully.'
+            ]),
+            'module_id' => $id,
+            'module_type' => 'application',
+            'notification_type' => 'Application Updated'
+        ];
+        addLogActivity($logData);
+
+        // Add activity log (from the first API version)
+        $logData = [
+            'type' => 'succes',
+            'note' => json_encode([
+                'title' => 'Compliance Task created',
+                'message' => 'Compliance Task created'
+            ]),
+            'module_id' => $dealTask->id,
+            'module_type' => 'task',
+            'notification_type' => 'task created'
+        ];
+        addLogActivity($logData);
         return response()->json([
             'status' => 'success',
             'message' => 'Application updated successfully!',
