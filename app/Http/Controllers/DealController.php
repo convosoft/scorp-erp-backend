@@ -449,6 +449,172 @@ class DealController extends Controller
         ]);
     }
 
+    public function email_marketing_getadmissions(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!($user->can('view deal') || $user->can('manage deal') || in_array($user->type, ['super admin', 'company', 'Admin Team']))) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Permission Denied.',
+            ], 403);
+        }
+
+        $view = $request->input('view', 'list');
+        $perPage = 1000;
+        $page = $request->input('page', 1);
+
+        $query = AdmissionView::withCount('applications');
+
+        // Permissions logic
+        $companies = FiltersBrands();
+        $brand_ids = array_keys($companies);
+        if (!in_array($user->type, ['super admin', 'Admin Team']) && !$user->can('level 1')) {
+            if ($user->type == 'company') {
+                $query->where('brand_id', $user->id);
+            } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
+                $query->whereIn('brand_id',  $brand_ids);
+            } elseif ($user->type == 'Region Manager' && $user->region_id) {
+                $query->where('region_id', $user->region_id);
+            } elseif (in_array($user->type, ['Branch Manager', 'Admissions Officer', 'Careers Consultant', 'Admissions Manager', 'Marketing Officer']) && $user->branch_id) {
+                $query->where('branch_id', $user->branch_id);
+            } elseif ($user->type == 'Agent') {
+                $query->where('agent_id', $user->agent_id);
+            } else {
+                $query->where('assigned_to', $user->id); // fallback
+            }
+        }
+
+
+
+        // Filters from request
+        $filters = $this->dealFilters();
+
+        foreach ($filters as $column => $value) {
+
+            if ($column === 'name') {
+                $query->where('name', 'like', "%{$value}%");
+            } elseif ($column === 'stage_id') {
+                $query->whereIn('stage_id', (array)$value);
+            } elseif ($column === 'users') {
+                $query->whereIn('created_by', (array)$value);
+            } elseif ($column === 'created_at') {
+                $query->whereDate('created_at', substr($value, 0, 10));
+            } elseif ($column === 'brand_id') {
+                $query->where('brand_id', $value);
+            } elseif ($column === 'region_id') {
+                $query->where('region_id', $value);
+            } elseif ($column === 'branch_id') {
+                $query->where('branch_id', $value);
+            } elseif ($column === 'created_by') {
+                $query->where('created_by', $value);
+            } elseif ($column === 'deal_assigned_user') {
+
+                if (is_array($value)) {
+                    $query->whereIn('assigned_to', $value);
+                } else {
+                    $query->where('assigned_to', $value);
+                }
+            } elseif ($column === 'created_at_from') {
+                $query->whereDate('created_at', '>=', $value);
+            } elseif ($column === 'created_at_to') {
+                $query->whereDate('created_at', '<=', $value);
+            } elseif ($column === 'tag') {
+
+                if (is_array($value)) {
+                    foreach ($value as $tag) {
+                        $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$tag]);
+                    }
+                } else {
+                    $query->whereRaw("FIND_IN_SET(?, tag_ids)", [$value]);
+                }
+            } elseif ($column === 'days_at_stage') {
+
+                if ($value === '30+') {
+                    $query->where('days_at_stage', '>=', 30);
+                } else {
+                    $query->where('days_at_stage', (int)$value);
+                }
+            }
+        }
+
+        // fetcttype filter
+        if ($request->filled('fetcttype')) {
+            $type = $request->fetcttype;
+            if ($type === 'youradmissions') $query->where('created_by', $user->id);
+            if ($type === 'assigntome') $query->where('assigned_to', $user->id);
+            if ($type === 'agentadmissions') $query->whereNotNull('agent_id');
+            else $query->whereNull('agent_id');
+        }
+
+        if ($request->filled('destination_id')) {
+            $destination_id = array_map('intval', (array) $request->destination_id);
+            $query->whereIn('destination_id', $destination_id);
+        }
+
+        if ($request->filled('intake_year')) {
+
+            $query->whereIn('intake_year',    $request->intake_year);
+        }
+        if ($request->filled('intake_month')) {
+
+            $months = array_map('strtoupper', (array) $request->intake_month);
+
+            $query->whereIn('intake_month', $months);
+
+            // $sql = str_replace('?', "'%s'", $query->toSql());
+            // $sql = vsprintf($sql, $query->getBindings());
+            // dd($sql);
+        }
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('price', 'like', "%{$search}%")
+                    ->orWhere('passport_number', 'like', "%{$search}%")
+                    ->orWhere('lead_name', 'like', "%{$search}%")
+                    ->orWhere('lead_email', 'like', "%{$search}%")
+                    ->orWhere('lead_phone', 'like', "%{$search}%");
+            });
+        }
+
+
+
+
+
+
+        $sql = str_replace('?', "'%s'", $query->toSql());
+        $sql = vsprintf($sql, $query->getBindings());
+        // echo $sql;
+
+        // echo "==========";
+        // echo $sql2;
+        // dd($sql , $brand_ids,$user);
+        // Sort by application count
+        if ($request->filled('sort_by_applications')) {
+            $direction = strtolower($request->get('sort_by_applications')) === 'asc' ? 'asc' : 'desc';
+            $query->orderBy('applications_count', $direction);
+        }
+        // List view
+        if (!$request->filled('sort_by_applications')) {
+            $query->orderByDesc('id');
+        }
+
+        $deals = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $deals->items(),
+            'current_page' => $deals->currentPage(),
+            'last_page' => $deals->lastPage(),
+            'total_records' => $deals->total(),
+            'per_page' => $deals->perPage()
+        ]);
+    }
+
     public function getAdmissionDetails(Request $request)
     {
 

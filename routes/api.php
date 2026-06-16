@@ -1006,6 +1006,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/GetadmissionNotes', [DealController::class, 'GetadmissionNotes']);
     Route::post('/deleteAdmission', [DealController::class, 'deleteAdmission']);
     Route::post('/assignTagsBulkadmissions', [DealController::class, 'addAdmissionTags']);
+    Route::post('/email_marketing_getadmissions', [DealController::class, 'email_marketing_getadmissions']);
 
 
 
