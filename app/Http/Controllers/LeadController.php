@@ -586,6 +586,197 @@ class LeadController extends Controller
             'per_page' => $leads->perPage(),
         ], 200);
     }
+    public function email_marketing_getleads(Request $request)
+    {
+        // ... validation stays same ...
+
+        $validator = Validator::make($request->all(), [
+
+            'perPage' => 'nullable|integer|min:1',
+            'page' => 'nullable|integer|min:1',
+            'name' => 'nullable|string',
+            'view' => 'required|string',
+            'brand' => 'nullable|integer|exists:users,id',
+            'region_id' => 'nullable|integer',
+            'branch_id' => 'nullable|integer',
+            'stage_id' => 'nullable',
+            'users' => 'nullable|array',
+            'lead_assigned_user' => 'sometimes|nullable',
+            'created_by' => 'sometimes|nullable',
+            'created_at_from' => 'nullable|date',
+            'created_at_to' => 'nullable|date',
+            'tag' => 'nullable|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $view = $request->input('view', 'list');
+        $usr = \Auth::user();
+        $perPage = 1000;
+        $page = $request->input('page', 1);
+
+        // ✅ Use the view instead of complex joins
+        $leadsQuery = LeadView::query();
+
+        // ✅ All filters become simple where clauses
+        if ($request->filled('Assigned')) {
+            $leadsQuery->whereNotNull('user_id');
+        }
+
+        if ($request->filled('Unassigned')) {
+            $leadsQuery->whereNull('user_id');
+        }
+
+        if ($request->filled('brand')) {
+            $leadsQuery->where('brand_id', $request->brand);
+        }
+
+        if ($request->filled('region_id')) {
+            $leadsQuery->where('region_id', $request->region_id);
+        }
+
+        if ($request->filled('branch_id')) {
+            $leadsQuery->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('stage_id')) {
+            $leadsQuery->whereIn('stage_id', $request->stage_id);
+        } else {
+            $leadsQuery->whereNotIn('stage_id', [6, 7]);
+        }
+
+        if ($request->filled('tag')) {
+            $leadsQuery->whereRaw('FIND_IN_SET(?, tag_ids)', [$request->tag]);
+        }
+
+        if ($request->filled('lead_assigned_user')) {
+            //$leadsQuery->where('user_id', $request->lead_assigned_user);
+
+            if (is_array($request->lead_assigned_user)) {
+                $leadsQuery->whereIn('user_id', $request->lead_assigned_user);
+            } else {
+                $leadsQuery->where('user_id', $request->lead_assigned_user);
+            }
+        }
+
+        if ($request->filled('created_by')) {
+            $leadsQuery->where('created_by', $request->created_by);
+        }
+
+        if ($request->filled('created_at_from')) {
+            $leadsQuery->whereDate('created_at', '>=', $request->created_at_from);
+        }
+
+        if ($request->filled('created_at_to')) {
+            $leadsQuery->whereDate('created_at', '<=', $request->created_at_to);
+        }
+
+        // ✅ Days at stage filter - now super simple!
+        if ($request->filled('days_at_stage')) {
+            $days = $request->days_at_stage;
+
+            if ($days === '30+') {
+                $leadsQuery->where('days_at_stage', '>=', 30);
+            } else {
+                $leadsQuery->whereBetween('days_at_stage', [(int)$days, (int)$days]);
+            }
+        }
+
+        if ($request->filled('fetcttype')) {
+
+            if ($request->fetcttype == 'yourleads') {
+                $leadsQuery->where('created_by', '=', $usr->id);
+            }
+
+            if ($request->fetcttype == 'assigntome') {
+                $leadsQuery->where('user_id', '=', $usr->id);
+            }
+        }
+
+        if ($request->fetcttype === 'agentleads') {
+            $leadsQuery->whereNotNull('agent_id');
+        } else {
+            if ($usr->type !== 'Agent') {
+                $leadsQuery->whereNull('agent_id');
+            }
+        }
+
+        // // User permissions
+        // $userType = $usr->type;
+        // if ($userType === 'company') {
+        //     $leadsQuery->where('brand_id', $usr->id);
+        // } elseif ($userType === 'Region Manager' && $usr->region_id) {
+        //     $leadsQuery->where('region_id', $usr->region_id);
+        // } elseif ($userType === 'Branch Manager' && $usr->branch_id) {
+        //     $leadsQuery->where('branch_id', $usr->branch_id);
+        // } elseif ($userType === 'Agent') {
+        //     $leadsQuery->where('agent_id', $usr->agent_id);
+        // }
+
+        // Apply user type-based filtering
+        // Initialize variables
+        $companies = FiltersBrands();
+        $brand_ids = array_keys($companies);
+
+        $userType = \Auth::user()->type;
+        if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+            // No additional filtering needed
+        } elseif ($userType === 'company') {
+            $leadsQuery->where('brand_id', \Auth::user()->id);
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+            $leadsQuery->whereIn('brand_id', $brand_ids);
+        } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
+            $leadsQuery->where('region_id', \Auth::user()->region_id);
+        } elseif (($userType === 'Branch Manager' || in_array($userType, ['Careers Consultant', 'Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || \Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id)) {
+            $leadsQuery->where('branch_id', \Auth::user()->branch_id);
+        } elseif ($userType === 'Agent') {
+            $leadsQuery->where('agent_id', $usr->agent_id);
+        } else {
+            $leadsQuery->where('user_id', \Auth::user()->id);
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $leadsQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%$search%")
+                    ->orWhere('email', 'like', "%$search%")
+                    ->orWhere('phone', 'like', "%$search%");
+            });
+        }
+
+
+
+
+
+        // $sql = str_replace('?', "'%s'", $leadsQuery->toSql());
+        // $sql = vsprintf($sql, $leadsQuery->getBindings());
+        // echo $sql;
+
+        // echo "==========";
+        // echo $sql2;
+        // dd($sql );
+
+        // ✅ List View - Simple pagination
+        $leads = $leadsQuery
+            ->where('is_converted', 0)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $leads->items(), // ✅ Everything already loaded!
+            'current_page' => $leads->currentPage(),
+            'last_page' => $leads->lastPage(),
+            'total_records' => $leads->total(),
+            'per_page' => $leads->perPage(),
+        ], 200);
+    }
     public function saveLead(Request $request)
     {
         $user = \Auth::user();
