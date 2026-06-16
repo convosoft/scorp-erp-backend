@@ -464,7 +464,7 @@ class DealController extends Controller
         $perPage = 1000;
         $page = $request->input('page', 1);
 
-        $query = AdmissionView::withCount('applications');
+        $query = AdmissionView::with('clients:id,email');
 
         // Permissions logic
         $companies = FiltersBrands();
@@ -603,7 +603,11 @@ class DealController extends Controller
             $query->orderByDesc('id');
         }
 
-        $deals = $query->paginate($perPage, ['*'], 'page', $page);
+        $deals = $query->select([
+            'id',
+            'name',
+        ])
+            ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'status' => 'success',
