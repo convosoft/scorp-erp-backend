@@ -474,11 +474,11 @@ class TaskController extends Controller
                 $fetcttype  =   $request->fetcttype;
 
                 if ($fetcttype == 'yourtask') {
-                    $finalQuery->where('deal_tasks.created_by', \Auth::id());
+                    $finalQuery->where('deal_tasks.assigned_to', \Auth::id());
                 }
 
                 if ($fetcttype == 'assignedbyme') {
-                    $finalQuery->where('deal_tasks.assigned_to', \Auth::id());
+                    $finalQuery->where('deal_tasks.created_by', \Auth::id());
                 }
 
                 if ($fetcttype == 'Quality') {
