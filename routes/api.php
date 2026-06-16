@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\AgencyTagController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginRegisterController;
@@ -336,6 +337,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/userTasksGet', [TaskController::class, 'userTasksGet']);
     Route::post('/createtask', [TaskController::class, 'createtask']);
     Route::post('/taskUpdate', [TaskController::class, 'taskUpdate']);
+    Route::post('/taskAddTags', [TaskController::class, 'taskAddTags']);
     Route::post('/TaskStatusChange', [TaskController::class, 'TaskStatusChange']);
     Route::post('/updateTaskStatus', [TaskController::class, 'updateTaskStatus']);
     Route::post('/ShuffleTaskOwnership', [TaskController::class, 'ShuffleTaskOwnership']);
@@ -852,6 +854,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/updateTaskTag', [TaskTagController::class, 'updateTaskTag']);
     Route::post('/deleteTaskTag', [TaskTagController::class, 'deleteTaskTag']);
     Route::post('/deleteBulkTaskTags', [TaskTagController::class, 'deleteBulkTaskTags']);
+
+    Route::get('/TaskTag', [GeneralController::class, 'TaskTag']);
+
+    Route::post('/Country/by/id', [GeneralController::class, 'CountryByID']);
     //   Agency tag
     Route::post('/addAgencyTag', [AgencyTagController::class, 'addAgencyTag']);
     Route::post('/getAgencyTags', [AgencyTagController::class, 'getAgencyTags']);
