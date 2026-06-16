@@ -685,6 +685,7 @@ class ApplicationsController extends Controller
 
 
             // OTHER JOINS
+            ->join('deals as d', 'd.id', '=', 'da.deal_id')
             ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
             ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
             ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
