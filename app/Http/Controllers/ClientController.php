@@ -86,12 +86,12 @@ class ClientController extends Controller
         // Build query
         $query = User::where('users.type', 'client')
             ->withCount('clientDeals')
-                ->addSelect([
-                    'client_applications_count' => \App\Models\Deal::selectRaw('COUNT(deal_applications.id)')
-                        ->join('deal_applications', 'deal_applications.deal_id', '=', 'deals.id')
-                        ->join('client_deals', 'client_deals.deal_id', '=', 'deals.id')
-                        ->whereColumn('client_deals.client_id', 'users.id')
-                ]);
+            ->addSelect([
+                'client_applications_count' => \App\Models\Deal::selectRaw('COUNT(deal_applications.id)')
+                    ->join('deal_applications', 'deal_applications.deal_id', '=', 'deals.id')
+                    ->join('client_deals', 'client_deals.deal_id', '=', 'deals.id')
+                    ->whereColumn('client_deals.client_id', 'users.id')
+            ]);
 
         // Filters
         if ($request->filled('name')) {
@@ -111,20 +111,20 @@ class ClientController extends Controller
         }
 
         if ($request->fetcttype == '') {
-                $query->where('users.blocked_status','=','0');
-            }
+            $query->where('users.blocked_status', '=', '0');
+        }
 
-         if ($request->fetcttype == 'blocked') {
-                $query->where('users.blocked_status','=','1');
-                 $query->where('users.unblock_status','!=','1');
-            }
+        if ($request->fetcttype == 'blocked') {
+            $query->where('users.blocked_status', '=', '1');
+            $query->where('users.unblock_status', '!=', '1');
+        }
         if ($request->fetcttype == 'active') {
-                $query->where('users.blocked_status','=','0');
-            }
+            $query->where('users.blocked_status', '=', '0');
+        }
 
-         if ($request->fetcttype == 'unblockedrequest') {
-                $query->where('users.unblock_status','=','1');
-            }
+        if ($request->fetcttype == 'unblockedrequest') {
+            $query->where('users.unblock_status', '=', '1');
+        }
 
 
         // Get paginated result
@@ -315,13 +315,13 @@ class ClientController extends Controller
 
     public function updateClient(Request $request)
     {
-            // Check permission
-            if (!Auth::user()->can('edit client')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Permission denied.',
-                ], 403);
-            }
+        // Check permission
+        if (!Auth::user()->can('edit client')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Permission denied.',
+            ], 403);
+        }
 
         // Validate request input
         $validator = Validator::make($request->all(), [
@@ -379,7 +379,7 @@ class ClientController extends Controller
             addLogActivity([
                 'type' => 'info',
                 'note' => json_encode([
-                    'title' =>  $client->name. '  contact Updated',
+                    'title' =>  $client->name . '  contact Updated',
                     'message' => 'Fields updated successfully',
                     'changes' => $changes
                 ]),
@@ -400,7 +400,7 @@ class ClientController extends Controller
     public function deleteClient(Request $request)
     {
 
-     // Validate request input
+        // Validate request input
         $validator = Validator::make($request->all(), [
             'id'              => 'required|exists:users,id',
         ]);
@@ -421,16 +421,16 @@ class ClientController extends Controller
                 /*  ClientDeal::where('client_id', '=', $client->id)->delete();
                     ClientPermission::where('client_id', '=', $client->id)->delete();*/
 
-                    addLogActivity([
-                'type' => 'warning',
-                'note' => json_encode([
-                    'title' => $client->name. ' contact deleted',
-                    'message' =>  $client->name. '  contact deleted',
-                ]),
-                'module_id' => $client->id,
-                'module_type' => 'client',
-                'notification_type' => 'Client Updated'
-            ]);
+                addLogActivity([
+                    'type' => 'warning',
+                    'note' => json_encode([
+                        'title' => $client->name . ' contact deleted',
+                        'message' =>  $client->name . '  contact deleted',
+                    ]),
+                    'module_id' => $client->id,
+                    'module_type' => 'client',
+                    'notification_type' => 'Client Updated'
+                ]);
                 $client->delete();
                 return redirect()->back()->with('success', __('Client Deleted Successfully!'));
             } else {
@@ -478,58 +478,60 @@ class ClientController extends Controller
         );
     }
 
-    public function clientDetail(Request $request) {
-            $validator = Validator::make($request->all(), [
-                'id' => 'required|exists:users,id',
-            ]);
+    public function clientDetail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
-            }
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()], 400);
+        }
 
-            $client = User::with([
-                'brand:id,name',
-                'region:id,name',
-                'branch:id,name',
-            ])->where('id', $request->id)->first();
-          $clienthistory =  HistoryRequest::where('student_id', $request->id)->orderBy('created_at', 'desc')->get();
+        $client = User::with([
+            'brand:id,name',
+            'region:id,name',
+            'branch:id,name',
+        ])->where('id', $request->id)->first();
+        $clienthistory =  HistoryRequest::where('student_id', $request->id)->orderBy('created_at', 'desc')->get();
 
-            if (!$client) {
-                return response()->json(['status' => 'error', 'message' => 'Client not found.'], 404);
-            }
+        if (!$client) {
+            return response()->json(['status' => 'error', 'message' => 'Client not found.'], 404);
+        }
 
 
 
-            $lead = Lead::select('leads.*')
-                ->join('deals as d', 'leads.is_converted', '=', 'd.id')
-                ->join('client_deals as cd', 'cd.deal_id', '=', 'd.id')
-                ->where('cd.client_id', $request->id)
-                ->first();
+        $lead = Lead::select('leads.*')
+            ->join('deals as d', 'leads.is_converted', '=', 'd.id')
+            ->join('client_deals as cd', 'cd.deal_id', '=', 'd.id')
+            ->where('cd.client_id', $request->id)
+            ->first();
 
-            $deals = Deal::join('client_deals', 'client_deals.deal_id', 'deals.id')
-                ->where('client_deals.client_id', $request->id)
-                ->select('deals.*')
-                ->get();
+        $deals = Deal::join('client_deals', 'client_deals.deal_id', 'deals.id')
+            ->where('client_deals.client_id', $request->id)
+            ->select('deals.*')
+            ->get();
 
-            $applications = Deal::join('deal_applications', 'deal_applications.deal_id', 'deals.id')
-                ->join('client_deals', 'client_deals.deal_id', 'deals.id')
-                ->where('client_deals.client_id', $request->id)
-                ->select('deal_applications.*')
-                ->get();
+        $applications = Deal::join('deal_applications', 'deal_applications.deal_id', 'deals.id')
+            ->join('client_deals', 'client_deals.deal_id', 'deals.id')
+            ->leftJoin('universities as u', 'u.id', '=', 'deal_applications.university_id')
+            ->where('client_deals.client_id', $request->id)
+            ->select('deal_applications.*,u.name as university_name')
+            ->get();
 
-            $stages = Stage::pluck('name', 'id');
+        $stages = Stage::pluck('name', 'id');
 
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'client' => $client,
-                    'lead' => $lead,
-                    'deals' => $deals,
-                    'applications' => $applications,
-                    'clienthistory' => $clienthistory,
-                    'stages' => $stages
-                ]
-            ]);
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'client' => $client,
+                'lead' => $lead,
+                'deals' => $deals,
+                'applications' => $applications,
+                'clienthistory' => $clienthistory,
+                'stages' => $stages
+            ]
+        ]);
     }
 
 
@@ -758,67 +760,67 @@ class ClientController extends Controller
 
 
 
- public function contactHistoryRequest(Request $request)
-{
-    if (!auth()->user()->can('manage client') && auth()->user()->type != 'super admin') {
+    public function contactHistoryRequest(Request $request)
+    {
+        if (!auth()->user()->can('manage client') && auth()->user()->type != 'super admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Permission Denied.'
+            ], 403);
+        }
+
+        $perPage = $request->get('num_results_on_page', env('RESULTS_ON_PAGE', 50));
+
+        $historyRequest = HistoryRequest::select(
+            'history_requests.*',
+            'Student.name as StudentName',
+            'Student.email as StudentEmail',
+            'Student.id as StudentId',
+            'history_requests.status as RequestsStatus'
+        )
+            ->join('users as Student', 'Student.id', '=', 'history_requests.student_id')
+            ->join('users', 'users.id', '=', 'history_requests.student_id')
+            ->where('users.type', 'client')
+            ->distinct('Student.id');
+
+        // Filter by name
+        if ($request->filled('name')) {
+            $historyRequest->where('users.name', 'like', '%' . $request->name . '%');
+        }
+
+        // Filter by email
+        if ($request->filled('email')) {
+            $historyRequest->where('users.email', 'like', '%' . $request->email . '%');
+        }
+
+        // Global search
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $historyRequest->where(function ($query) use ($search) {
+                $query->where('users.name', 'like', '%' . $search . '%')
+                    ->orWhere('users.passport_number', 'like', '%' . $search . '%');
+            });
+        }
+
+        $clients = $historyRequest
+            ->orderBy('users.created_at', 'DESC')
+            ->paginate($perPage);
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'Permission Denied.'
-        ], 403);
+            'status' => 'success',
+            'message' => 'History requests fetched successfully.',
+            'data' => $clients->items(),
+            'pagination' => [
+                'current_page' => $clients->currentPage(),
+                'last_page' => $clients->lastPage(),
+                'per_page' => $clients->perPage(),
+                'total' => $clients->total(),
+                'from' => $clients->firstItem(),
+                'to' => $clients->lastItem(),
+            ]
+        ]);
     }
-
-    $perPage = $request->get('num_results_on_page', env('RESULTS_ON_PAGE', 50));
-
-    $historyRequest = HistoryRequest::select(
-        'history_requests.*',
-        'Student.name as StudentName',
-        'Student.email as StudentEmail',
-        'Student.id as StudentId',
-        'history_requests.status as RequestsStatus'
-    )
-        ->join('users as Student', 'Student.id', '=', 'history_requests.student_id')
-        ->join('users', 'users.id', '=', 'history_requests.student_id')
-        ->where('users.type', 'client')
-        ->distinct('Student.id');
-
-    // Filter by name
-    if ($request->filled('name')) {
-        $historyRequest->where('users.name', 'like', '%' . $request->name . '%');
-    }
-
-    // Filter by email
-    if ($request->filled('email')) {
-        $historyRequest->where('users.email', 'like', '%' . $request->email . '%');
-    }
-
-    // Global search
-    if ($request->filled('search')) {
-        $search = $request->search;
-
-        $historyRequest->where(function ($query) use ($search) {
-            $query->where('users.name', 'like', '%' . $search . '%')
-                ->orWhere('users.passport_number', 'like', '%' . $search . '%');
-        });
-    }
-
-    $clients = $historyRequest
-        ->orderBy('users.created_at', 'DESC')
-        ->paginate($perPage);
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'History requests fetched successfully.',
-        'data' => $clients->items(),
-        'pagination' => [
-            'current_page' => $clients->currentPage(),
-            'last_page' => $clients->lastPage(),
-            'per_page' => $clients->perPage(),
-            'total' => $clients->total(),
-            'from' => $clients->firstItem(),
-            'to' => $clients->lastItem(),
-        ]
-    ]);
-}
 
     public function HistoryclientDetail($id)
     {
@@ -829,7 +831,8 @@ class ClientController extends Controller
             'html' => $html
         ]);
     }
-        public function blockClient(Request $request){
+    public function blockClient(Request $request)
+    {
         if (\Auth::user()->can('edit deal')) {
             $validator = \Validator::make($request->all(), [
                 'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
@@ -839,7 +842,7 @@ class ClientController extends Controller
             ]);
             if ($validator->fails()) {
                 $messages = $validator->getMessageBag();
-                 return response()->json([
+                return response()->json([
                     'status' => 'error',
                     'message' =>  $messages
                 ]);
@@ -857,9 +860,9 @@ class ClientController extends Controller
             $HistoryRequest->start_date = date('Y-m-d');
             $HistoryRequest->time = date('H:i:s');
             $HistoryRequest->note = json_encode([
-                    'title' => 'Contact Updated',
-                    'message' => 'Contact Blocked Request'
-                ]);
+                'title' => 'Contact Updated',
+                'message' => 'Contact Blocked Request'
+            ]);
             $HistoryRequest->module_type = 'Blocked';
             $HistoryRequest->student_id = $request->id;
             $HistoryRequest->created_by = \Auth::user()->id;
@@ -867,9 +870,9 @@ class ClientController extends Controller
             $HistoryRequest->attachments = $blockAttachmentName ?? null;
             $HistoryRequest->save();
 
-            $User->blocked_reason=$request->blocked_reason;
-            $User->blocked_status= '1';
-            $User->blocked_by= \Auth::id();
+            $User->blocked_reason = $request->blocked_reason;
+            $User->blocked_status = '1';
+            $User->blocked_by = \Auth::id();
             $User->save();
 
             $data = [
@@ -894,7 +897,8 @@ class ClientController extends Controller
         }
     }
 
-       public function unBlockClient(Request $request){
+    public function unBlockClient(Request $request)
+    {
         if (\Auth::user()->can('edit deal')) {
             $validator = \Validator::make($request->all(), [
                 'block_attachments' => 'required|file|mimes:png,jpg,pdf|max:1024', // Allow only jpg and pdf files with max size 1MB
@@ -903,7 +907,7 @@ class ClientController extends Controller
             ]);
             if ($validator->fails()) {
                 $messages = $validator->getMessageBag();
-                 return response()->json([
+                return response()->json([
                     'status' => 'error',
                     'message' =>  $messages
                 ]);
@@ -914,8 +918,8 @@ class ClientController extends Controller
                 $request->file('block_attachments')->move(public_path('unblock_attachments'), $blockAttachmentName);
                 $User->unblock_attachments = $blockAttachmentName; // Save the file path if needed
             }
-            $User->unblock_reason=$request->blocked_reason;
-            $User->unblock_status= '1';
+            $User->unblock_reason = $request->blocked_reason;
+            $User->unblock_status = '1';
 
 
 
@@ -925,8 +929,8 @@ class ClientController extends Controller
             $HistoryRequest->start_date = date('Y-m-d');
             $HistoryRequest->time = date('H:i:s');
             $HistoryRequest->note = json_encode([
-            'title' => 'Contact Updated',
-            'message' => 'Contact Unblocked Request'
+                'title' => 'Contact Updated',
+                'message' => 'Contact Unblocked Request'
             ]);
             $HistoryRequest->module_type = 'Unblocked';
             $HistoryRequest->student_id = $request->id;
@@ -939,7 +943,7 @@ class ClientController extends Controller
 
 
 
-            $User->unblock_by= \Auth::id();
+            $User->unblock_by = \Auth::id();
             $User->save();
 
             $data = [
@@ -965,23 +969,24 @@ class ClientController extends Controller
     }
 
 
-        public function updateUnblockRequestStatus(Request $request){
+    public function updateUnblockRequestStatus(Request $request)
+    {
 
-         $validator = \Validator::make($request->all(), [
-                'id' => 'required|exists:users,id',
-                'blocked_reason' => 'required',
-                'admin_action_status' => 'required',
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'blocked_reason' => 'required',
+            'admin_action_status' => 'required',
+        ]);
+        if ($validator->fails()) {
+            $messages = $validator->getMessageBag();
+            return response()->json([
+                'status' => 'error',
+                'message' =>  $messages
             ]);
-            if ($validator->fails()) {
-                $messages = $validator->getMessageBag();
-                 return response()->json([
-                    'status' => 'error',
-                    'message' =>  $messages
-                ]);
-            }
+        }
         if (\Auth::user()->can('edit deal')) {
-            if($request->admin_action_status != null){
-                 if($request->admin_action_status == '1'){
+            if ($request->admin_action_status != null) {
+                if ($request->admin_action_status == '1') {
 
                     $User = User::findOrFail($request->id);
 
@@ -991,8 +996,8 @@ class ClientController extends Controller
                     $HistoryRequest->start_date = date('Y-m-d');
                     $HistoryRequest->time = date('H:i:s');
                     $HistoryRequest->note = json_encode([
-                    'title' => 'Contact Updated',
-                    'message' => 'Contact Approved Unblock Request'
+                        'title' => 'Contact Updated',
+                        'message' => 'Contact Approved Unblock Request'
                     ]);
                     $HistoryRequest->module_type = 'Approved';
                     $HistoryRequest->student_id = $request->id;
@@ -1018,12 +1023,12 @@ class ClientController extends Controller
                     ];
                     addLogActivity($data);
 
-                     return response()->json([
+                    return response()->json([
                         'status' => 'success',
                         'message' => 'Unlock Request Submit Successfully',
                         'id' => $User->id,
-                    ],200);
-                 }else{
+                    ], 200);
+                } else {
 
                     $User = User::findOrFail($request->id);
 
@@ -1036,8 +1041,8 @@ class ClientController extends Controller
                     $HistoryRequest->start_date = date('Y-m-d');
                     $HistoryRequest->time = date('H:i:s');
                     $HistoryRequest->note = json_encode([
-                    'title' => 'Contact Updated',
-                    'message' => 'Contact Rejected Unblock Request'
+                        'title' => 'Contact Updated',
+                        'message' => 'Contact Rejected Unblock Request'
                     ]);
                     $HistoryRequest->module_type = 'Rejected';
                     $HistoryRequest->student_id = $request->id;
@@ -1062,15 +1067,11 @@ class ClientController extends Controller
                         'message' => 'Rejected Client Request Successfully',
                         'id' => $request->id,
                     ]);
-                 }
-            }else{
-
+                }
+            } else {
             }
         } else {
             return response()->json(['error' => __('Permission Denied.')], 401);
         }
     }
-
-
-
 }
