@@ -672,6 +672,12 @@ class ApplicationsController extends Controller
             ->select(
                 'da.name as application_name',
                 'da.id as application_id',
+                'da.stage_id',
+                'd.assigned_to',
+                'd.university_id',
+                'd.brand_id',
+                'd.branch_id',
+                'd.contact_id',
                 'client.name as client_name',
                 'client.email as client_email',
             )
