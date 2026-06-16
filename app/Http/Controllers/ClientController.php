@@ -512,11 +512,16 @@ class ClientController extends Controller
             ->select('deals.*')
             ->get();
 
-        $applications = Deal::join('deal_applications', 'deal_applications.deal_id', 'deals.id')
-            ->join('client_deals', 'client_deals.deal_id', 'deals.id')
-            ->leftJoin('universities as u', 'u.id', '=', 'deal_applications.university_id')
-            ->where('client_deals.client_id', $request->id)
-            ->select('deal_applications.*,u.name as university_name')
+        $applications = Deal::query()
+            ->join('deal_applications as da', 'da.deal_id', '=', 'deals.id')
+            ->join('client_deals as cd', 'cd.deal_id', '=', 'deals.id')
+            ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
+            ->where('cd.client_id', $request->id)
+            ->select([
+                'da.*',
+                'u.name as university_name'
+            ])
+            ->distinct()
             ->get();
 
         $stages = Stage::pluck('name', 'id');
