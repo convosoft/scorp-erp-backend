@@ -34,90 +34,92 @@ if (!function_exists('countries')) {
     }
 }
 
-  function checkUserAssociationsBeforeDelete($userId)
-    {
-        if (empty($userId)) {
-            return "Error: User ID is required.";
-        }
-
-        $tableLabels = [
-            'deal_tasks' => 'Tasks',
-            'leads' => 'Leads',
-            'deals' => 'Admissions and Applications',
-        ];
-
-        $tables = [
-            'deal_tasks' => ['created_by', 'assigned_to'],
-            'leads' => ['user_id', 'created_by'],
-            'deals' => ['created_by', 'assigned_to'],
-        ];
-
-        $user = \Auth::user(); // Fetch authenticated user
-        $filtersBrands = array_keys(FiltersBrands()); // Get filters for brands
-
-        // Fetch associated tables with record counts
-        $associatedTables = collect($tables)->mapWithKeys(function ($columns, $table) use ($userId, $user, $filtersBrands) {
-            $count = \DB::table($table)
-                ->where(function ($query) use ($columns, $userId, $user, $filtersBrands, $table) {
-                    // Check for user association in the specified columns
-                    foreach ($columns as $column) {
-                        $query->orWhere($column, $userId);
-                    }
-
-                    // Apply filtering logic based on user roles
-                    if ($user->type !== 'HR') {
-                        if ($user->type === 'super admin' || $user->can('level 1')) {
-                            $filtersBrands[] = '3751';
-                            $query->whereIn("$table.brand_id", $filtersBrands);
-                        } elseif ($user->type === 'company') {
-                            $query->where("$table.brand_id", $user->id);
-                        } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
-                            $query->whereIn("$table.brand_id", $filtersBrands);
-                        } elseif ($user->type === 'Region Manager' || ($user->can('level 3') && !empty($user->region_id))) {
-                            $query->where("$table.region_id", $user->region_id);
-                        } elseif (
-                            in_array($user->type, [
-                                'Branch Manager',
-                                'Admissions Officer',
-                                'Careers Consultant',
-                                'Admissions Manager',
-                                'Marketing Officer',
-                            ]) || ($user->can('level 4') && !empty($user->branch_id))
-                        ) {
-                            $query->where("$table.branch_id", $user->branch_id);
-                        } elseif ($user->type === 'Agent') {
-                            $query->where("$table.assigned_to", $user->id)
-                                ->orWhere("$table.created_by", $user->id);
-                        } else {
-                            $query->where("$table.branch_id", $user->branch_id);
-                        }
-                    }
-                })->count();
-
-            return $count > 0 ? [$table => $count] : [];
-        });
-
-        if ($associatedTables->isNotEmpty()) {
-            // Map to user-friendly labels with counts
-            $associatedMessages = $associatedTables->map(function ($count, $table) use ($tableLabels) {
-                $label = $tableLabels[$table] ?? $table; // Default to table name if no label exists
-                return "$label ($count record(s))";
-            });
-
-            return "User is associated with the following: " . $associatedMessages->join(', ') . ". Please remove these associations before deleting the user.";
-        }
-
-        return null;
+function checkUserAssociationsBeforeDelete($userId)
+{
+    if (empty($userId)) {
+        return "Error: User ID is required.";
     }
 
-function encryptData($data, $key = "mysecretkey1234567890123456") {
+    $tableLabels = [
+        'deal_tasks' => 'Tasks',
+        'leads' => 'Leads',
+        'deals' => 'Admissions and Applications',
+    ];
+
+    $tables = [
+        'deal_tasks' => ['created_by', 'assigned_to'],
+        'leads' => ['user_id', 'created_by'],
+        'deals' => ['created_by', 'assigned_to'],
+    ];
+
+    $user = \Auth::user(); // Fetch authenticated user
+    $filtersBrands = array_keys(FiltersBrands()); // Get filters for brands
+
+    // Fetch associated tables with record counts
+    $associatedTables = collect($tables)->mapWithKeys(function ($columns, $table) use ($userId, $user, $filtersBrands) {
+        $count = \DB::table($table)
+            ->where(function ($query) use ($columns, $userId, $user, $filtersBrands, $table) {
+                // Check for user association in the specified columns
+                foreach ($columns as $column) {
+                    $query->orWhere($column, $userId);
+                }
+
+                // Apply filtering logic based on user roles
+                if ($user->type !== 'HR') {
+                    if ($user->type === 'super admin' || $user->can('level 1')) {
+                        $filtersBrands[] = '3751';
+                        $query->whereIn("$table.brand_id", $filtersBrands);
+                    } elseif ($user->type === 'company') {
+                        $query->where("$table.brand_id", $user->id);
+                    } elseif (in_array($user->type, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
+                        $query->whereIn("$table.brand_id", $filtersBrands);
+                    } elseif ($user->type === 'Region Manager' || ($user->can('level 3') && !empty($user->region_id))) {
+                        $query->where("$table.region_id", $user->region_id);
+                    } elseif (
+                        in_array($user->type, [
+                            'Branch Manager',
+                            'Admissions Officer',
+                            'Careers Consultant',
+                            'Admissions Manager',
+                            'Marketing Officer',
+                        ]) || ($user->can('level 4') && !empty($user->branch_id))
+                    ) {
+                        $query->where("$table.branch_id", $user->branch_id);
+                    } elseif ($user->type === 'Agent') {
+                        $query->where("$table.assigned_to", $user->id)
+                            ->orWhere("$table.created_by", $user->id);
+                    } else {
+                        $query->where("$table.branch_id", $user->branch_id);
+                    }
+                }
+            })->count();
+
+        return $count > 0 ? [$table => $count] : [];
+    });
+
+    if ($associatedTables->isNotEmpty()) {
+        // Map to user-friendly labels with counts
+        $associatedMessages = $associatedTables->map(function ($count, $table) use ($tableLabels) {
+            $label = $tableLabels[$table] ?? $table; // Default to table name if no label exists
+            return "$label ($count record(s))";
+        });
+
+        return "User is associated with the following: " . $associatedMessages->join(', ') . ". Please remove these associations before deleting the user.";
+    }
+
+    return null;
+}
+
+function encryptData($data, $key = "mysecretkey1234567890123456")
+{
     $cipher = "AES-256-CBC";
     $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($cipher));
     $encrypted = openssl_encrypt($data, $cipher, $key, 0, $iv);
     return urlencode(base64_encode($iv . $encrypted));
 }
 
-function decryptData($data, $key = "mysecretkey1234567890123456") {
+function decryptData($data, $key = "mysecretkey1234567890123456")
+{
     $cipher = "AES-256-CBC";
     $data = base64_decode($data);
     $iv_length = openssl_cipher_iv_length($cipher);
@@ -216,7 +218,7 @@ if (!function_exists('getAllEmployees')) {
             $usersQuery->where('id', \Auth::user()->id);
         }
         // Apply exclusion of user types
-        return $usersQuery->whereNotIn('type', $excludedTypes)->pluck('name','id');
+        return $usersQuery->whereNotIn('type', $excludedTypes)->pluck('name', 'id');
     }
 }
 
@@ -334,107 +336,107 @@ function generateDigitOTP($len = 6)
     return $otp;
 }
 
- function buildEmailData($template, $user,$cc=null)
-    {
-        if (!$template) {
-            return [];
-        }
-
-        $subject = replaceTags($template->subject, $user);
-        $content = replaceTags($template->template, $user);
-
-        return [
-            'to'           => $user->email,
-            'cc'           => $cc,
-            'subject'      => $subject,
-            'brand_id'     => $user->brand_id,
-            'from_email'   => $template->from ?? 'hr@scorp.co',
-            'branch_id'    => $user->branch_id,
-            'region_id'    => $user->region_id,
-            'is_send'      => '0',
-            'sender_id'    => 0,
-            'created_by'   => 0,
-            'priority'     => 1,
-            'content'      => $content,
-            'stage_id'     => null,
-            'pipeline_id'  => null,
-            'template_id'  => $template->id,
-            'related_type' => 'employee',
-            'related_id'   => $user->id,
-            'created_at'   => now(),
-            'updated_at'   => now(),
-        ];
+function buildEmailData($template, $user, $cc = null)
+{
+    if (!$template) {
+        return [];
     }
 
-     function replaceTags($content, $user)
-    {
-        $tags = EmailTag::all();
-        $replacePairs = [];
+    $subject = replaceTags($template->subject, $user);
+    $content = replaceTags($template->template, $user);
 
-        foreach ($tags as $tag) {
-            $key = '{' . $tag->tag . '}';
-               // If tag exists as dynamic property on $user (from $additionalTags)
-                if (isset($user->{$tag->tag})) {
-                    $value = $user->{$tag->tag};
-                } else {
-                    $value = ''; // default
-                }
+    return [
+        'to'           => $user->email,
+        'cc'           => $cc,
+        'subject'      => $subject,
+        'brand_id'     => $user->brand_id,
+        'from_email'   => $template->from ?? 'hr@scorp.co',
+        'branch_id'    => $user->branch_id,
+        'region_id'    => $user->region_id,
+        'is_send'      => '0',
+        'sender_id'    => 0,
+        'created_by'   => 0,
+        'priority'     => 1,
+        'content'      => $content,
+        'stage_id'     => null,
+        'pipeline_id'  => null,
+        'template_id'  => $template->id,
+        'related_type' => 'employee',
+        'related_id'   => $user->id,
+        'created_at'   => now(),
+        'updated_at'   => now(),
+    ];
+}
 
-            switch ($tag->tag) {
-                case 'employee_name':
-                    $value = $user->name;
-                    break;
-                case 'employee_email':
-                    $value = $user->email;
-                    break;
-                case 'DOB':
-                    $value = $user->date_of_birth;
-                    break;
+function replaceTags($content, $user)
+{
+    $tags = EmailTag::all();
+    $replacePairs = [];
 
-                case 'branch_manager_name':
-                    $value = optional(optional($user->branch)->manager)->name ?? '';
-                    break;
-                case 'branch_manager_email':
-                    $value = optional(optional($user->branch)->manager)->email ?? '';
-                    break;
-
-                case 'date_today':
-                    $value = now()->toDateString();
-                    break;
-                case 'employee_designation':
-                    $value = optional($user->designation)->name ?? '';
-                    break;
-                case 'commencedDate':
-                    $value = optional(
-                        $user->employeeMetas->where('meta_key', 'commencedDate')->first()
-                    )->meta_value ?? '';
-                    break;
-                        // 🔹 Document info
-                    case 'document_name':
-                        $value = $user->document_name ?? '';
-                        break;
-                    case 'document_expiry':
-                        $value = $user->document_expiry ?? '';
-                        break;
-
-                    // 🔹 Managers
-                    case 'project_manager_name':
-                        $value = $user->project_manager?->name ?? '';
-                        break;
-                    case 'project_manager_email':
-                        $value = $user->project_manager?->email ?? '';
-                        break;
-                    }
-
-            $replacePairs[$key] = $value;
+    foreach ($tags as $tag) {
+        $key = '{' . $tag->tag . '}';
+        // If tag exists as dynamic property on $user (from $additionalTags)
+        if (isset($user->{$tag->tag})) {
+            $value = $user->{$tag->tag};
+        } else {
+            $value = ''; // default
         }
 
-        return strtr($content, $replacePairs);
+        switch ($tag->tag) {
+            case 'employee_name':
+                $value = $user->name;
+                break;
+            case 'employee_email':
+                $value = $user->email;
+                break;
+            case 'DOB':
+                $value = $user->date_of_birth;
+                break;
+
+            case 'branch_manager_name':
+                $value = optional(optional($user->branch)->manager)->name ?? '';
+                break;
+            case 'branch_manager_email':
+                $value = optional(optional($user->branch)->manager)->email ?? '';
+                break;
+
+            case 'date_today':
+                $value = now()->toDateString();
+                break;
+            case 'employee_designation':
+                $value = optional($user->designation)->name ?? '';
+                break;
+            case 'commencedDate':
+                $value = optional(
+                    $user->employeeMetas->where('meta_key', 'commencedDate')->first()
+                )->meta_value ?? '';
+                break;
+            // 🔹 Document info
+            case 'document_name':
+                $value = $user->document_name ?? '';
+                break;
+            case 'document_expiry':
+                $value = $user->document_expiry ?? '';
+                break;
+
+            // 🔹 Managers
+            case 'project_manager_name':
+                $value = $user->project_manager?->name ?? '';
+                break;
+            case 'project_manager_email':
+                $value = $user->project_manager?->email ?? '';
+                break;
+        }
+
+        $replacePairs[$key] = $value;
     }
+
+    return strtr($content, $replacePairs);
+}
 
 
 if (!function_exists('addLogActivity')) {
-    function addLogActivity($data = [],$is_cron= 0)
+    function addLogActivity($data = [], $is_cron = 0)
     {
         $new_log = new LogActivity();
         $new_log->type = $data['type'];
@@ -443,11 +445,11 @@ if (!function_exists('addLogActivity')) {
         $new_log->note = $data['note'];
         $new_log->module_type = isset($data['module_type']) ? $data['module_type'] : '';
         $new_log->module_id = isset($data['module_id']) ? $data['module_id'] : 0;
-        if($is_cron==1){
+        if ($is_cron == 1) {
             $new_log->created_by = 0;
-        }else{
+        } else {
             $new_log->created_by = \Auth::user()?->id ?? 0;
-            }
+        }
 
         $new_log->save();
 
@@ -455,67 +457,67 @@ if (!function_exists('addLogActivity')) {
 
         ///////////////////Creating Notification
         $msg = '';
-        if(strtolower($data['notification_type']) == 'application stage update'){
+        if (strtolower($data['notification_type']) == 'application stage update') {
             $msg = 'Application stage updated.';
-        }else if(strtolower($data['notification_type']) == 'lead updated'){
+        } else if (strtolower($data['notification_type']) == 'lead updated') {
             $msg = 'Lead updated.';
-        }else if(strtolower($data['module_type']) == 'application'){
+        } else if (strtolower($data['module_type']) == 'application') {
             $msg = 'New application created.';
-        }else if(strtolower($data['notification_type']) == 'University Created'){
+        } else if (strtolower($data['notification_type']) == 'University Created') {
             $msg = 'New University Created.';
-        }else if(strtolower($data['notification_type']) == 'University Updated'){
+        } else if (strtolower($data['notification_type']) == 'University Updated') {
             $msg = 'University Updated.';
-        }else if(strtolower($data['notification_type']) == 'University Deleted'){
+        } else if (strtolower($data['notification_type']) == 'University Deleted') {
             $msg = 'University Deleted.';
-        }else if(strtolower($data['notification_type']) == 'Deal Created'){
+        } else if (strtolower($data['notification_type']) == 'Deal Created') {
             $msg = 'Deal Created.';
-        }else if(strtolower($data['notification_type']) == 'Deal Updated'){
+        } else if (strtolower($data['notification_type']) == 'Deal Updated') {
             $msg = 'Deal Updated.';
-        }else if(strtolower($data['notification_type']) == 'Lead Updated'){
+        } else if (strtolower($data['notification_type']) == 'Lead Updated') {
             $msg = 'Lead Updated.';
-        }else if(strtolower($data['notification_type']) == 'Deal Notes Created'){
+        } else if (strtolower($data['notification_type']) == 'Deal Notes Created') {
             $msg = 'Deal Notes Created.';
-        }else if(strtolower($data['notification_type']) == 'Task Created'){
+        } else if (strtolower($data['notification_type']) == 'Task Created') {
             $msg = 'Task Created.';
-        }else if(strtolower($data['notification_type']) == 'Task Updated'){
+        } else if (strtolower($data['notification_type']) == 'Task Updated') {
             $msg = 'Task Updated.';
-        }else if(strtolower($data['notification_type']) == 'Stage Updated'){
+        } else if (strtolower($data['notification_type']) == 'Stage Updated') {
             $msg = 'Stage Updated.';
-        }else if(strtolower($data['notification_type']) == 'Deal Stage Updated'){
+        } else if (strtolower($data['notification_type']) == 'Deal Stage Updated') {
             $msg = 'Deal Stage Updated.';
-        }else if(strtolower($data['notification_type']) == 'Organization Created'){
+        } else if (strtolower($data['notification_type']) == 'Organization Created') {
             $msg = 'Organization Created.';
-        }else if(strtolower($data['notification_type']) == 'Organization Updated'){
+        } else if (strtolower($data['notification_type']) == 'Organization Updated') {
             $msg = 'Organization Updated.';
-        }else if(strtolower($data['notification_type']) == 'Lead Notes Updated'){
+        } else if (strtolower($data['notification_type']) == 'Lead Notes Updated') {
             $msg = 'Lead Notes Updated.';
-        }else if(strtolower($data['notification_type']) == 'Notes created'){
+        } else if (strtolower($data['notification_type']) == 'Notes created') {
             $msg = 'Notes created.';
-        }else if(strtolower($data['notification_type']) == 'Task Deleted'){
+        } else if (strtolower($data['notification_type']) == 'Task Deleted') {
             $msg = 'Task Deleted.';
-        }else if(strtolower($data['notification_type']) == 'Lead Created'){
+        } else if (strtolower($data['notification_type']) == 'Lead Created') {
             $msg = 'Lead Created.';
-        }else if(strtolower($data['notification_type']) == 'Lead Updated'){
+        } else if (strtolower($data['notification_type']) == 'Lead Updated') {
             $msg = 'Lead Updated.';
-        }else if(strtolower($data['notification_type']) == 'Lead Deleted'){
+        } else if (strtolower($data['notification_type']) == 'Lead Deleted') {
             $msg = 'Lead Deleted.';
-        }else if(strtolower($data['notification_type']) == 'Discussion created'){
+        } else if (strtolower($data['notification_type']) == 'Discussion created') {
             $msg = 'Discussion created.';
-        }else if(strtolower($data['notification_type']) == 'Drive link added'){
+        } else if (strtolower($data['notification_type']) == 'Drive link added') {
             $msg = 'Drive link added.';
-        }else if(strtolower($data['notification_type']) == 'Lead Notes Updated'){
+        } else if (strtolower($data['notification_type']) == 'Lead Notes Updated') {
             $msg = 'Lead Notes Updated.';
-        }else if(strtolower($data['notification_type']) == 'Lead Notes Deleted'){
+        } else if (strtolower($data['notification_type']) == 'Lead Notes Deleted') {
             $msg = 'Lead Notes Deleted.';
-        }else if(strtolower($data['notification_type']) == 'Lead Converted'){
+        } else if (strtolower($data['notification_type']) == 'Lead Converted') {
             $msg = 'Lead Converted.';
-        }else if(strtolower($data['notification_type']) == 'Application Notes Created'){
+        } else if (strtolower($data['notification_type']) == 'Application Notes Created') {
             $msg = 'Application Notes Created.';
-        }else if(strtolower($data['notification_type']) == 'Application Notes Updated'){
+        } else if (strtolower($data['notification_type']) == 'Application Notes Updated') {
             $msg = 'Application Notes Updated.';
-        }else if(strtolower($data['notification_type']) == 'Applicaiton Notes Deleted'){
+        } else if (strtolower($data['notification_type']) == 'Applicaiton Notes Deleted') {
             $msg = 'Applicaiton Notes Deleted.';
-        }else{
+        } else {
             $msg = 'New record created';
         }
 
@@ -528,7 +530,7 @@ if (!function_exists('addLogActivity')) {
         // $notification->is_read = 0;
 
         // $notification->save();
-       // event(new NewNotification($notification));
+        // event(new NewNotification($notification));
     }
 }
 
@@ -598,7 +600,6 @@ if (!function_exists('FiltersBrands')) {
         }
 
         if (\Auth::user()->type == 'super admin' || \Auth::user()->type == 'Admin Team' || \Auth::user()->type == 'HR' || \Auth::user()->can('level 1')) {
-
         } else if (\Auth::user()->type == 'Project Director' || \Auth::user()->type == 'Project Manager' || \Auth::user()->can('level 2')) {
             $permittedCompanies = allPermittedCompanies();
             $brands->whereIn('id', $permittedCompanies);
@@ -612,7 +613,7 @@ if (!function_exists('FiltersBrands')) {
             $branches = Branch::where('branch_manager_id', \Auth::user()->id)->pluck('id')->toArray();
             $brands->whereIn('branch_id', $branches);
             $brands->orWhere('id', $user_brand);
-        } else if(\Auth::user()->can('level 5')){
+        } else if (\Auth::user()->can('level 5')) {
             $brands->where('id', $user_brand);
         } else {
             $brands->where('id', $user_brand);
@@ -739,7 +740,7 @@ if (!function_exists('FiltersBranchUsers')) {
             return $unique_users;
         }
 
-        return  'Branch not found' ;
+        return  'Branch not found';
     }
 }
 if (!function_exists('FilterUserByBranchId')) {
@@ -930,58 +931,58 @@ if (!function_exists('FiltersBranchUsersFORTASK')) {
 if (!function_exists('FiltersBranchUsersFORTASK_FORM_EDIT')) {
     function FiltersBranchUsersFORTASK_FORM_EDIT($id)
     {
-        $branch=Branch::find($id);
-        if(!empty($branch)){
+        $branch = Branch::find($id);
+        if (!empty($branch)) {
 
-         //get region of the branch
-         $regions = Region::select(['regions.id'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('id')->toArray();
+            //get region of the branch
+            $regions = Region::select(['regions.id'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('id')->toArray();
 
-         $brand_ids = Region::select(['regions.brands'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('brands')->toArray();
+            $brand_ids = Region::select(['regions.brands'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('brands')->toArray();
 
-         //super admins
-         $admins=[];
-         if($branch->name == 'Admin'){
-            $admins = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
-        }
-        $Product_Coordinator=[];
-        if($branch->name == 'Product'){
-           $Product_Coordinator = User::whereIn('type', ['Product Coordinator'])->pluck('name', 'id')->toArray();
-       }
+            //super admins
+            $admins = [];
+            if ($branch->name == 'Admin') {
+                $admins = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+            }
+            $Product_Coordinator = [];
+            if ($branch->name == 'Product') {
+                $Product_Coordinator = User::whereIn('type', ['Product Coordinator'])->pluck('name', 'id')->toArray();
+            }
 
-       $Marketing_team=[];
-       if($branch->name == 'Marketing'){
-          $Marketing_team = User::whereIn('type', ['Marketing Officer'])->pluck('name', 'id')->toArray();
-       }
+            $Marketing_team = [];
+            if ($branch->name == 'Marketing') {
+                $Marketing_team = User::whereIn('type', ['Marketing Officer'])->pluck('name', 'id')->toArray();
+            }
 
-         //project directors
-         $project_directors = User::whereIn('type', ['Project Director', 'Project Manager'])->where('brand_id', $brand_ids)->pluck('name', 'id')->toArray();
+            //project directors
+            $project_directors = User::whereIn('type', ['Project Director', 'Project Manager'])->where('brand_id', $brand_ids)->pluck('name', 'id')->toArray();
 
-         $regional_managers = User::where('type', 'Region Manager')->whereIn('region_id', $regions)->pluck('name', 'id')->toArray();
-
-
-        // $users = User::whereNotIn('type', ['super admin', 'company', 'accountant', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
-        $users = User::whereNotIn('type', ['super admin', 'company', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
-
-        $login_user=[\Auth::id() => \Auth::user()->name];
-        $html = '';
-
-        if(isset($_GET['page']) && $_GET['page'] == 'lead_list'){
-            $html .= '<option value="null">Not Assign</option> ';
-        }
+            $regional_managers = User::where('type', 'Region Manager')->whereIn('region_id', $regions)->pluck('name', 'id')->toArray();
 
 
-        $unique_users = [];
-        $users_lists = [$admins, $project_directors, $regional_managers, $users,$Product_Coordinator,$Marketing_team,$login_user];
-        foreach ($users_lists as $users) {
-            foreach ($users as $key => $user) {
-                if (!isset($unique_users[$key]) && $key > 0) {
-                    $unique_users[$key] = $user;
+            // $users = User::whereNotIn('type', ['super admin', 'company', 'accountant', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
+            $users = User::whereNotIn('type', ['super admin', 'company', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
+
+            $login_user = [\Auth::id() => \Auth::user()->name];
+            $html = '';
+
+            if (isset($_GET['page']) && $_GET['page'] == 'lead_list') {
+                $html .= '<option value="null">Not Assign</option> ';
+            }
+
+
+            $unique_users = [];
+            $users_lists = [$admins, $project_directors, $regional_managers, $users, $Product_Coordinator, $Marketing_team, $login_user];
+            foreach ($users_lists as $users) {
+                foreach ($users as $key => $user) {
+                    if (!isset($unique_users[$key]) && $key > 0) {
+                        $unique_users[$key] = $user;
+                    }
                 }
             }
-        }
 
-         return $unique_users;
-     }
+            return $unique_users;
+        }
     }
 }
 
@@ -1001,27 +1002,27 @@ if (!function_exists('stagesRange')) {
 }
 
 if (!function_exists('GetTrainers')) {
-        function GetTrainers()
-        {
-            $Trainer_query = App\Models\Trainer::query();
-            // Apply user type-based filtering
-            $userType = \Auth::user()->type;
-            if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
-                // No additional filtering needed
-            } elseif ($userType === 'company') {
-                $Trainer_query->where('trainers.brand_id', \Auth::user()->id);
-            } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
-                $Trainer_query->whereIn('trainers.brand_id', array_keys(FiltersBrands()));
-            } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
-                $Trainer_query->where('trainers.region_id', \Auth::user()->region_id);
-            } elseif (($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || \Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id)) {
-                $Trainer_query->where('trainers.branch_id', \Auth::user()->branch_id);
-            } else {
-                $Trainer_query->where('trainers.created_by', \Auth::user()->id);
-            }
-
-            return $Trainer_query->get()->pluck('firstname', 'id');
+    function GetTrainers()
+    {
+        $Trainer_query = App\Models\Trainer::query();
+        // Apply user type-based filtering
+        $userType = \Auth::user()->type;
+        if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+            // No additional filtering needed
+        } elseif ($userType === 'company') {
+            $Trainer_query->where('trainers.brand_id', \Auth::user()->id);
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+            $Trainer_query->whereIn('trainers.brand_id', array_keys(FiltersBrands()));
+        } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
+            $Trainer_query->where('trainers.region_id', \Auth::user()->region_id);
+        } elseif (($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || \Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id)) {
+            $Trainer_query->where('trainers.branch_id', \Auth::user()->branch_id);
+        } else {
+            $Trainer_query->where('trainers.created_by', \Auth::user()->id);
         }
+
+        return $Trainer_query->get()->pluck('firstname', 'id');
+    }
 }
 
 if (!function_exists('GetDepartments')) {
@@ -1088,13 +1089,13 @@ if (!function_exists('CountJob')) {
         }
 
 
-        return $count_query->whereIn('status',$status)->count();
+        return $count_query->whereIn('status', $status)->count();
     }
 }
 
 
 if (!function_exists('RoleBaseTableGet')) {
-    function RoleBaseTableGet($count_query,$brand,$region,$branch,$byMe)
+    function RoleBaseTableGet($count_query, $brand, $region, $branch, $byMe)
     {
         $companies = FiltersBrands();
         $brand_ids = array_keys($companies);
@@ -1122,27 +1123,26 @@ if (!function_exists('GetAllbrachesByPermission')) {
     function GetAllbrachesByPermission()
     {
         $branch_query = Branch::select(['branches.*']);
-            if(\Auth::user()->type == 'super admin' || \Auth::user()->type == 'Admin Team' || \Auth::user()->type == 'HR'){
-            }else if(\Auth::user()->type == 'company'){
+        if (\Auth::user()->type == 'super admin' || \Auth::user()->type == 'Admin Team' || \Auth::user()->type == 'HR') {
+        } else if (\Auth::user()->type == 'company') {
             $branch_query->where('brands', \Auth::user()->id);
-            }else{
-                $companies = FiltersBrands();
-                $brand_ids = array_keys($companies);
-                $branch_query->whereIn('brands', $brand_ids);
-            }
-            if(\Auth::user()->type == 'Region Manager'){
-                $branch_query->where('region_id', \Auth::user()->region_id);
-            }
+        } else {
+            $companies = FiltersBrands();
+            $brand_ids = array_keys($companies);
+            $branch_query->whereIn('brands', $brand_ids);
+        }
+        if (\Auth::user()->type == 'Region Manager') {
+            $branch_query->where('region_id', \Auth::user()->region_id);
+        }
 
 
-            return $branch_query->get();
-
-
+        return $branch_query->get();
     }
 }
 
 if (! function_exists('limit_words')) {
-    function limit_words($string, $word_limit) {
+    function limit_words($string, $word_limit)
+    {
         $words = explode(' ', $string);
         return implode(' ', array_slice($words, 0, $word_limit));
     }
@@ -1164,39 +1164,36 @@ if (!function_exists('BrandsRegionsBranches')) {
         //$project_dm = [];
 
         //$super_admins = User::whereIn('type', ['super admin'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-        if(!empty(request()->segment(1)) && !empty(request()->segment(2)))
-        {
-            if(request()->segment(1).'/'.request()->segment(2) == 'tages/edit')
-            {
-                $leadTag=LeadTag::find(request()->segment(3));
-                if(!empty($leadTag))
-                {
+        if (!empty(request()->segment(1)) && !empty(request()->segment(2))) {
+            if (request()->segment(1) . '/' . request()->segment(2) == 'tages/edit') {
+                $leadTag = LeadTag::find(request()->segment(3));
+                if (!empty($leadTag)) {
                     $regions = Region::where('brands', $leadTag->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                     $branches = Branch::where('region_id', $leadTag->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-                    $employees = User::where('branch_id', $leadTag->branch_id)->whereNotIn('type', ['client', 'company', 'super admin','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    $employees = User::where('branch_id', $leadTag->branch_id)->whereNotIn('type', ['client', 'company', 'super admin', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 }
             }
         }
-        if(isset($_GET['brand']) && !empty($_GET['brand'])){
+        if (isset($_GET['brand']) && !empty($_GET['brand'])) {
             $regions = Region::where('brands', $_GET['brand'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
         }
-        if(isset($_GET['brand_id']) && !empty($_GET['brand_id'])){
+        if (isset($_GET['brand_id']) && !empty($_GET['brand_id'])) {
             $regions = Region::where('brands', $_GET['brand_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
         }
 
-        if(isset($_GET['region_id']) && !empty($_GET['region_id'])){
+        if (isset($_GET['region_id']) && !empty($_GET['region_id'])) {
             $branches = Branch::where('region_id', $_GET['region_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             // $regions = Region::where('id', $_GET['region_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
         }
 
-        if(isset($_GET['branch_id']) && !empty($_GET['branch_id'])){
-           // $branches = Branch::where('id', $_GET['branch_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-           $employees = User::where('branch_id', $_GET['branch_id'])->whereNotIn('type', ['client', 'company', 'super admin','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        if (isset($_GET['branch_id']) && !empty($_GET['branch_id'])) {
+            // $branches = Branch::where('id', $_GET['branch_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $employees = User::where('branch_id', $_GET['branch_id'])->whereNotIn('type', ['client', 'company', 'super admin', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
         }
 
         if ($type == 'super admin' || $type == 'Admin Team' || $type == 'HR' || \Auth::user()->can('level 1')) {
             $brands = User::where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-           $employees = User::whereNotIn('type', ['company', 'client', 'team','organization', 'super admin'])->where('branch_id', $user->branch_id)->pluck('name', 'id')->toArray();
+            $employees = User::whereNotIn('type', ['company', 'client', 'team', 'organization', 'super admin'])->where('branch_id', $user->branch_id)->pluck('name', 'id')->toArray();
         } else if ($type == 'company') {
             $brands = User::where('type', 'company')->where('id', $user->id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             $regions = Region::where('brands', $user->id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
@@ -1208,11 +1205,11 @@ if (!function_exists('BrandsRegionsBranches')) {
             $brands = User::where('type', 'company')->where('id', $user->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             $regions = Region::where('id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             $branches = Branch::where('region_id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-        } else if ($type == 'Branch Manager' || $type == 'Admissions Officer' || $type == 'Admissions Manager' || $type == 'Marketing Officer' || \Auth::user()->can('level 4')) {
+        } else if ($type == 'Branch Manager' || $type == 'Admissions Officer' || $type == 'Careers Consultant' || $type == 'Admissions Manager' || $type == 'Marketing Officer' || \Auth::user()->can('level 4')) {
             $brands = User::where('type', 'company')->where('id', $user->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             $regions = Region::where('id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
             $branches = Branch::where('id', $user->branch_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-            $employees = User::where('branch_id', $user->branch_id)->whereNotIn('type', ['client', 'company','organization', 'super admin'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $employees = User::where('branch_id', $user->branch_id)->whereNotIn('type', ['client', 'company', 'organization', 'super admin'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
         }
 
 
@@ -1254,28 +1251,28 @@ if (!function_exists('BrandsRegionsBranches')) {
 
             // $regional_managers = User::whereNull('users.branch_id')->where('type', 'Region Manager')->whereIn('region_id', $regions)->pluck('name', 'id')->toArray();
 
-            $branch=Branch::find($branch_id);
+            $branch = Branch::find($branch_id);
 
             if ($type == 'super admin' || $type == 'HR' || $type == 'Admin Team' || \Auth::user()->can('level 1')) {
                 $brands = User::where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-                if(!empty($branch)){
-                    if($branch->name == 'Admin'){
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
                         $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
-                    }else{
-                        $employees = User::whereIn('branch_id', [$user->branch_id,$branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                     }
                 }
             } else if ($type == 'company') {
                 $brands = User::where('type', 'company')->where('id', $user->id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-                if(!empty($branch)){
-                    if($branch->name == 'Admin'){
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
                         $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
-                    }else{
-                        $employees = User::whereIn('branch_id', [$user->branch_id,$branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                     }
                 }
             } else if ($type == 'Project Director' || $type == 'Project Manager' || \Auth::user()->can('level 2') || $type == 'Agent') {
@@ -1284,33 +1281,33 @@ if (!function_exists('BrandsRegionsBranches')) {
                 $brands = User::where('type', 'company')->whereIn('id', $brand_ids)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-                if(!empty($branch)){
-                    if($branch->name == 'Admin'){
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
                         $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
-                    }else{
-                        $employees = User::whereIn('branch_id', [$user->branch_id,$branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                     }
                 }
             } else if ($type == 'Region Manager' || \Auth::user()->can('level 3')) {
                 $brands = User::where('type', 'company')->where('id', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-                if(!empty($branch)){
-                    if($branch->name == 'Admin'){
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
                         $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
-                    }else{
-                        $employees = User::whereIn('branch_id', [$user->branch_id,$branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                     }
                 }
             } else if ($type == 'Branch Manager' || $type == 'Admissions Officer' || $type == 'Admissions Manager' || $type == 'Marketing Officer' || \Auth::user()->can('level 4')) {
                 $brands = User::where('type', 'company')->where('id', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $regions = Region::where('id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                 $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
-                if(!empty($branch)){
-                    if($branch->name == 'Admin'){
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
                         $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
-                    }else{
-                        $employees = User::whereIn('branch_id', [$user->branch_id,$branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client','organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
                     }
                 }
             }
@@ -1381,7 +1378,8 @@ function accessLevel()
  *               - 'num_results_on_page': The number of results to display on each page.
  *               - 'page': The current page number.
  */
-function getPaginationDetail(){
+function getPaginationDetail()
+{
     // Pagination calculation
     $start = 0; // Default start index
     $num_results_on_page = env("RESULTS_ON_PAGE"); // Default number of results per page
@@ -1415,7 +1413,8 @@ function getPaginationDetail(){
  *
  * @return array Associative array containing lists of users, regions, and branches.
  */
-function UserRegionBranch(){
+function UserRegionBranch()
+{
     // Retrieve users and format them as 'name' => 'id'
     $users = User::pluck('name', 'id')->toArray();
 
@@ -1432,14 +1431,15 @@ function UserRegionBranch(){
         'branches' => $branches
     ];
 }
-function allBranches(){
+function allBranches()
+{
     // Retrieve branches and format them as 'name' => 'id'
     return Branch::pluck('name', 'id')->toArray();
 }
 if (!function_exists('addNotifications')) {
     function addNotifications($data = [])
     {
-       \DB::table('notifications')->insert($data);
+        \DB::table('notifications')->insert($data);
     }
 }
 // /////////////
@@ -1461,608 +1461,609 @@ if (!function_exists('intakeYear')) {
 if (!function_exists('FetchTimeZone')) {
     function FetchTimeZone()
     {
-       $timezone =[
-        "Africa/Abidjan",
-        "Africa/Accra",
-        "Africa/Addis_Ababa",
-        "Africa/Algiers",
-        "Africa/Asmara",
-        "Africa/Asmera",
-        "Africa/Bamako",
-        "Africa/Bangui",
-        "Africa/Banjul",
-        "Africa/Bissau",
-        "Africa/Blantyre",
-        "Africa/Brazzaville",
-        "Africa/Bujumbura",
-        "Africa/Cairo",
-        "Africa/Casablanca",
-        "Africa/Ceuta",
-        "Africa/Conakry",
-        "Africa/Dakar",
-        "Africa/Dar_es_Salaam",
-        "Africa/Djibouti",
-        "Africa/Douala",
-        "Africa/El_Aaiun",
-        "Africa/Freetown",
-        "Africa/Gaborone",
-        "Africa/Harare",
-        "Africa/Johannesburg",
-        "Africa/Juba",
-        "Africa/Kampala",
-        "Africa/Khartoum",
-        "Africa/Kigali",
-        "Africa/Kinshasa",
-        "Africa/Lagos",
-        "Africa/Libreville",
-        "Africa/Lome",
-        "Africa/Luanda",
-        "Africa/Lubumbashi",
-        "Africa/Lusaka",
-        "Africa/Malabo",
-        "Africa/Maputo",
-        "Africa/Maseru",
-        "Africa/Mbabane",
-        "Africa/Mogadishu",
-        "Africa/Monrovia",
-        "Africa/Nairobi",
-        "Africa/Ndjamena",
-        "Africa/Niamey",
-        "Africa/Nouakchott",
-        "Africa/Ouagadougou",
-        "Africa/Porto-Novo",
-        "Africa/Sao_Tome",
-        "Africa/Timbuktu",
-        "Africa/Tripoli",
-        "Africa/Tunis",
-        "Africa/Windhoek",
-        "America/Adak",
-        "America/Anchorage",
-        "America/Anguilla",
-        "America/Antigua",
-        "America/Araguaina",
-        "America/Argentina/Buenos_Aires",
-        "America/Argentina/Catamarca",
-        "America/Argentina/ComodRivadavia",
-        "America/Argentina/Cordoba",
-        "America/Argentina/Jujuy",
-        "America/Argentina/La_Rioja",
-        "America/Argentina/Mendoza",
-        "America/Argentina/Rio_Gallegos",
-        "America/Argentina/Salta",
-        "America/Argentina/San_Juan",
-        "America/Argentina/San_Luis",
-        "America/Argentina/Tucuman",
-        "America/Argentina/Ushuaia",
-        "America/Aruba",
-        "America/Asuncion",
-        "America/Atikokan",
-        "America/Atka",
-        "America/Bahia",
-        "America/Bahia_Banderas",
-        "America/Barbados",
-        "America/Belem",
-        "America/Belize",
-        "America/Blanc-Sablon",
-        "America/Boa_Vista",
-        "America/Bogota",
-        "America/Boise",
-        "America/Buenos_Aires",
-        "America/Cambridge_Bay",
-        "America/Campo_Grande",
-        "America/Cancun",
-        "America/Caracas",
-        "America/Catamarca",
-        "America/Cayenne",
-        "America/Cayman",
-        "America/Chicago",
-        "America/Chihuahua",
-        "America/Ciudad_Juarez",
-        "America/Coral_Harbour",
-        "America/Cordoba",
-        "America/Costa_Rica",
-        "America/Creston",
-        "America/Cuiaba",
-        "America/Curacao",
-        "America/Danmarkshavn",
-        "America/Dawson",
-        "America/Dawson_Creek",
-        "America/Denver",
-        "America/Detroit",
-        "America/Dominica",
-        "America/Edmonton",
-        "America/Eirunepe",
-        "America/El_Salvador",
-        "America/Ensenada",
-        "America/Fort_Nelson",
-        "America/Fort_Wayne",
-        "America/Fortaleza",
-        "America/Glace_Bay",
-        "America/Godthab",
-        "America/Goose_Bay",
-        "America/Grand_Turk",
-        "America/Grenada",
-        "America/Guadeloupe",
-        "America/Guatemala",
-        "America/Guayaquil",
-        "America/Guyana",
-        "America/Halifax",
-        "America/Havana",
-        "America/Hermosillo",
-        "America/Indiana/Indianapolis",
-        "America/Indiana/Knox",
-        "America/Indiana/Marengo",
-        "America/Indiana/Petersburg",
-        "America/Indiana/Tell_City",
-        "America/Indiana/Vevay",
-        "America/Indiana/Vincennes",
-        "America/Indiana/Winamac",
-        "America/Indianapolis",
-        "America/Inuvik",
-        "America/Iqaluit",
-        "America/Jamaica",
-        "America/Jujuy",
-        "America/Juneau",
-        "America/Kentucky/Louisville",
-        "America/Kentucky/Monticello",
-        "America/Knox_IN",
-        "America/Kralendijk",
-        "America/La_Paz",
-        "America/Lima",
-        "America/Los_Angeles",
-        "America/Louisville",
-        "America/Lower_Princes",
-        "America/Maceio",
-        "America/Managua",
-        "America/Manaus",
-        "America/Marigot",
-        "America/Martinique",
-        "America/Matamoros",
-        "America/Mazatlan",
-        "America/Mendoza",
-        "America/Menominee",
-        "America/Merida",
-        "America/Metlakatla",
-        "America/Mexico_City",
-        "America/Miquelon",
-        "America/Moncton",
-        "America/Monterrey",
-        "America/Montevideo",
-        "America/Montreal",
-        "America/Montserrat",
-        "America/Nassau",
-        "America/New_York",
-        "America/Nipigon",
-        "America/Nome",
-        "America/Noronha",
-        "America/North_Dakota/Beulah",
-        "America/North_Dakota/Center",
-        "America/North_Dakota/New_Salem",
-        "America/Nuuk",
-        "America/Ojinaga",
-        "America/Panama",
-        "America/Pangnirtung",
-        "America/Paramaribo",
-        "America/Phoenix",
-        "America/Port-au-Prince",
-        "America/Port_of_Spain",
-        "America/Porto_Acre",
-        "America/Porto_Velho",
-        "America/Puerto_Rico",
-        "America/Punta_Arenas",
-        "America/Rainy_River",
-        "America/Rankin_Inlet",
-        "America/Recife",
-        "America/Regina",
-        "America/Resolute",
-        "America/Rio_Branco",
-        "America/Rosario",
-        "America/Santa_Isabel",
-        "America/Santarem",
-        "America/Santiago",
-        "America/Santo_Domingo",
-        "America/Sao_Paulo",
-        "America/Scoresbysund",
-        "America/Shiprock",
-        "America/Sitka",
-        "America/St_Barthelemy",
-        "America/St_Johns",
-        "America/St_Kitts",
-        "America/St_Lucia",
-        "America/St_Thomas",
-        "America/St_Vincent",
-        "America/Swift_Current",
-        "America/Tegucigalpa",
-        "America/Thule",
-        "America/Thunder_Bay",
-        "America/Tijuana",
-        "America/Toronto",
-        "America/Tortola",
-        "America/Vancouver",
-        "America/Virgin",
-        "America/Whitehorse",
-        "America/Winnipeg",
-        "America/Yakutat",
-        "America/Yellowknife",
-        "Antarctica/Casey",
-        "Antarctica/Davis",
-        "Antarctica/DumontDUrville",
-        "Antarctica/Macquarie",
-        "Antarctica/Mawson",
-        "Antarctica/McMurdo",
-        "Antarctica/Palmer",
-        "Antarctica/Rothera",
-        "Antarctica/South_Pole",
-        "Antarctica/Syowa",
-        "Antarctica/Troll",
-        "Antarctica/Vostok",
-        "Arctic/Longyearbyen",
-        "Asia/Aden",
-        "Asia/Almaty",
-        "Asia/Amman",
-        "Asia/Anadyr",
-        "Asia/Aqtau",
-        "Asia/Aqtobe",
-        "Asia/Ashgabat",
-        "Asia/Ashkhabad",
-        "Asia/Atyrau",
-        "Asia/Baghdad",
-        "Asia/Bahrain",
-        "Asia/Baku",
-        "Asia/Bangkok",
-        "Asia/Barnaul",
-        "Asia/Beirut",
-        "Asia/Bishkek",
-        "Asia/Brunei",
-        "Asia/Calcutta",
-        "Asia/Chita",
-        "Asia/Choibalsan",
-        "Asia/Chongqing",
-        "Asia/Chungking",
-        "Asia/Colombo",
-        "Asia/Dacca",
-        "Asia/Damascus",
-        "Asia/Dhaka",
-        "Asia/Dili",
-        "Asia/Dubai",
-        "Asia/Dushanbe",
-        "Asia/Famagusta",
-        "Asia/Gaza",
-        "Asia/Harbin",
-        "Asia/Hebron",
-        "Asia/Ho_Chi_Minh",
-        "Asia/Hong_Kong",
-        "Asia/Hovd",
-        "Asia/Irkutsk",
-        "Asia/Istanbul",
-        "Asia/Jakarta",
-        "Asia/Jayapura",
-        "Asia/Jerusalem",
-        "Asia/Kabul",
-        "Asia/Kamchatka",
-        "Asia/Karachi",
-        "Asia/Kashgar",
-        "Asia/Kathmandu",
-        "Asia/Katmandu",
-        "Asia/Khandyga",
-        "Asia/Kolkata",
-        "Asia/Krasnoyarsk",
-        "Asia/Kuala_Lumpur",
-        "Asia/Kuching",
-        "Asia/Kuwait",
-        "Asia/Macao",
-        "Asia/Macau",
-        "Asia/Magadan",
-        "Asia/Makassar",
-        "Asia/Manila",
-        "Asia/Muscat",
-        "Asia/Nicosia",
-        "Asia/Novokuznetsk",
-        "Asia/Novosibirsk",
-        "Asia/Omsk",
-        "Asia/Oral",
-        "Asia/Phnom_Penh",
-        "Asia/Pontianak",
-        "Asia/Pyongyang",
-        "Asia/Qatar",
-        "Asia/Qostanay",
-        "Asia/Qyzylorda",
-        "Asia/Rangoon",
-        "Asia/Riyadh",
-        "Asia/Saigon",
-        "Asia/Sakhalin",
-        "Asia/Samarkand",
-        "Asia/Seoul",
-        "Asia/Shanghai",
-        "Asia/Singapore",
-        "Asia/Srednekolymsk",
-        "Asia/Taipei",
-        "Asia/Tashkent",
-        "Asia/Tbilisi",
-        "Asia/Tehran",
-        "Asia/Tel_Aviv",
-        "Asia/Thimbu",
-        "Asia/Thimphu",
-        "Asia/Tokyo",
-        "Asia/Tomsk",
-        "Asia/Ujung_Pandang",
-        "Asia/Ulaanbaatar",
-        "Asia/Ulan_Bator",
-        "Asia/Urumqi",
-        "Asia/Ust-Nera",
-        "Asia/Vientiane",
-        "Asia/Vladivostok",
-        "Asia/Yakutsk",
-        "Asia/Yangon",
-        "Asia/Yekaterinburg",
-        "Asia/Yerevan",
-        "Atlantic/Azores",
-        "Atlantic/Bermuda",
-        "Atlantic/Canary",
-        "Atlantic/Cape_Verde",
-        "Atlantic/Faeroe",
-        "Atlantic/Faroe",
-        "Atlantic/Jan_Mayen",
-        "Atlantic/Madeira",
-        "Atlantic/Reykjavik",
-        "Atlantic/South_Georgia",
-        "Atlantic/St_Helena",
-        "Atlantic/Stanley",
-        "Australia/ACT",
-        "Australia/Adelaide",
-        "Australia/Brisbane",
-        "Australia/Broken_Hill",
-        "Australia/Canberra",
-        "Australia/Currie",
-        "Australia/Darwin",
-        "Australia/Eucla",
-        "Australia/Hobart",
-        "Australia/LHI",
-        "Australia/Lindeman",
-        "Australia/Lord_Howe",
-        "Australia/Melbourne",
-        "Australia/NSW",
-        "Australia/North",
-        "Australia/Perth",
-        "Australia/Queensland",
-        "Australia/South",
-        "Australia/Sydney",
-        "Australia/Tasmania",
-        "Australia/Victoria",
-        "Australia/West",
-        "Australia/Yancowinna",
-        "Brazil/Acre",
-        "Brazil/DeNoronha",
-        "Brazil/East",
-        "Brazil/West",
-        "CET",
-        "CST6CDT",
-        "Canada/Atlantic",
-        "Canada/Central",
-        "Canada/Eastern",
-        "Canada/Mountain",
-        "Canada/Newfoundland",
-        "Canada/Pacific",
-        "Canada/Saskatchewan",
-        "Canada/Yukon",
-        "Chile/Continental",
-        "Chile/EasterIsland",
-        "Cuba",
-        "EET",
-        "EST",
-        "EST5EDT",
-        "Egypt",
-        "Eire",
-        "Etc/GMT",
-        "Etc/GMT+0",
-        "Etc/GMT+1",
-        "Etc/GMT+10",
-        "Etc/GMT+11",
-        "Etc/GMT+12",
-        "Etc/GMT+2",
-        "Etc/GMT+3",
-        "Etc/GMT+4",
-        "Etc/GMT+5",
-        "Etc/GMT+6",
-        "Etc/GMT+7",
-        "Etc/GMT+8",
-        "Etc/GMT+9",
-        "Etc/GMT-0",
-        "Etc/GMT-1",
-        "Etc/GMT-10",
-        "Etc/GMT-11",
-        "Etc/GMT-12",
-        "Etc/GMT-13",
-        "Etc/GMT-14",
-        "Etc/GMT-2",
-        "Etc/GMT-3",
-        "Etc/GMT-4",
-        "Etc/GMT-5",
-        "Etc/GMT-6",
-        "Etc/GMT-7",
-        "Etc/GMT-8",
-        "Etc/GMT-9",
-        "Etc/GMT0",
-        "Etc/Greenwich",
-        "Etc/UCT",
-        "Etc/UTC",
-        "Etc/Universal",
-        "Etc/Zulu",
-        "Europe/Amsterdam",
-        "Europe/Andorra",
-        "Europe/Astrakhan",
-        "Europe/Athens",
-        "Europe/Belfast",
-        "Europe/Belgrade",
-        "Europe/Berlin",
-        "Europe/Bratislava",
-        "Europe/Brussels",
-        "Europe/Bucharest",
-        "Europe/Budapest",
-        "Europe/Busingen",
-        "Europe/Chisinau",
-        "Europe/Copenhagen",
-        "Europe/Dublin",
-        "Europe/Gibraltar",
-        "Europe/Guernsey",
-        "Europe/Helsinki",
-        "Europe/Isle_of_Man",
-        "Europe/Istanbul",
-        "Europe/Jersey",
-        "Europe/Kaliningrad",
-        "Europe/Kiev",
-        "Europe/Kirov",
-        "Europe/Kyiv",
-        "Europe/Lisbon",
-        "Europe/Ljubljana",
-        "Europe/London",
-        "Europe/Luxembourg",
-        "Europe/Madrid",
-        "Europe/Malta",
-        "Europe/Mariehamn",
-        "Europe/Minsk",
-        "Europe/Monaco",
-        "Europe/Moscow",
-        "Europe/Nicosia",
-        "Europe/Oslo",
-        "Europe/Paris",
-        "Europe/Podgorica",
-        "Europe/Prague",
-        "Europe/Riga",
-        "Europe/Rome",
-        "Europe/Samara",
-        "Europe/San_Marino",
-        "Europe/Sarajevo",
-        "Europe/Saratov",
-        "Europe/Simferopol",
-        "Europe/Skopje",
-        "Europe/Sofia",
-        "Europe/Stockholm",
-        "Europe/Tallinn",
-        "Europe/Tirane",
-        "Europe/Tiraspol",
-        "Europe/Ulyanovsk",
-        "Europe/Uzhgorod",
-        "Europe/Vaduz",
-        "Europe/Vatican",
-        "Europe/Vienna",
-        "Europe/Vilnius",
-        "Europe/Volgograd",
-        "Europe/Warsaw",
-        "Europe/Zagreb",
-        "Europe/Zaporozhye",
-        "Europe/Zurich",
-        "GB",
-        "GB-Eire",
-        "GMT",
-        "GMT+0",
-        "GMT-0",
-        "GMT0",
-        "Greenwich",
-        "HST",
-        "Hongkong",
-        "Iceland",
-        "Indian/Antananarivo",
-        "Indian/Chagos",
-        "Indian/Christmas",
-        "Indian/Cocos",
-        "Indian/Comoro",
-        "Indian/Kerguelen",
-        "Indian/Mahe",
-        "Indian/Maldives",
-        "Indian/Mauritius",
-        "Indian/Mayotte",
-        "Indian/Reunion",
-        "Iran",
-        "Israel",
-        "Jamaica",
-        "Japan",
-        "Kwajalein",
-        "Libya",
-        "MET",
-        "MST",
-        "MST7MDT",
-        "Mexico/BajaNorte",
-        "Mexico/BajaSur",
-        "Mexico/General",
-        "NZ",
-        "NZ-CHAT",
-        "Navajo",
-        "PRC",
-        "PST8PDT",
-        "Pacific/Apia",
-        "Pacific/Auckland",
-        "Pacific/Bougainville",
-        "Pacific/Chatham",
-        "Pacific/Chuuk",
-        "Pacific/Easter",
-        "Pacific/Efate",
-        "Pacific/Enderbury",
-        "Pacific/Fakaofo",
-        "Pacific/Fiji",
-        "Pacific/Funafuti",
-        "Pacific/Galapagos",
-        "Pacific/Gambier",
-        "Pacific/Guadalcanal",
-        "Pacific/Guam",
-        "Pacific/Honolulu",
-        "Pacific/Johnston",
-        "Pacific/Kanton",
-        "Pacific/Kiritimati",
-        "Pacific/Kosrae",
-        "Pacific/Kwajalein",
-        "Pacific/Majuro",
-        "Pacific/Marquesas",
-        "Pacific/Midway",
-        "Pacific/Nauru",
-        "Pacific/Niue",
-        "Pacific/Norfolk",
-        "Pacific/Noumea",
-        "Pacific/Pago_Pago",
-        "Pacific/Palau",
-        "Pacific/Pitcairn",
-        "Pacific/Pohnpei",
-        "Pacific/Ponape",
-        "Pacific/Port_Moresby",
-        "Pacific/Rarotonga",
-        "Pacific/Saipan",
-        "Pacific/Samoa",
-        "Pacific/Tahiti",
-        "Pacific/Tarawa",
-        "Pacific/Tongatapu",
-        "Pacific/Truk",
-        "Pacific/Wake",
-        "Pacific/Wallis",
-        "Pacific/Yap",
-        "Poland",
-        "Portugal",
-        "ROC",
-        "ROK",
-        "Singapore",
-        "Turkey",
-        "UCT",
-        "US/Alaska",
-        "US/Aleutian",
-        "US/Arizona",
-        "US/Central",
-        "US/East-Indiana",
-        "US/Eastern",
-        "US/Hawaii",
-        "US/Indiana-Starke",
-        "US/Michigan",
-        "US/Mountain",
-        "US/Pacific",
-        "US/Samoa",
-        "UTC",
-        "Universal",
-        "W-SU",
-        "WET",
-        "Zulu"];
+        $timezone = [
+            "Africa/Abidjan",
+            "Africa/Accra",
+            "Africa/Addis_Ababa",
+            "Africa/Algiers",
+            "Africa/Asmara",
+            "Africa/Asmera",
+            "Africa/Bamako",
+            "Africa/Bangui",
+            "Africa/Banjul",
+            "Africa/Bissau",
+            "Africa/Blantyre",
+            "Africa/Brazzaville",
+            "Africa/Bujumbura",
+            "Africa/Cairo",
+            "Africa/Casablanca",
+            "Africa/Ceuta",
+            "Africa/Conakry",
+            "Africa/Dakar",
+            "Africa/Dar_es_Salaam",
+            "Africa/Djibouti",
+            "Africa/Douala",
+            "Africa/El_Aaiun",
+            "Africa/Freetown",
+            "Africa/Gaborone",
+            "Africa/Harare",
+            "Africa/Johannesburg",
+            "Africa/Juba",
+            "Africa/Kampala",
+            "Africa/Khartoum",
+            "Africa/Kigali",
+            "Africa/Kinshasa",
+            "Africa/Lagos",
+            "Africa/Libreville",
+            "Africa/Lome",
+            "Africa/Luanda",
+            "Africa/Lubumbashi",
+            "Africa/Lusaka",
+            "Africa/Malabo",
+            "Africa/Maputo",
+            "Africa/Maseru",
+            "Africa/Mbabane",
+            "Africa/Mogadishu",
+            "Africa/Monrovia",
+            "Africa/Nairobi",
+            "Africa/Ndjamena",
+            "Africa/Niamey",
+            "Africa/Nouakchott",
+            "Africa/Ouagadougou",
+            "Africa/Porto-Novo",
+            "Africa/Sao_Tome",
+            "Africa/Timbuktu",
+            "Africa/Tripoli",
+            "Africa/Tunis",
+            "Africa/Windhoek",
+            "America/Adak",
+            "America/Anchorage",
+            "America/Anguilla",
+            "America/Antigua",
+            "America/Araguaina",
+            "America/Argentina/Buenos_Aires",
+            "America/Argentina/Catamarca",
+            "America/Argentina/ComodRivadavia",
+            "America/Argentina/Cordoba",
+            "America/Argentina/Jujuy",
+            "America/Argentina/La_Rioja",
+            "America/Argentina/Mendoza",
+            "America/Argentina/Rio_Gallegos",
+            "America/Argentina/Salta",
+            "America/Argentina/San_Juan",
+            "America/Argentina/San_Luis",
+            "America/Argentina/Tucuman",
+            "America/Argentina/Ushuaia",
+            "America/Aruba",
+            "America/Asuncion",
+            "America/Atikokan",
+            "America/Atka",
+            "America/Bahia",
+            "America/Bahia_Banderas",
+            "America/Barbados",
+            "America/Belem",
+            "America/Belize",
+            "America/Blanc-Sablon",
+            "America/Boa_Vista",
+            "America/Bogota",
+            "America/Boise",
+            "America/Buenos_Aires",
+            "America/Cambridge_Bay",
+            "America/Campo_Grande",
+            "America/Cancun",
+            "America/Caracas",
+            "America/Catamarca",
+            "America/Cayenne",
+            "America/Cayman",
+            "America/Chicago",
+            "America/Chihuahua",
+            "America/Ciudad_Juarez",
+            "America/Coral_Harbour",
+            "America/Cordoba",
+            "America/Costa_Rica",
+            "America/Creston",
+            "America/Cuiaba",
+            "America/Curacao",
+            "America/Danmarkshavn",
+            "America/Dawson",
+            "America/Dawson_Creek",
+            "America/Denver",
+            "America/Detroit",
+            "America/Dominica",
+            "America/Edmonton",
+            "America/Eirunepe",
+            "America/El_Salvador",
+            "America/Ensenada",
+            "America/Fort_Nelson",
+            "America/Fort_Wayne",
+            "America/Fortaleza",
+            "America/Glace_Bay",
+            "America/Godthab",
+            "America/Goose_Bay",
+            "America/Grand_Turk",
+            "America/Grenada",
+            "America/Guadeloupe",
+            "America/Guatemala",
+            "America/Guayaquil",
+            "America/Guyana",
+            "America/Halifax",
+            "America/Havana",
+            "America/Hermosillo",
+            "America/Indiana/Indianapolis",
+            "America/Indiana/Knox",
+            "America/Indiana/Marengo",
+            "America/Indiana/Petersburg",
+            "America/Indiana/Tell_City",
+            "America/Indiana/Vevay",
+            "America/Indiana/Vincennes",
+            "America/Indiana/Winamac",
+            "America/Indianapolis",
+            "America/Inuvik",
+            "America/Iqaluit",
+            "America/Jamaica",
+            "America/Jujuy",
+            "America/Juneau",
+            "America/Kentucky/Louisville",
+            "America/Kentucky/Monticello",
+            "America/Knox_IN",
+            "America/Kralendijk",
+            "America/La_Paz",
+            "America/Lima",
+            "America/Los_Angeles",
+            "America/Louisville",
+            "America/Lower_Princes",
+            "America/Maceio",
+            "America/Managua",
+            "America/Manaus",
+            "America/Marigot",
+            "America/Martinique",
+            "America/Matamoros",
+            "America/Mazatlan",
+            "America/Mendoza",
+            "America/Menominee",
+            "America/Merida",
+            "America/Metlakatla",
+            "America/Mexico_City",
+            "America/Miquelon",
+            "America/Moncton",
+            "America/Monterrey",
+            "America/Montevideo",
+            "America/Montreal",
+            "America/Montserrat",
+            "America/Nassau",
+            "America/New_York",
+            "America/Nipigon",
+            "America/Nome",
+            "America/Noronha",
+            "America/North_Dakota/Beulah",
+            "America/North_Dakota/Center",
+            "America/North_Dakota/New_Salem",
+            "America/Nuuk",
+            "America/Ojinaga",
+            "America/Panama",
+            "America/Pangnirtung",
+            "America/Paramaribo",
+            "America/Phoenix",
+            "America/Port-au-Prince",
+            "America/Port_of_Spain",
+            "America/Porto_Acre",
+            "America/Porto_Velho",
+            "America/Puerto_Rico",
+            "America/Punta_Arenas",
+            "America/Rainy_River",
+            "America/Rankin_Inlet",
+            "America/Recife",
+            "America/Regina",
+            "America/Resolute",
+            "America/Rio_Branco",
+            "America/Rosario",
+            "America/Santa_Isabel",
+            "America/Santarem",
+            "America/Santiago",
+            "America/Santo_Domingo",
+            "America/Sao_Paulo",
+            "America/Scoresbysund",
+            "America/Shiprock",
+            "America/Sitka",
+            "America/St_Barthelemy",
+            "America/St_Johns",
+            "America/St_Kitts",
+            "America/St_Lucia",
+            "America/St_Thomas",
+            "America/St_Vincent",
+            "America/Swift_Current",
+            "America/Tegucigalpa",
+            "America/Thule",
+            "America/Thunder_Bay",
+            "America/Tijuana",
+            "America/Toronto",
+            "America/Tortola",
+            "America/Vancouver",
+            "America/Virgin",
+            "America/Whitehorse",
+            "America/Winnipeg",
+            "America/Yakutat",
+            "America/Yellowknife",
+            "Antarctica/Casey",
+            "Antarctica/Davis",
+            "Antarctica/DumontDUrville",
+            "Antarctica/Macquarie",
+            "Antarctica/Mawson",
+            "Antarctica/McMurdo",
+            "Antarctica/Palmer",
+            "Antarctica/Rothera",
+            "Antarctica/South_Pole",
+            "Antarctica/Syowa",
+            "Antarctica/Troll",
+            "Antarctica/Vostok",
+            "Arctic/Longyearbyen",
+            "Asia/Aden",
+            "Asia/Almaty",
+            "Asia/Amman",
+            "Asia/Anadyr",
+            "Asia/Aqtau",
+            "Asia/Aqtobe",
+            "Asia/Ashgabat",
+            "Asia/Ashkhabad",
+            "Asia/Atyrau",
+            "Asia/Baghdad",
+            "Asia/Bahrain",
+            "Asia/Baku",
+            "Asia/Bangkok",
+            "Asia/Barnaul",
+            "Asia/Beirut",
+            "Asia/Bishkek",
+            "Asia/Brunei",
+            "Asia/Calcutta",
+            "Asia/Chita",
+            "Asia/Choibalsan",
+            "Asia/Chongqing",
+            "Asia/Chungking",
+            "Asia/Colombo",
+            "Asia/Dacca",
+            "Asia/Damascus",
+            "Asia/Dhaka",
+            "Asia/Dili",
+            "Asia/Dubai",
+            "Asia/Dushanbe",
+            "Asia/Famagusta",
+            "Asia/Gaza",
+            "Asia/Harbin",
+            "Asia/Hebron",
+            "Asia/Ho_Chi_Minh",
+            "Asia/Hong_Kong",
+            "Asia/Hovd",
+            "Asia/Irkutsk",
+            "Asia/Istanbul",
+            "Asia/Jakarta",
+            "Asia/Jayapura",
+            "Asia/Jerusalem",
+            "Asia/Kabul",
+            "Asia/Kamchatka",
+            "Asia/Karachi",
+            "Asia/Kashgar",
+            "Asia/Kathmandu",
+            "Asia/Katmandu",
+            "Asia/Khandyga",
+            "Asia/Kolkata",
+            "Asia/Krasnoyarsk",
+            "Asia/Kuala_Lumpur",
+            "Asia/Kuching",
+            "Asia/Kuwait",
+            "Asia/Macao",
+            "Asia/Macau",
+            "Asia/Magadan",
+            "Asia/Makassar",
+            "Asia/Manila",
+            "Asia/Muscat",
+            "Asia/Nicosia",
+            "Asia/Novokuznetsk",
+            "Asia/Novosibirsk",
+            "Asia/Omsk",
+            "Asia/Oral",
+            "Asia/Phnom_Penh",
+            "Asia/Pontianak",
+            "Asia/Pyongyang",
+            "Asia/Qatar",
+            "Asia/Qostanay",
+            "Asia/Qyzylorda",
+            "Asia/Rangoon",
+            "Asia/Riyadh",
+            "Asia/Saigon",
+            "Asia/Sakhalin",
+            "Asia/Samarkand",
+            "Asia/Seoul",
+            "Asia/Shanghai",
+            "Asia/Singapore",
+            "Asia/Srednekolymsk",
+            "Asia/Taipei",
+            "Asia/Tashkent",
+            "Asia/Tbilisi",
+            "Asia/Tehran",
+            "Asia/Tel_Aviv",
+            "Asia/Thimbu",
+            "Asia/Thimphu",
+            "Asia/Tokyo",
+            "Asia/Tomsk",
+            "Asia/Ujung_Pandang",
+            "Asia/Ulaanbaatar",
+            "Asia/Ulan_Bator",
+            "Asia/Urumqi",
+            "Asia/Ust-Nera",
+            "Asia/Vientiane",
+            "Asia/Vladivostok",
+            "Asia/Yakutsk",
+            "Asia/Yangon",
+            "Asia/Yekaterinburg",
+            "Asia/Yerevan",
+            "Atlantic/Azores",
+            "Atlantic/Bermuda",
+            "Atlantic/Canary",
+            "Atlantic/Cape_Verde",
+            "Atlantic/Faeroe",
+            "Atlantic/Faroe",
+            "Atlantic/Jan_Mayen",
+            "Atlantic/Madeira",
+            "Atlantic/Reykjavik",
+            "Atlantic/South_Georgia",
+            "Atlantic/St_Helena",
+            "Atlantic/Stanley",
+            "Australia/ACT",
+            "Australia/Adelaide",
+            "Australia/Brisbane",
+            "Australia/Broken_Hill",
+            "Australia/Canberra",
+            "Australia/Currie",
+            "Australia/Darwin",
+            "Australia/Eucla",
+            "Australia/Hobart",
+            "Australia/LHI",
+            "Australia/Lindeman",
+            "Australia/Lord_Howe",
+            "Australia/Melbourne",
+            "Australia/NSW",
+            "Australia/North",
+            "Australia/Perth",
+            "Australia/Queensland",
+            "Australia/South",
+            "Australia/Sydney",
+            "Australia/Tasmania",
+            "Australia/Victoria",
+            "Australia/West",
+            "Australia/Yancowinna",
+            "Brazil/Acre",
+            "Brazil/DeNoronha",
+            "Brazil/East",
+            "Brazil/West",
+            "CET",
+            "CST6CDT",
+            "Canada/Atlantic",
+            "Canada/Central",
+            "Canada/Eastern",
+            "Canada/Mountain",
+            "Canada/Newfoundland",
+            "Canada/Pacific",
+            "Canada/Saskatchewan",
+            "Canada/Yukon",
+            "Chile/Continental",
+            "Chile/EasterIsland",
+            "Cuba",
+            "EET",
+            "EST",
+            "EST5EDT",
+            "Egypt",
+            "Eire",
+            "Etc/GMT",
+            "Etc/GMT+0",
+            "Etc/GMT+1",
+            "Etc/GMT+10",
+            "Etc/GMT+11",
+            "Etc/GMT+12",
+            "Etc/GMT+2",
+            "Etc/GMT+3",
+            "Etc/GMT+4",
+            "Etc/GMT+5",
+            "Etc/GMT+6",
+            "Etc/GMT+7",
+            "Etc/GMT+8",
+            "Etc/GMT+9",
+            "Etc/GMT-0",
+            "Etc/GMT-1",
+            "Etc/GMT-10",
+            "Etc/GMT-11",
+            "Etc/GMT-12",
+            "Etc/GMT-13",
+            "Etc/GMT-14",
+            "Etc/GMT-2",
+            "Etc/GMT-3",
+            "Etc/GMT-4",
+            "Etc/GMT-5",
+            "Etc/GMT-6",
+            "Etc/GMT-7",
+            "Etc/GMT-8",
+            "Etc/GMT-9",
+            "Etc/GMT0",
+            "Etc/Greenwich",
+            "Etc/UCT",
+            "Etc/UTC",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "Europe/Amsterdam",
+            "Europe/Andorra",
+            "Europe/Astrakhan",
+            "Europe/Athens",
+            "Europe/Belfast",
+            "Europe/Belgrade",
+            "Europe/Berlin",
+            "Europe/Bratislava",
+            "Europe/Brussels",
+            "Europe/Bucharest",
+            "Europe/Budapest",
+            "Europe/Busingen",
+            "Europe/Chisinau",
+            "Europe/Copenhagen",
+            "Europe/Dublin",
+            "Europe/Gibraltar",
+            "Europe/Guernsey",
+            "Europe/Helsinki",
+            "Europe/Isle_of_Man",
+            "Europe/Istanbul",
+            "Europe/Jersey",
+            "Europe/Kaliningrad",
+            "Europe/Kiev",
+            "Europe/Kirov",
+            "Europe/Kyiv",
+            "Europe/Lisbon",
+            "Europe/Ljubljana",
+            "Europe/London",
+            "Europe/Luxembourg",
+            "Europe/Madrid",
+            "Europe/Malta",
+            "Europe/Mariehamn",
+            "Europe/Minsk",
+            "Europe/Monaco",
+            "Europe/Moscow",
+            "Europe/Nicosia",
+            "Europe/Oslo",
+            "Europe/Paris",
+            "Europe/Podgorica",
+            "Europe/Prague",
+            "Europe/Riga",
+            "Europe/Rome",
+            "Europe/Samara",
+            "Europe/San_Marino",
+            "Europe/Sarajevo",
+            "Europe/Saratov",
+            "Europe/Simferopol",
+            "Europe/Skopje",
+            "Europe/Sofia",
+            "Europe/Stockholm",
+            "Europe/Tallinn",
+            "Europe/Tirane",
+            "Europe/Tiraspol",
+            "Europe/Ulyanovsk",
+            "Europe/Uzhgorod",
+            "Europe/Vaduz",
+            "Europe/Vatican",
+            "Europe/Vienna",
+            "Europe/Vilnius",
+            "Europe/Volgograd",
+            "Europe/Warsaw",
+            "Europe/Zagreb",
+            "Europe/Zaporozhye",
+            "Europe/Zurich",
+            "GB",
+            "GB-Eire",
+            "GMT",
+            "GMT+0",
+            "GMT-0",
+            "GMT0",
+            "Greenwich",
+            "HST",
+            "Hongkong",
+            "Iceland",
+            "Indian/Antananarivo",
+            "Indian/Chagos",
+            "Indian/Christmas",
+            "Indian/Cocos",
+            "Indian/Comoro",
+            "Indian/Kerguelen",
+            "Indian/Mahe",
+            "Indian/Maldives",
+            "Indian/Mauritius",
+            "Indian/Mayotte",
+            "Indian/Reunion",
+            "Iran",
+            "Israel",
+            "Jamaica",
+            "Japan",
+            "Kwajalein",
+            "Libya",
+            "MET",
+            "MST",
+            "MST7MDT",
+            "Mexico/BajaNorte",
+            "Mexico/BajaSur",
+            "Mexico/General",
+            "NZ",
+            "NZ-CHAT",
+            "Navajo",
+            "PRC",
+            "PST8PDT",
+            "Pacific/Apia",
+            "Pacific/Auckland",
+            "Pacific/Bougainville",
+            "Pacific/Chatham",
+            "Pacific/Chuuk",
+            "Pacific/Easter",
+            "Pacific/Efate",
+            "Pacific/Enderbury",
+            "Pacific/Fakaofo",
+            "Pacific/Fiji",
+            "Pacific/Funafuti",
+            "Pacific/Galapagos",
+            "Pacific/Gambier",
+            "Pacific/Guadalcanal",
+            "Pacific/Guam",
+            "Pacific/Honolulu",
+            "Pacific/Johnston",
+            "Pacific/Kanton",
+            "Pacific/Kiritimati",
+            "Pacific/Kosrae",
+            "Pacific/Kwajalein",
+            "Pacific/Majuro",
+            "Pacific/Marquesas",
+            "Pacific/Midway",
+            "Pacific/Nauru",
+            "Pacific/Niue",
+            "Pacific/Norfolk",
+            "Pacific/Noumea",
+            "Pacific/Pago_Pago",
+            "Pacific/Palau",
+            "Pacific/Pitcairn",
+            "Pacific/Pohnpei",
+            "Pacific/Ponape",
+            "Pacific/Port_Moresby",
+            "Pacific/Rarotonga",
+            "Pacific/Saipan",
+            "Pacific/Samoa",
+            "Pacific/Tahiti",
+            "Pacific/Tarawa",
+            "Pacific/Tongatapu",
+            "Pacific/Truk",
+            "Pacific/Wake",
+            "Pacific/Wallis",
+            "Pacific/Yap",
+            "Poland",
+            "Portugal",
+            "ROC",
+            "ROK",
+            "Singapore",
+            "Turkey",
+            "UCT",
+            "US/Alaska",
+            "US/Aleutian",
+            "US/Arizona",
+            "US/Central",
+            "US/East-Indiana",
+            "US/Eastern",
+            "US/Hawaii",
+            "US/Indiana-Starke",
+            "US/Michigan",
+            "US/Mountain",
+            "US/Pacific",
+            "US/Samoa",
+            "UTC",
+            "Universal",
+            "W-SU",
+            "WET",
+            "Zulu"
+        ];
 
         return $timezone;
     }
 
-        function formatKey($key)
+    function formatKey($key)
     {
         $keyMappings = [
             'mode_of_payment' => 'Mode Of Payment',
@@ -2097,7 +2098,8 @@ if (!function_exists('FetchTimeZone')) {
         return ucwords(str_replace('_', ' ', $key));
     }
 
-    function is_json($string) {
+    function is_json($string)
+    {
         if (!is_string($string)) {
             return false;
         }
@@ -2106,7 +2108,8 @@ if (!function_exists('FetchTimeZone')) {
     }
 }
 if (!function_exists('formatLocalDateReturntime')) {
-    function formatLocalDateReturntime($datetime, $timezone = 'UTC', $timezoneAbbr = null) {
+    function formatLocalDateReturntime($datetime, $timezone = 'UTC', $timezoneAbbr = null)
+    {
         if (!$datetime) return null;
 
         try {
