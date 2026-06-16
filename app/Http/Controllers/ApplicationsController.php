@@ -677,7 +677,6 @@ class ApplicationsController extends Controller
                 'd.university_id',
                 'd.brand_id',
                 'd.branch_id',
-                'd.contact_id',
                 'client.name as client_name',
                 'client.email as client_email',
             )
