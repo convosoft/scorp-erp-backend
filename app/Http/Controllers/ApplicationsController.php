@@ -804,6 +804,8 @@ class ApplicationsController extends Controller
                 'OneTask' => $OneTask,
                 'SixTask' => $SixTask,
                 'application' => $application,
+                'deal_details' => $deal_details,
+                'coursedetail' => $coursedetail,
                 'country' => $country,
                 'stages' => $stages,
                 'tags' => $tags,
@@ -3157,8 +3159,7 @@ class ApplicationsController extends Controller
                 'module_type' => 'finanace_student_file',
                 'notification_type' => 'Finance Student File Created',
             ]);
-
-            }
+        }
 
         // Remove unwanted fields
         $inputs = $request->except(['_token', '_method', 'submit', 'application_id', 'stage_id']);
