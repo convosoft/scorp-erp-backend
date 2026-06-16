@@ -336,6 +336,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/userTasksGet', [TaskController::class, 'userTasksGet']);
     Route::post('/createtask', [TaskController::class, 'createtask']);
     Route::post('/taskUpdate', [TaskController::class, 'taskUpdate']);
+    Route::post('/TaskStatusChange', [TaskController::class, 'TaskStatusChange']);
     Route::post('/updateTaskStatus', [TaskController::class, 'updateTaskStatus']);
     Route::post('/ShuffleTaskOwnership', [TaskController::class, 'ShuffleTaskOwnership']);
     Route::post('/getTaskDetails', [TaskController::class, 'getTaskDetails']);

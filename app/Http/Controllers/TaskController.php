@@ -343,10 +343,10 @@ class TaskController extends Controller
 
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
-                if($status!='All'){
+                if ($status != 'All') {
                     if ($status == '1') {
                         $tasksQuery->where('deal_tasks.tasks_type_status', "1");
-                                //  ->where('deal_tasks.status', 1);
+                        //  ->where('deal_tasks.status', 1);
                     } elseif ($status == '2') {
                         $tasksQuery->where('deal_tasks.tasks_type_status', "2");
                     } else {
@@ -362,7 +362,7 @@ class TaskController extends Controller
                 $tasksQuery->where('deal_tasks.created_by', \Auth::id());
             }
 
-              // Filter by origin country if provided
+            // Filter by origin country if provided
             if ($request->filled('country')) {
                 $country =  $request->country;
 
@@ -371,32 +371,29 @@ class TaskController extends Controller
 
                 if ($country_code) {
                     $tasksQuery->where('uni_status', '0')
-                               ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
+                        ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country', $country_code->id);
                 }
             }
 
-              // Additional filters
+            // Additional filters
             if ($request->filled('fetcttype')) {
                 $fetcttype  =   $request->fetcttype;
 
-                if( $fetcttype=='assignedbyme'){
+                if ($fetcttype == 'assignedbyme') {
                     $tasksQuery->where('deal_tasks.created_by', \Auth::id());
                 }
 
-                if( $fetcttype=='yourtask'){
+                if ($fetcttype == 'yourtask') {
                     $tasksQuery->where('deal_tasks.assigned_to', \Auth::id());
                 }
 
-                if( $fetcttype=='Quality'){
+                if ($fetcttype == 'Quality') {
                     $tasksQuery->where('deal_tasks.tasks_type', 'Quality');
                 }
 
-                if( $fetcttype=='Compliance'){
+                if ($fetcttype == 'Compliance') {
                     $tasksQuery->where('deal_tasks.tasks_type', 'Compliance');
                 }
-
-
-
             }
 
             if ($request->fetcttype == 'agenttask') {
@@ -571,10 +568,9 @@ class TaskController extends Controller
 
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
-                if($status!='All'){
+                if ($status != 'All') {
                     if ($status == '1') {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "1")
-                              ;
+                        $finalQuery->where('deal_tasks.tasks_type_status', "1");
                     } elseif ($status == '2') {
                         $finalQuery->where('deal_tasks.tasks_type_status', "2");
                     } else {
@@ -601,7 +597,7 @@ class TaskController extends Controller
                     ->where('deal_tasks.tasks_type_status', "0");
             }
 
-             $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
+            $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
             $sql2 = vsprintf($sql2, $finalQuery->getBindings());
             //  echo $sql2; sdf
 
@@ -609,7 +605,7 @@ class TaskController extends Controller
 
             // echo "==========";
             // echo $sql2;
-           // dd($sql,$sql2 );
+            // dd($sql,$sql2 );
 
             //  get tasks
             // Paginate results
@@ -1937,5 +1933,62 @@ class TaskController extends Controller
             'status' => 'success',
             'data' => $tasks
         ], 200);
+    }
+    public function TaskStatusChange(Request $request)
+    {
+
+        $rules = [
+            'id' => 'required|integer|min:1',
+        ];
+
+        // Validation
+        $validator = \Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+        $id = $request->input('id');
+
+        if ($id) {
+            $dealTask = DealTask::findOrFail($id);
+
+            if ($dealTask->created_by !== (int)$dealTask->assigned_to && \Auth::id() == (int)$dealTask->assigned_to) {
+
+                $html = '<p class="mb-0">
+                <span class="fw-bold">
+                    <span style="cursor:pointer;font-weight:bold;color:#1770b4 !important"
+                        onclick="openSidebar(\'/get-task-detail?task_id=' . $dealTask->id . '\')"
+                        data-task-id="' . $dealTask->id . '">' . $dealTask->name . '</span>
+                </span>
+                Task Completed By <span style="cursor:pointer;font-weight:bold;color:#1770b4 !important"
+                    onclick="openSidebar(\'/users/' . \Auth::id() . '/user_detail\')">
+                    ' . User::find(\Auth::id())->name ?? '' . ' </span>
+            </p>';
+
+                addNotifications([
+                    'type' => 'Tasks',
+                    'data_type' => 'Task_Completed',
+                    'sender_id' => \Auth::id(),
+                    'receiver_id' => $dealTask->created_by,
+                    'data' => $html,
+                    'is_read' => 0,
+                    'related_id' => $dealTask->id,
+                    'created_by' => \Auth::id(),
+                    'created_at' => \Carbon\Carbon::now()
+                ]);
+            }
+            $dealTask->update(['status' => '1']);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Update User Tasks Successfully'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'ID is required'
+        ], 400);
     }
 }
