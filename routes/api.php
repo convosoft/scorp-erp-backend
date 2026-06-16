@@ -1063,7 +1063,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/saveApplicationDepositRequest', [ApplicationsController::class, 'application_request_save_deposite_applied']);
     Route::post('/applicationNotesStore', [ApplicationsController::class, 'applicationNotesStore']);
     Route::post('/getApplicationNotes', [ApplicationsController::class, 'getApplicationNotes']);
-    Route::post('/email_marketing_getapplications', [ApplicationsController::class, 'email_marketing_getapplications']);
+    Route::post('/email_marketing_getapplications', [ApplicationsController::class, 'email_marketing_getapplications']); // email marketing
 
     //     University Rules
     Route::post('/addMOIInstitutes', [MoiAcceptedController::class, 'addMOIInstitutes']);
