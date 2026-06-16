@@ -584,7 +584,7 @@ class UserController extends Controller
         // Clone query before pagination for counts
         $countsQuery = clone $employeesQuery;
         // at last apply status filter ssssss
-        if ($request->is_active!='') {
+        if ($request->is_active != '') {
             $employeesQuery->where('is_active', $request->is_active);
         }
 
@@ -647,6 +647,146 @@ class UserController extends Controller
 
             return response()->stream($callback, 200, $headers);
         }
+
+        // Paginate results
+        $employees = $employeesQuery
+            ->orderBy('users.name', 'ASC')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'status' => 'success',
+            'baseurl' =>  asset('/EmployeeDocument'),
+            'data' => $employees->items(),
+            'current_page' => $employees->currentPage(),
+            'last_page' => $employees->lastPage(),
+            'total_records' => $employees->total(),
+            'perPage' => $employees->perPage(),
+            'count_summary' => $statusCounts
+        ], 200);
+    }
+    public function email_marketing_getAgents(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'page' => 'nullable|integer|min:1',
+            'perPage' => 'nullable|integer|min:1',
+            'brand' => 'nullable|integer|exists:users,id',
+            'region_id' => 'nullable|integer|exists:regions,id',
+            'branch_id' => 'nullable|integer|exists:branches,id',
+            'name' => 'nullable|string',
+            'type' => 'nullable|string',
+            'is_active' => 'nullable',
+            'tag_ids' => 'nullable',
+            'designation_id' => 'nullable',
+            'department_id' => 'nullable',
+            'phone' => 'nullable|string',
+            'search' => 'nullable|string',
+            'download_csv' => 'nullable|boolean', // Add this parameter
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = \Auth::user();
+        $perPage = 1000;
+        $page = $request->input('page', 1);
+
+        if (!$user->can('manage agent')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
+        $employeesQuery = User::with(['branch', 'brand'])->select('users.*');
+
+        // Apply filters
+        if ($request->filled('brand')) {
+            $employeesQuery->where('brand_id', $request->brand);
+        }
+        if ($request->filled('region_id')) {
+            $employeesQuery->where('region_id', $request->region_id);
+        }
+        if ($request->filled('branch_id')) {
+            $employeesQuery->where('branch_id', $request->branch_id);
+        }
+        if ($request->filled('type')) {
+            $employeesQuery->where('type', 'like', '%' . $request->type . '%');
+        }
+        if ($request->filled('name')) {
+            $employeesQuery->where('name', 'like', '%' . $request->name . '%');
+        }
+        if ($request->filled('designation_id')) {
+            $employeesQuery->where('designation_id', $request->designation_id);
+        }
+        if ($request->filled('department_id')) {
+            $employeesQuery->where('department_id', $request->department_id);
+        }
+        if ($request->filled('tag_ids')) {
+            $tagIds = explode(',', $request->input('tag_ids')); // [6,4]
+            $employeesQuery->where(function ($query) use ($tagIds) {
+                foreach ($tagIds as $tagId) {
+                    $query->orWhereRaw("FIND_IN_SET(?, tag_ids)", [$tagId]);
+                }
+            });
+        }
+
+
+        if ($request->filled('phone')) {
+            $employeesQuery->where('phone', 'like', '%' . $request->phone . '%');
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $employeesQuery->where(function ($query) use ($search) {
+                $query->where('users.name', 'like', "%$search%")
+                    ->orWhere('users.email', 'like', "%$search%")
+                    ->orWhere('users.phone', 'like', "%$search%")
+                    ->orWhere('users.type', 'like', "%$search%")
+                    ->orWhere(DB::raw('(SELECT name FROM branches WHERE branches.id = users.branch_id)'), 'like', "%$search%")
+                    ->orWhere(DB::raw('(SELECT name FROM regions WHERE regions.id = users.region_id)'), 'like', "%$search%")
+                    ->orWhere(DB::raw('(SELECT name FROM users AS brands WHERE brands.id = users.brand_id)'), 'like', "%$search%");
+            });
+        }
+
+        // Apply user-specific restrictions
+        if ($user->can('level 1') || $user->type === 'super admin') {
+            $employeesQuery->where('type', 'Agent');
+        } elseif ($user->type === 'company') {
+            $employeesQuery->where('brand_id', $user->id)->where('type', 'Agent');
+        } elseif ($user->can('level 2')) {
+            $brandIds = array_keys(FiltersBrands());
+            $employeesQuery->whereIn('brand_id', $brandIds)->where('type', 'Agent');
+        } elseif ($user->can('level 3') && $user->region_id) {
+            $employeesQuery->where('region_id', $user->region_id)->where('type', 'Agent');
+        } elseif ($user->can('level 4') && $user->branch_id) {
+            $employeesQuery->where('branch_id', $user->branch_id)->where('type', 'Agent');
+        } else {
+            $employeesQuery->where('id', $user->id)->where('type', 'Agent');
+        }
+
+        // Clone query before pagination for counts
+        $countsQuery = clone $employeesQuery;
+        // at last apply status filter ssssss
+        if ($request->is_active != '') {
+            $employeesQuery->where('is_active', $request->is_active);
+        }
+
+
+        // Reset the original select
+        $countsQuery->getQuery()->columns = [];
+
+        $statusCounts = $countsQuery->select(
+            DB::raw("SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as `active`"),
+            DB::raw("SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as `suspended`"),
+            DB::raw("SUM(CASE WHEN is_active = 2 THEN 1 ELSE 0 END) as `terminated`")
+        )->first();
+        //  dd($request->input('download_csv'));
+        // Check if CSV download is requested
+
 
         // Paginate results
         $employees = $employeesQuery
@@ -4459,7 +4599,7 @@ class UserController extends Controller
         ], 200);
     }
 
-     public function createAgentProfile(Request $request)
+    public function createAgentProfile(Request $request)
     {
 
         // Validation for NEW business profile fields
@@ -4553,7 +4693,7 @@ class UserController extends Controller
         }
     }
 
-      public function createBusinessProfile(Request $request)
+    public function createBusinessProfile(Request $request)
     {
 
         // Validation for NEW business profile fields
