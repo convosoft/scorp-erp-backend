@@ -670,35 +670,13 @@ class ApplicationsController extends Controller
         // BASE QUERY (same as plain)
         $app_query = DB::table('deal_applications as da')
             ->select(
-                'da.*',
-
-                'u.name as university_name',
-                's.name as stage_name',
-                'au.name as assigned_user_name',
-                'b.name as brand_name',
-                'br.name as branch_name',
-                DB::raw('DATEDIFF(CURDATE(), da.created_at) as applicationAge')
+                'da.name as application_name',
+                'da.id as application_id',
+                'client.name as client_name',
+                'client.email as client_email',
             )
 
-            // ✅ JOIN DEAL
-            ->join('deals as d', 'd.id', '=', 'da.deal_id')
 
-            // ✅ TASKS COUNT (GROUPED)
-            ->leftJoin(DB::raw('
-            (SELECT related_to, COUNT(*) as tasks_count
-            FROM deal_tasks
-            WHERE related_type = "application"
-            GROUP BY related_to
-            ) as dt
-        '), 'dt.related_to', '=', 'da.id')
-
-            // ✅ NOTES COUNT (GROUPED)
-            ->leftJoin(DB::raw('
-            (SELECT application_id, COUNT(*) as notes_count
-            FROM application_notes
-            GROUP BY application_id
-            ) as an
-        '), 'an.application_id', '=', 'da.id')
 
             // OTHER JOINS
             ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
