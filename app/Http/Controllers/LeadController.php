@@ -762,7 +762,11 @@ class LeadController extends Controller
         // dd($sql );
 
         // ✅ List View - Simple pagination
-        $leads = $leadsQuery
+        $leads = $leadsQuery->select([
+            'id',
+            'name',
+            'email',
+        ])
             ->where('is_converted', 0)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
