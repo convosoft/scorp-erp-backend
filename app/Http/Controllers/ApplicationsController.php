@@ -650,6 +650,241 @@ class ApplicationsController extends Controller
     }
 
 
+    public function email_marketing_getapplications(Request $request)
+    {
+        $usr = \Auth::user();
+
+        if (!($usr->can('view application') ||
+            in_array($usr->type, ['super admin', 'company', 'Admin Team']) ||
+            $usr->can('level 1'))) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Permission Denied.')
+            ], 403);
+        }
+
+        $perPage = (int) 1000;
+        $page = (int) $request->input('page', 1);
+        $start = ($page - 1) * $perPage;
+
+        // BASE QUERY (same as plain)
+        $app_query = DB::table('deal_applications as da')
+            ->select(
+                'da.*',
+
+                'u.name as university_name',
+                's.name as stage_name',
+                'au.name as assigned_user_name',
+                'b.name as brand_name',
+                'br.name as branch_name',
+                DB::raw('DATEDIFF(CURDATE(), da.created_at) as applicationAge')
+            )
+
+            // ✅ JOIN DEAL
+            ->join('deals as d', 'd.id', '=', 'da.deal_id')
+
+            // ✅ TASKS COUNT (GROUPED)
+            ->leftJoin(DB::raw('
+            (SELECT related_to, COUNT(*) as tasks_count
+            FROM deal_tasks
+            WHERE related_type = "application"
+            GROUP BY related_to
+            ) as dt
+        '), 'dt.related_to', '=', 'da.id')
+
+            // ✅ NOTES COUNT (GROUPED)
+            ->leftJoin(DB::raw('
+            (SELECT application_id, COUNT(*) as notes_count
+            FROM application_notes
+            GROUP BY application_id
+            ) as an
+        '), 'an.application_id', '=', 'da.id')
+
+            // OTHER JOINS
+            ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
+            ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
+            ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
+            ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
+            ->leftJoin('users as client', 'client.id', '=', 'da.contact_id')
+            ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
+
+
+        if ($request->filled('country') && is_array($request->country)) {
+
+            $countries = $request->country;
+
+            $app_query->where(function ($query) use ($countries) {
+
+                // Home country (252)
+                if (in_array(252, $countries)) {
+                    $query->orWhere('u.home_status', 1);
+                }
+
+                // Other countries
+                $otherCountries = array_diff($countries, [252]);
+
+                if (!empty($otherCountries)) {
+                    $query->orWhereIn('u.country', $otherCountries);
+                }
+            });
+        }
+
+        if ($request->filled('intake_month')) {
+            $app_query->whereIn('da.intake', $request->intake_month);
+        }
+
+
+        if ($request->filled('intake_year')) {
+            $app_query->whereIn('da.intakeYear', $request->intake_year);
+        }
+        if ($request->filled('sources')) {
+            $app_query->whereIn('da.sources', $request->sources);
+        }
+
+
+        // Conditional sorting
+        if ($request->filled('sort_by_tasks')) {
+            $dir = strtolower($request->sort_by_tasks) === 'asc' ? 'asc' : 'desc';
+            $app_query->orderBy('tasks_count', $dir);
+        } elseif ($request->filled('sort_by_notes')) {
+            $dir = strtolower($request->sort_by_notes) === 'asc' ? 'asc' : 'desc';
+            $app_query->orderBy('notes_count', $dir);
+        } else {
+            // Default fallback
+            $app_query->orderBy('da.created_at', 'desc');
+        }
+
+        // ROLE FILTERING (same as plain)
+        if ($usr->type == 'super admin' || $usr->type == 'Admin Team' || $usr->can('level 1')) {
+        } elseif ($usr->type == 'company') {
+            $app_query->where('d.brand_id', $usr->id);
+        } elseif ($usr->type == 'Project Director' || $usr->type == 'Project Manager' || $usr->can('level 2')) {
+            $brand_ids = array_keys(FiltersBrands());
+            $app_query->whereIn('d.brand_id', $brand_ids);
+        } elseif ($usr->type == 'Region Manager' || ($usr->can('level 3') && !empty($usr->region_id))) {
+            $app_query->where('d.region_id', $usr->region_id);
+        } elseif (
+            $usr->type == 'Branch Manager' ||
+            $usr->type == 'Admissions Officer' ||
+            $usr->type == 'Careers Consultant' ||
+            $usr->type == 'Admissions Manager' ||
+            $usr->type == 'Marketing Officer' ||
+            ($usr->can('level 4') && !empty($usr->branch_id))
+        ) {
+            $app_query->where('d.branch_id', $usr->branch_id);
+        } elseif ($usr->type === 'Agent') {
+            $app_query->where(function ($q) use ($usr) {
+                $q->where('d.assigned_to', $usr->id)
+                    ->orWhere('d.created_by', $usr->id);
+            });
+        } else {
+            $app_query->where('d.assigned_to', $usr->id);
+        }
+
+        // fetcttype (FIXED LOGIC)
+        if ($request->filled('fetcttype')) {
+
+            if ($request->fetcttype === 'yourapplications') {
+                $app_query->where('da.created_by', $usr->id);
+            } elseif ($request->fetcttype === 'assigntome') {
+                $app_query->where('d.assigned_to', $usr->id);
+            } elseif ($request->fetcttype === 'agentapplications') {
+                $app_query->whereNotNull('da.agent_id');
+            }
+        }
+
+        // fetcttype (FIXED LOGIC)
+        if ($request->filled('fetcttype') && $request->fetcttype == 'blocked') {
+            $app_query->where('client.blocked_status', '=', '1');
+            $app_query->where('client.unblock_status', '!=', '1');
+        } else {
+            $app_query->where('client.blocked_status', '=', '0');
+        }
+
+        // Filters
+        $filters = $this->ApplicationFilters($request);
+
+        foreach ($filters as $column => $value) {
+
+            if ($column === 'name') {
+                $app_query->whereIn('da.name', (array)$value);
+            } elseif ($column === 'stage_id') {
+                $app_query->whereIn('da.stage_id', (array)$value);
+            } elseif ($column === 'university_id') {
+                $app_query->whereIn('da.university_id', (array)$value);
+
+                //$app_query->where('da.university_id', $value);
+
+            } elseif ($column === 'created_by') {
+                $app_query->whereIn('da.created_by', (array)$value);
+            } elseif ($column === 'brand') {
+                $app_query->where('d.brand_id', $value);
+            } elseif ($column === 'region_id') {
+                $app_query->where('d.region_id', $value);
+            } elseif ($column === 'branch_id') {
+                $app_query->where('d.branch_id', $value);
+            } elseif ($column === 'assigned_to') {
+                //  $app_query->where('d.assigned_to', $value);
+
+                if (is_array($value)) {
+                    $app_query->whereIn('d.assigned_to', $value);
+                } else {
+                    $app_query->where('d.assigned_to', $value);
+                }
+            } elseif ($column === 'created_at_from') {
+                $app_query->whereDate('da.created_at', '>=', $value);
+            } elseif ($column === 'created_at_to') {
+                $app_query->whereDate('da.created_at', '<=', $value);
+            } elseif ($column === 'tag_id') {
+                $app_query->whereRaw('FIND_IN_SET(?, da.tag_ids)', [$value]);
+            }
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $g_search = $request->input('search');
+
+            if (strpos($g_search, 'APC') === 0) {
+                $numericId = preg_replace('/^[A-Z]+/', '', $g_search);
+                $app_query->where('deal_applications.id', $numericId);
+            } else {
+                $app_query->where(function ($query) use ($g_search) {
+                    $query->where('da.name', 'like', "%{$g_search}%")
+                        ->orWhere('da.application_key', 'like', "%{$g_search}%")
+                        ->orWhere('da.course', 'like', "%{$g_search}%");
+                });
+            }
+        }
+
+
+
+
+        // NORMAL LIST VIEW
+        $total_records = $app_query->count();
+
+        $applications = $app_query
+            ->skip($start)
+            ->limit($perPage)
+            ->get();
+
+        $applicationsWithTags = $applications->map(function ($app) {
+            $appArray = (array) $app; // Convert stdClass to array
+            $appArray['tags'] = $this->getTagsForApplication($app->tag_ids ?? '');
+            return $appArray;
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $applicationsWithTags,
+            'current_page' => $page,
+            'last_page' => ceil($total_records / $perPage),
+            'total_records' => $total_records,
+            'per_page' => $perPage,
+        ]);
+    }
+
+
+
     private function getTagsForApplication($tagIds)
     {
         if (empty($tagIds)) {
@@ -3157,8 +3392,7 @@ class ApplicationsController extends Controller
                 'module_type' => 'finanace_student_file',
                 'notification_type' => 'Finance Student File Created',
             ]);
-
-            }
+        }
 
         // Remove unwanted fields
         $inputs = $request->except(['_token', '_method', 'submit', 'application_id', 'stage_id']);
