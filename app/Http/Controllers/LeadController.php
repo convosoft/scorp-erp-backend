@@ -589,7 +589,7 @@ class LeadController extends Controller
     public function email_marketing_getleads(Request $request)
     {
         // ... validation stays same ...
-
+        $request->view = 'list';
         $validator = Validator::make($request->all(), [
 
             'perPage' => 'nullable|integer|min:1',
