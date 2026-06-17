@@ -185,4 +185,131 @@ class EmailCampaignController extends Controller
             'data' => $campaign->fresh()
         ]);
     }
+    public function getEmailCampaigns(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'perPage' => 'nullable|integer|min:1',
+            'page' => 'nullable|integer|min:1',
+
+            'search' => 'nullable|string',
+            'campaign_name' => 'nullable|string',
+
+            'recipient_type' => 'nullable|in:leads,admissions,applications,agents',
+            'status' => 'nullable|in:draft,pending_approval,approved,rejected,sending,completed',
+
+            'brand_id' => 'nullable|integer',
+            'region_id' => 'nullable|integer',
+            'branch_id' => 'nullable|integer',
+
+            'created_by' => 'nullable|integer',
+            'approved_by' => 'nullable|integer',
+
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = \Auth::user();
+        $perPage = $request->input('perPage', env('RESULTS_ON_PAGE', 50));
+        $page = $request->input('page', 1);
+
+        $query = EmailCampaign::query();
+
+        // 🔎 SEARCH (name / subject / email)
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('campaign_name', 'like', "%$search%")
+                    ->orWhere('subject', 'like', "%$search%")
+                    ->orWhere('from_email', 'like', "%$search%");
+            });
+        }
+
+        // Filters
+        if ($request->filled('campaign_name')) {
+            $query->where('campaign_name', 'like', "%{$request->campaign_name}%");
+        }
+
+        if ($request->filled('recipient_type')) {
+            $query->where('recipient_type', $request->recipient_type);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
+        }
+
+        if ($request->filled('region_id')) {
+            $query->where('region_id', $request->region_id);
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('created_by')) {
+            $query->where('created_by', $request->created_by);
+        }
+
+        if ($request->filled('approved_by')) {
+            $query->where('approved_by', $request->approved_by);
+        }
+
+        // Date filters
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        // 🔐 ROLE-BASED ACCESS CONTROL
+        $companies = FiltersBrands();
+        $brand_ids = array_keys($companies);
+
+        $userType = \Auth::user()->type;
+        if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+            // No additional filtering needed
+        } elseif ($userType === 'company') {
+            $query->where('brand_id', \Auth::user()->id);
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+            $query->whereIn('brand_id', $brand_ids);
+        } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
+            $query->where('region_id', \Auth::user()->region_id);
+        } elseif (($userType === 'Branch Manager' || in_array($userType, ['Careers Consultant', 'Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || \Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id)) {
+            $query->where('branch_id', \Auth::user()->branch_id);
+        } elseif ($userType === 'Agent') {
+            $query->where('agent_id', $usr->agent_id);
+        } else {
+            $query->where('user_id', \Auth::user()->id);
+        }
+
+
+        // Sorting
+        $query->orderBy('created_at', 'desc');
+
+        // Pagination
+        $campaigns = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $campaigns->items(),
+
+            'current_page' => $campaigns->currentPage(),
+            'last_page' => $campaigns->lastPage(),
+            'total_records' => $campaigns->total(),
+            'per_page' => $campaigns->perPage(),
+        ]);
+    }
 }
