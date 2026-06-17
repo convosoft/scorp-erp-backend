@@ -1156,4 +1156,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/validate-email', [EmailValidationController::class, 'checkEmail']);
     Route::post('/is-email-valid',  [EmailValidationController::class, 'isValid']);
     Route::post('/email-marketing/campaigns/create', [EmailCampaignController::class, 'createCampaign']);
+    Route::post('/email-marketing/campaigns/approve', [EmailCampaignController::class, 'approveCampaign']);
+    Route::post('/email-marketing/campaigns/reject', [EmailCampaignController::class, 'rejectCampaign']);
 });

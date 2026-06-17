@@ -83,4 +83,100 @@ class EmailCampaignController extends Controller
             'data' => $campaign,
         ]);
     }
+
+    public function approveCampaign(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|exists:email_campaigns,id',
+            'comments' => 'required|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $campaign = EmailCampaign::find($request->id);
+
+        if ($campaign->status !== 'pending_approval') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only pending approval campaigns can be approved.'
+            ], 422);
+        }
+
+        $campaign->update([
+            'status' => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+            'comments' => $request->comments,
+        ]);
+
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => 'Email Campaign Approved',
+                'message' => "Email campaign '{$campaign->campaign_name}' has been approved. Comments: {$request->comments}"
+            ]),
+            'module_id' => $campaign->id,
+            'module_type' => 'email_campaign',
+            'notification_type' => 'Email Campaign Approved',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Campaign approved successfully.',
+            'data' => $campaign->fresh()
+        ]);
+    }
+
+    public function rejectCampaign(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|exists:email_campaigns,id',
+            'comments' => 'required|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $campaign = EmailCampaign::find($request->id);
+
+        if ($campaign->status !== 'pending_approval') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only pending approval campaigns can be rejected.'
+            ], 422);
+        }
+
+        $campaign->update([
+            'status' => 'rejected',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+            'comments' => $request->comments,
+        ]);
+
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => 'Email Campaign Rejected',
+                'message' => "Email campaign '{$campaign->campaign_name}' has been rejected. Comments: {$request->comments}"
+            ]),
+            'module_id' => $campaign->id,
+            'module_type' => 'email_campaign',
+            'notification_type' => 'Email Campaign Rejected',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Campaign rejected successfully.',
+            'data' => $campaign->fresh()
+        ]);
+    }
 }

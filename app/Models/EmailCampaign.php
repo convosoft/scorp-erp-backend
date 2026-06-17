@@ -22,6 +22,7 @@ class EmailCampaign extends Model
         'created_by',
         'approved_by',
         'approved_at',
+        'comments',
     ];
 
     protected $casts = [
