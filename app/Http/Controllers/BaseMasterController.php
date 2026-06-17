@@ -133,7 +133,7 @@ abstract class BaseMasterController extends Controller
         ]);
 
         addLogActivity([
-            'type' => 'success',
+            'type' => 'info',
             'note' => json_encode([
                 'title' => "{$this->entityName} Updated",
                 'message' => "{$this->entityName} '{$oldName}' updated successfully."
@@ -188,7 +188,7 @@ abstract class BaseMasterController extends Controller
         $record->delete();
 
         addLogActivity([
-            'type' => 'success',
+            'type' => 'warning',
             'note' => json_encode([
                 'title' => "{$this->entityName} Deleted",
                 'message' => "{$this->entityName} '{$name}' deleted successfully."
