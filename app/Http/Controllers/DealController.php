@@ -465,10 +465,9 @@ class DealController extends Controller
         $page = $request->input('page', 1);
 
         $query = AdmissionView::with(['clients' => function ($q) {
-            $q->where('is_email_bogus', 0)
-                ->select('id', 'name', 'email');
+            $q->where('users.is_email_bogus', 0)        // qualify the condition
+                ->select('users.id', 'users.name', 'users.email'); // qualify the SELECT
         }]);
-
         // Permissions logic
         $companies = FiltersBrands();
         $brand_ids = array_keys($companies);
