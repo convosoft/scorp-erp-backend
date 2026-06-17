@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmailCampaign;
+use App\Models\EmailCampaignRecipient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -44,6 +45,17 @@ class EmailCampaignController extends Controller
             'status'           => $request->status,
             'created_by'       => Auth::id(),
         ]);
+
+        foreach ($request->recipient_ids as $recipient) {
+
+            EmailCampaignRecipient::create([
+                'campaign_id' => $campaign->id,
+                'recipient_type' => $request->recipient_type,
+                'recipient_id' => $recipient['id'],
+                'name' => $recipient['name'],
+                'email' => $recipient['email'],
+            ]);
+        }
 
         addLogActivity([
             'type' => 'success',
