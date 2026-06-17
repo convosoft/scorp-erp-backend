@@ -219,7 +219,44 @@ class EmailCampaignController extends Controller
         $perPage = $request->input('perPage', env('RESULTS_ON_PAGE', 50));
         $page = $request->input('page', 1);
 
-        $query = EmailCampaign::query();
+        $query = EmailCampaign::query()
+            ->select('email_campaigns.*')
+
+            // Total queued emails
+            ->addSelect([
+                'total_queued' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id'),
+
+                // Sent emails
+                'total_sent' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->where('is_send', '1'),
+
+                // Pending emails
+                'total_pending' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->where('is_send', '0'),
+
+                // Failed emails
+                'total_failed' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->where('status', '2'),
+
+                // Delivered emails
+                'total_delivered' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->whereNotNull('delivered_at'),
+
+                // Opened emails
+                'total_opened' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->whereNotNull('opened_at'),
+
+                // Clicked emails
+                'total_clicked' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->whereNotNull('clicked_at'),
+            ]);
 
         // 🔎 SEARCH (name / subject / email)
         if ($request->filled('search')) {
@@ -371,4 +408,3 @@ class EmailCampaignController extends Controller
         ], 200);
     }
 }
-
