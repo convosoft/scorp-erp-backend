@@ -22,6 +22,10 @@ class EmailCampaignController extends Controller
             'filters_json' => 'nullable|array',
             'total_recipients' => 'nullable|integer|min:0',
             'status' => 'required|in:draft,pending_approval',
+            'recipient_ids' => 'required|array|min:1',
+            'recipient_ids.*.id' => 'required|integer',
+            'recipient_ids.*.name' => 'required|string',
+            'recipient_ids.*.email' => 'required|email',
         ]);
 
         if ($validator->fails()) {
@@ -46,16 +50,21 @@ class EmailCampaignController extends Controller
             'created_by'       => Auth::id(),
         ]);
 
-        foreach ($request->recipient_ids as $recipient) {
+        $rows = [];
 
-            EmailCampaignRecipient::create([
-                'campaign_id' => $campaign->id,
+        foreach ($request->recipient_ids as $recipient) {
+            $rows[] = [
+                'campaign_id'    => $campaign->id,
                 'recipient_type' => $request->recipient_type,
-                'recipient_id' => $recipient['id'],
-                'name' => $recipient['name'],
-                'email' => $recipient['email'],
-            ]);
+                'recipient_id'   => $recipient['id'],
+                'name'           => $recipient['name'],
+                'email'          => $recipient['email'],
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ];
         }
+
+        EmailCampaignRecipient::insert($rows);
 
         addLogActivity([
             'type' => 'success',
