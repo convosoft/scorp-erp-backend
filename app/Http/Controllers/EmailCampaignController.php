@@ -14,6 +14,9 @@ class EmailCampaignController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'campaign_name' => 'required|string|max:255',
+            'brand_id' => 'required|integer|exists:users,id',
+            'branch_id' => 'required|integer|exists:branches,id',
+            'region_id' => 'required|integer|exists:regions,id',
             'recipient_type' => 'required|in:leads,admissions,applications,agents',
             'template_id' => 'nullable|integer',
             'from_email' => 'nullable|email',
@@ -38,6 +41,9 @@ class EmailCampaignController extends Controller
 
         $campaign = EmailCampaign::create([
             'campaign_name'    => $request->campaign_name,
+            'brand_id'    => $request->brand_id,
+            'branch_id'    => $request->branch_id,
+            'region_id'    => $request->region_id,
             'recipient_type'   => $request->recipient_type,
             'template_id'      => $request->template_id,
             'email_sender_id'  => Auth::id(),
