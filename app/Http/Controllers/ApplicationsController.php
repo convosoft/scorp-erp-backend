@@ -692,6 +692,10 @@ class ApplicationsController extends Controller
             ->leftJoin('users as client', 'client.id', '=', 'da.contact_id')
             ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
+        $app_query->where('client.is_email_bogus', 0);
+
+        $app_query->whereNotNull('client.email');
+
 
         if ($request->filled('country') && is_array($request->country)) {
 

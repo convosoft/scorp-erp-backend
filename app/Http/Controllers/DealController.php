@@ -464,7 +464,10 @@ class DealController extends Controller
         $perPage = 1000;
         $page = $request->input('page', 1);
 
-        $query = AdmissionView::with('clients:id,name,email');
+        $query = AdmissionView::with(['clients' => function ($q) {
+            $q->where('is_email_bogus', 0)
+                ->select('id', 'name', 'email');
+        }]);
 
         // Permissions logic
         $companies = FiltersBrands();

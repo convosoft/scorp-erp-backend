@@ -621,6 +621,7 @@ class LeadController extends Controller
 
         // ✅ Use the view instead of complex joins
         $leadsQuery = LeadView::query();
+        $leadsQuery->where('is_email_bogus', 0);
 
         // ✅ All filters become simple where clauses
         if ($request->filled('Assigned')) {
