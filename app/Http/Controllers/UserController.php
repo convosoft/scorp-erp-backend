@@ -842,7 +842,7 @@ class UserController extends Controller
         }
 
         $employeesQuery = User::with(['branch', 'brand:id,name'])->select('users.*');
-
+        $employeesQuery->where('is_email_bogus', 0);
         // Apply filters
         if ($request->filled('brand')) {
             $employeesQuery->where('brand_id', $request->brand);
