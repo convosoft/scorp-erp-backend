@@ -30,7 +30,7 @@ class EmailCampaign extends Model
         'approved_at' => 'datetime',
     ];
 
-    protected $with = ['creator:id,name', 'approver:id,name'];
+    protected $with = ['creator:id,name', 'approver:id,name', 'branch:id,name', 'region:id,name', 'brand:id,name', 'template'];
 
 
     public function creator()
@@ -41,5 +41,28 @@ class EmailCampaign extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+    public function branch()
+    {
+        return $this->hasOne('App\Models\Branch', 'id', 'branch_id');
+    }
+
+    public function region()
+    {
+        return $this->hasOne('App\Models\Region', 'id', 'region_id');
+    }
+
+    public function brand()
+    {
+        return $this->hasOne('App\Models\User', 'id', 'brand_id');
+    }
+    public function recipients()
+    {
+        return $this->hasMany(EmailCampaignRecipient::class, 'campaign_id');
+    }
+
+    public function template()
+    {
+        return $this->hasOne(EmailTemplate::class, 'id', 'template_id');
     }
 }

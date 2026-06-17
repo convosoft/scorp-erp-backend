@@ -312,4 +312,63 @@ class EmailCampaignController extends Controller
             'per_page' => $campaigns->perPage(),
         ]);
     }
+
+    public function getCampaignDetail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|exists:email_campaigns,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $campaign = EmailCampaign::with('recipients')->find($request->id);
+
+        if (!$campaign) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Campaign not found.',
+            ], 404);
+        }
+
+        // 🔐 ROLE-BASED ACCESS CONTROL
+        $user = Auth::user();
+        $userType = $user->type;
+        $companies = FiltersBrands();
+        $brand_ids = array_keys($companies);
+
+        $allowed = false;
+        if (in_array($userType, ['super admin', 'Admin Team']) || $user->can('level 1')) {
+            $allowed = true;
+        } elseif ($userType === 'company') {
+            $allowed = ($campaign->brand_id == $user->id);
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
+            $allowed = in_array($campaign->brand_id, $brand_ids);
+        } elseif (($userType === 'Region Manager' || $user->can('level 3')) && !empty($user->region_id)) {
+            $allowed = ($campaign->region_id == $user->region_id);
+        } elseif (($userType === 'Branch Manager' || in_array($userType, ['Careers Consultant', 'Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || $user->can('level 4') && !empty($user->branch_id)) {
+            $allowed = ($campaign->branch_id == $user->branch_id);
+        } elseif ($userType === 'Agent') {
+            $allowed = ($campaign->created_by == $user->id);
+        } else {
+            $allowed = ($campaign->created_by == $user->id);
+        }
+
+        if (!$allowed) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Permission Denied.'),
+            ], 403);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $campaign,
+        ], 200);
+    }
 }
+
