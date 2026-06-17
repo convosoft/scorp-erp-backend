@@ -562,7 +562,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employees', [UserController::class, 'employees']);
     Route::get('/Pluck_All_Users', [UserController::class, 'Pluck_All_Users']);
     Route::post('/Pluck_All_Users_by_filter', [UserController::class, 'Pluck_All_Users_by_filter']);
-    Route::post('/email_marketing_getAgents', [UserController::class, 'email_marketing_getAgents']);
+    Route::post('/email_marketing_getagents', [UserController::class, 'email_marketing_getAgents']);
 
     Route::get('/get/employee/Details', [UserController::class, 'EmployeeDetails']);
     Route::post('/createEmployee', [UserController::class, 'createEmployee']);
