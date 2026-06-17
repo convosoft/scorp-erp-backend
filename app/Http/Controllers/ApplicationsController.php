@@ -673,8 +673,8 @@ class ApplicationsController extends Controller
             $filters['name'] = $request->input('applications');
         }
 
-        if ($request->filled('stages')) {
-            $filters['stage_id'] = $request->input('stages');
+        if ($request->filled('stage_id')) {
+            $filters['stage_id'] = $request->input('stage_id');
         }
 
         if ($request->filled('created_by')) {
