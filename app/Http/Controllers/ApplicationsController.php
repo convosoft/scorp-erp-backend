@@ -454,12 +454,14 @@ class ApplicationsController extends Controller
         // Filters
         $filters = $this->ApplicationFilters($request);
 
+          dd($filters);
+
         foreach ($filters as $column => $value) {
 
             if ($column === 'name') {
                 $app_query->whereIn('da.name', (array)$value);
             } elseif ($column === 'stage_id') {
-                dd($value);
+
                 $app_query->whereIn('da.stage_id', (array)$value);
             } elseif ($column === 'university_id') {
                 $app_query->whereIn('da.university_id', (array)$value);
