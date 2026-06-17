@@ -85,6 +85,7 @@ use App\Http\Controllers\EducationLevelsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReassignController;
 use App\Http\Controllers\ELTRequirementsController;
+use App\Http\Controllers\EmailCampaignController;
 use App\Http\Controllers\EmailValidationController;
 use App\Http\Controllers\LeadTagController;
 use App\Http\Controllers\MediaDocumentController;
@@ -1154,4 +1155,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // Email validation (mailboxlayer)
     Route::post('/validate-email', [EmailValidationController::class, 'checkEmail']);
     Route::post('/is-email-valid',  [EmailValidationController::class, 'isValid']);
+    Route::post('/email-marketing/campaigns/create', [EmailCampaignController::class, 'createCampaign']);
 });
