@@ -454,7 +454,7 @@ class ApplicationsController extends Controller
         // Filters
         $filters = $this->ApplicationFilters($request);
 
-          dd($filters);
+         // dd($filters);
 
         foreach ($filters as $column => $value) {
 
