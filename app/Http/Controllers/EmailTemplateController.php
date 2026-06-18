@@ -116,7 +116,7 @@ class EmailTemplateController extends Controller
             ], 422);
         }
 
-        $emailTemplate = EmailTemplate::finde($request->id);
+        $emailTemplate = EmailTemplate::find($request->id);
 
         return response()->json([
             'status' => 'success',
