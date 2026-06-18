@@ -408,4 +408,133 @@ class EmailCampaignController extends Controller
             'data' => $campaign,
         ], 200);
     }
+
+    public function updateCampaign(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|exists:email_campaigns,id',
+            'campaign_name' => 'required|string|max:255',
+            'brand_id' => 'required|integer|exists:users,id',
+            'branch_id' => 'required|integer|exists:branches,id',
+            'region_id' => 'required|integer|exists:regions,id',
+            'recipient_type' => 'required|in:leads,admissions,applications,agents',
+            'template_id' => 'nullable|integer',
+            'from_email' => 'nullable|email',
+            'subject' => 'required|string|max:500',
+            'body' => 'required',
+            'filters_json' => 'nullable|array',
+            'total_recipients' => 'nullable|integer|min:0',
+            'status' => 'required|in:draft,pending_approval',
+            'recipient_ids' => 'required|array|min:1',
+            'recipient_ids.*.id' => 'required|integer',
+            'recipient_ids.*.name' => 'required|string',
+            'recipient_ids.*.email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $campaign = EmailCampaign::find($request->id);
+
+        if (!$campaign) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Campaign not found.',
+            ], 404);
+        }
+
+        // Check if campaign is already approved, sending, or completed
+        if (in_array($campaign->status, ['approved', 'sending', 'completed'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Campaign cannot be updated once it is approved, sending, or completed.',
+            ], 422);
+        }
+
+        // 🔐 ROLE-BASED ACCESS CONTROL
+        $user = Auth::user();
+        $userType = $user->type;
+        $companies = FiltersBrands();
+        $brand_ids = array_keys($companies);
+
+        $allowed = false;
+        if (in_array($userType, ['super admin', 'Admin Team']) || $user->can('level 1')) {
+            $allowed = true;
+        } elseif ($userType === 'company') {
+            $allowed = ($campaign->brand_id == $user->id);
+        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || $user->can('level 2')) {
+            $allowed = in_array($campaign->brand_id, $brand_ids);
+        } elseif (($userType === 'Region Manager' || $user->can('level 3')) && !empty($user->region_id)) {
+            $allowed = ($campaign->region_id == $user->region_id);
+        } elseif (($userType === 'Branch Manager' || in_array($userType, ['Careers Consultant', 'Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || $user->can('level 4') && !empty($user->branch_id)) {
+            $allowed = ($campaign->branch_id == $user->branch_id);
+        } elseif ($userType === 'Agent') {
+            $allowed = ($campaign->created_by == $user->id);
+        } else {
+            $allowed = ($campaign->created_by == $user->id);
+        }
+
+        if (!$allowed) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Permission Denied.'),
+            ], 403);
+        }
+
+        $campaign->update([
+            'campaign_name'    => $request->campaign_name,
+            'brand_id'         => $request->brand_id,
+            'branch_id'        => $request->branch_id,
+            'region_id'        => $request->region_id,
+            'recipient_type'   => $request->recipient_type,
+            'template_id'      => $request->template_id,
+            'from_email'       => $request->from_email,
+            'subject'          => $request->subject,
+            'body'             => $request->body,
+            'filters_json'     => $request->filters_json,
+            'total_recipients' => $request->total_recipients ?? 0,
+            'status'           => $request->status,
+        ]);
+
+        // Delete existing recipients
+        EmailCampaignRecipient::where('campaign_id', $campaign->id)->delete();
+
+        // Re-insert new recipients
+        $rows = [];
+        foreach ($request->recipient_ids as $recipient) {
+            $rows[] = [
+                'campaign_id'    => $campaign->id,
+                'recipient_type' => $request->recipient_type,
+                'recipient_id'   => $recipient['id'],
+                'name'           => $recipient['name'],
+                'email'          => $recipient['email'],
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ];
+        }
+
+        EmailCampaignRecipient::insert($rows);
+
+        addLogActivity([
+            'type' => 'info',
+            'note' => json_encode([
+                'title' => "'{$campaign->campaign_name}' Email Campaign Updated",
+                'message' => "Email campaign '{$campaign->campaign_name}' has been updated successfully."
+            ]),
+            'module_id' => $campaign->id,
+            'module_type' => 'email_campaign',
+            'notification_type' => 'Email Campaign Updated',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Campaign updated successfully',
+            'data' => $campaign->fresh(),
+        ]);
+    }
 }
+
