@@ -1826,12 +1826,10 @@ class GeneralController extends Controller
     public function getemailTags(Request $request)
     {
         $type = $request->type;
-        $is_campaign = $request->is_campaign ?? 0;
 
         $tags = DB::table('email_tags')
             ->where('type', 'universal')
             ->orWhere('type', $type)
-            ->where('is_campaign', $is_campaign)
             ->get();
 
         return response()->json([
