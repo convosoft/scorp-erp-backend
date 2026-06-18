@@ -2210,13 +2210,22 @@ if (!function_exists('uploadFileToS3')) {
                 }
 
                 $data = [
-                    'student_id' => $admission->student_id,
-                    'student_name' => $admission->student_name,
-                    'student_email' => $admission->email,
-                    'admission_number' => $admission->admission_number,
-                    'admission_status' => $admission->status,
-                    'course_name' => optional($admission->course)->name,
-                    'university_name' => optional($admission->university)->name,
+                    'student_id' => $admission->student_id ?? '',
+                    'student_name' => $admission->student_name ?? '',
+                    'student_email' => $admission->email ?? '',
+                    'student_phone' => $admission->phone ?? '',
+                    'admission_number' => $admission->admission_number ?? '',
+                    'admission_status' => $admission->status ?? '',
+                    'admission_date' => $admission->admission_date ?? '',
+                    'intake' => $admission->intake ?? '',
+                    'semester' => $admission->semester ?? '',
+                    'academic_year' => $admission->academic_year ?? '',
+                    'campus_name' => optional($admission->campus)->name ?? '',
+                    'university_name' => optional($admission->university)->name ?? '',
+                    'course_name' => optional($admission->course)->name ?? '',
+                    'program_name' => optional($admission->program)->name ?? '',
+                    'fee_amount' => $admission->fee_amount ?? '',
+                    'scholarship_amount' => $admission->scholarship_amount ?? '',
                 ];
 
                 break;
@@ -2230,13 +2239,21 @@ if (!function_exists('uploadFileToS3')) {
                 }
 
                 $data = [
-                    'application_id' => $application->id,
-                    'application_number' => $application->application_number,
-                    'application_status' => $application->status,
-                    'student_name' => $application->name,
-                    'course_name' => optional($application->course)->name,
-                    'university_name' => optional($application->university)->name,
-                    'intake' => $application->intake,
+                    'application_id' => $application->id ?? '',
+                    'application_number' => $application->application_number ?? '',
+                    'application_status' => $application->status ?? '',
+                    'application_stage' => optional($application->stage)->name ?? '',
+                    'submitted_date' => $application->submitted_date ?? '',
+                    'decision_date' => $application->decision_date ?? '',
+                    'offer_status' => $application->offer_status ?? '',
+                    'offer_type' => $application->offer_type ?? '',
+                    'visa_status' => $application->visa_status ?? '',
+                    'application_remarks' => $application->remarks ?? '',
+                    'assigned_officer' => optional($application->assignedUser)->name ?? '',
+                    'student_name' => $application->name ?? '',
+                    'course_name' => optional($application->course)->name ?? '',
+                    'university_name' => optional($application->university)->name ?? '',
+                    'intake' => $application->intake ?? '',
                 ];
 
                 break;
@@ -2250,21 +2267,55 @@ if (!function_exists('uploadFileToS3')) {
                 }
 
                 $data = [
-                    'agent_id' => $agent->id,
-                    'agent_name' => $agent->name,
-                    'agency_name' => $agent->agency_name,
-                    'agent_email' => $agent->email,
-                    'agent_phone' => $agent->phone,
-                    'agent_status' => $agent->status,
+                    'agent_id' => $agent->id ?? '',
+                    'agent_name' => $agent->name ?? '',
+                    'agency_name' => $agent->agency_name ?? '',
+                    'agent_email' => $agent->email ?? '',
+                    'agent_phone' => $agent->phone ?? '',
+                    'agent_country' => $agent->country ?? '',
+                    'agent_city' => $agent->city ?? '',
+                    'agent_status' => $agent->status ?? '',
+                    'commission_rate' => $agent->commission_rate ?? '',
+                    'otp' => '',
+                    'profile_status' => $agent->profile_status ?? '',
+                    'comment' => '',
                 ];
 
                 break;
         }
 
-        // Universal Tags
-        $data['company_name'] = config('app.name');
-        $data['current_year'] = date('Y');
-        $data['date_today'] = now()->format('Y-m-d');
+        // $data = array_merge($data, [
+        //     'employee_name' => '',
+        //     'employee_email' => '',
+        //     'DOB' => '',
+        //     'leave_status' => '',
+        //     'branch_manager_email' => '',
+        //     'project_manager_email' => '',
+        //     'attendnace_date' => '',
+        //     'employee_designation' => '',
+        //     'project_manager_name' => '',
+        //     'branch_manager_name' => '',
+        //     'termination_date' => '',
+        //     'termination_reason' => '',
+        //     'suspension_date' => '',
+        //     'suspension_reason' => '',
+        //     'suspension_end_date' => '',
+        //     'document_name' => '',
+        //     'document_expiry' => '',
+        //     'employee_status' => '',
+
+        //     'brand_name' => '',
+        //     'branch_name' => '',
+
+        //     'company_name' => config('app.name'),
+        //     'portal_link' => 'https://newerp.scorp-erp.com',
+        //     'login_url' => 'https://newerp.scorp-erp.com/login',
+
+        //     'date_today' => now()->format('Y-m-d'),
+        //     'current_year' => date('Y'),
+        // ]);
+
+        // Universal Tags  
 
         foreach ($data as $key => $value) {
             $template = str_replace(
