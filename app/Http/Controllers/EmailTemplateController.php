@@ -93,6 +93,37 @@ class EmailTemplateController extends Controller
         ], 200);
     }
 
+    public function getEmailTemplateDetailByID(Request $request)
+    {
+        if (!\Auth::user()->can('manage email template')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Permission denied.'
+            ], 403);
+        }
+
+        $validator = \Validator::make(
+            $request->all(),
+            [
+                'id' => 'required|exists:email_templates,id'
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $emailTemplate = EmailTemplate::finde($request->id);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $emailTemplate
+        ], 200);
+    }
+
     public function addEmailTemplate(Request $request)
     {
         if (!\Auth::user()->can('create email template')) {

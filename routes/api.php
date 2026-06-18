@@ -943,6 +943,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('email_marketing_queue_detail', [EmailTemplateController::class, 'email_marketing_queue_detail'])->name('email_marketing_queue_detail');
     Route::post('email-marketing-approved-reject', [EmailTemplateController::class, 'email_marketing_approved_reject'])->name('email_marketing_approved_reject');
     Route::post('getEmailTemplateDetail', [EmailTemplateController::class, 'getEmailTemplateDetail'])->name('getEmailTemplateDetail');
+    Route::post('getEmailTemplateDetailByID', [EmailTemplateController::class, 'getEmailTemplateDetailByID'])->name('getEmailTemplateDetailByID');
     //    Role
     Route::post('/getRoleDetail', [RoleController::class, 'getRoleDetail']);
     Route::post('/addRole', [RoleController::class, 'addRole']);
