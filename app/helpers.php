@@ -2203,7 +2203,7 @@ if (!function_exists('uploadFileToS3')) {
 
             case 'admissions':
 
-                $admission = Admission::find($id);
+                $admission = Deal::find($id);
 
                 if (!$admission) {
                     return $template;
@@ -2260,7 +2260,7 @@ if (!function_exists('uploadFileToS3')) {
 
             case 'agents':
 
-                $agent = Agent::find($id);
+                $agent = User::find($id);
 
                 if (!$agent) {
                     return $template;
