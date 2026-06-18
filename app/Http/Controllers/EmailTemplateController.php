@@ -25,9 +25,10 @@ class EmailTemplateController extends Controller
 {
     public function getEmailTemplatePluck(Request $request)
     {
+        $is_campaign = $request->is_campaign ?? 0;
 
-
-        $emailTemplates = EmailTemplate::pluck('name', 'id')
+        $emailTemplates = EmailTemplate::where('is_campaign', $is_campaign)
+            ->pluck('name', 'id')
             ->toArray();
 
         return response()->json([
