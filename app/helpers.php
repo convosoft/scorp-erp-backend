@@ -2165,4 +2165,107 @@ if (!function_exists('uploadFileToS3')) {
 
         return Storage::disk('s3')->url($path);
     }
-}
+
+    public function parseEmailTemplate($template, $id, $type)
+    {
+        $data = [];
+
+        switch ($type) {
+
+            case 'leads':
+
+                $lead = Lead::find($id);
+
+                if (!$lead) {
+                    return $template;
+                }
+
+                $data = [
+                    'lead_id' => $lead->id,
+                    'lead_name' => $lead->name,
+                    'lead_first_name' => $lead->first_name,
+                    'lead_last_name' => $lead->last_name,
+                    'lead_email' => $lead->email,
+                    'lead_phone' => $lead->phone,
+                    'lead_status' => $lead->status,
+                    'lead_stage' => optional($lead->stage)->name,
+                ];
+
+                break;
+
+            case 'admissions':
+
+                $admission = Admission::find($id);
+
+                if (!$admission) {
+                    return $template;
+                }
+
+                $data = [
+                    'student_id' => $admission->student_id,
+                    'student_name' => $admission->student_name,
+                    'student_email' => $admission->email,
+                    'admission_number' => $admission->admission_number,
+                    'admission_status' => $admission->status,
+                    'course_name' => optional($admission->course)->name,
+                    'university_name' => optional($admission->university)->name,
+                ];
+
+                break;
+
+            case 'applications':
+
+                $application = DealApplication::find($id);
+
+                if (!$application) {
+                    return $template;
+                }
+
+                $data = [
+                    'application_id' => $application->id,
+                    'application_number' => $application->application_number,
+                    'application_status' => $application->status,
+                    'student_name' => $application->name,
+                    'course_name' => optional($application->course)->name,
+                    'university_name' => optional($application->university)->name,
+                    'intake' => $application->intake,
+                ];
+
+                break;
+
+            case 'agents':
+
+                $agent = Agent::find($id);
+
+                if (!$agent) {
+                    return $template;
+                }
+
+                $data = [
+                    'agent_id' => $agent->id,
+                    'agent_name' => $agent->name,
+                    'agency_name' => $agent->agency_name,
+                    'agent_email' => $agent->email,
+                    'agent_phone' => $agent->phone,
+                    'agent_status' => $agent->status,
+                ];
+
+                break;
+        }
+
+        // Universal Tags
+        $data['company_name'] = config('app.name');
+        $data['current_year'] = date('Y');
+        $data['date_today'] = now()->format('Y-m-d');
+
+        foreach ($data as $key => $value) {
+            $template = str_replace(
+                ['{' . $key . '}', '{{' . $key . '}}'],
+                $value ?? '',
+                $template
+            );
+        }
+
+        return $template;
+    }
+    }

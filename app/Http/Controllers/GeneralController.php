@@ -799,7 +799,7 @@ class GeneralController extends Controller
             'file' => 'required|file|max:10240', // 10MB max file size
         ]);
 
-          if ($validator->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'failure',
                 'errors' => $validator->errors(),
@@ -1738,10 +1738,10 @@ class GeneralController extends Controller
 
     public function DealTagPluck_new()
     {
-       $data = LeadTag::with('branch:id,name')->get()->mapWithKeys(function ($tag) {
-                $branchName = $tag->branch ? $tag->branch->name : 'No Branch';
-                return [$tag->id => $tag->tag . " ($branchName)"];
-            })->toArray();
+        $data = LeadTag::with('branch:id,name')->get()->mapWithKeys(function ($tag) {
+            $branchName = $tag->branch ? $tag->branch->name : 'No Branch';
+            return [$tag->id => $tag->tag . " ($branchName)"];
+        })->toArray();
         return response()->json([
             'status' => 'success',
             'data' => $data
@@ -1826,10 +1826,12 @@ class GeneralController extends Controller
     public function getemailTags(Request $request)
     {
         $type = $request->type;
+        $is_campaign = $request->is_campaign ?? 0;
 
         $tags = DB::table('email_tags')
             ->where('type', 'universal')
             ->orWhere('type', $type)
+            ->where('is_campaign', $is_campaign)
             ->get();
 
         return response()->json([

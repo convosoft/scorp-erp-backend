@@ -28,7 +28,7 @@ class EmailTemplateController extends Controller
 
 
         $emailTemplates = EmailTemplate::pluck('name', 'id')
-                                    ->toArray();
+            ->toArray();
 
         return response()->json([
             'status' => 'success',
@@ -38,7 +38,7 @@ class EmailTemplateController extends Controller
 
     public function getEmailTemplates()
     {
-        if(!\Auth::user()->can('manage email template')) {
+        if (!\Auth::user()->can('manage email template')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Permission denied.'
@@ -46,7 +46,7 @@ class EmailTemplateController extends Controller
         }
 
         $emailTemplates = EmailTemplate::with(['created_by:id,name'])
-                                    ->get();
+            ->get();
 
         return response()->json([
             'status' => 'success',
@@ -54,9 +54,9 @@ class EmailTemplateController extends Controller
         ], 200);
     }
 
-     public function getEmailTemplateDetail(Request $request)
+    public function getEmailTemplateDetail(Request $request)
     {
-        if(!\Auth::user()->can('manage email template')) {
+        if (!\Auth::user()->can('manage email template')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Permission denied.'
@@ -77,7 +77,7 @@ class EmailTemplateController extends Controller
                 }
             }],
         ]);
-        if($validator->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => $validator->errors()
@@ -94,7 +94,7 @@ class EmailTemplateController extends Controller
 
     public function addEmailTemplate(Request $request)
     {
-        if(!\Auth::user()->can('create email template')) {
+        if (!\Auth::user()->can('create email template')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Permission denied.'
@@ -111,7 +111,7 @@ class EmailTemplateController extends Controller
             ]
         );
 
-        if($validator->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => $validator->errors()
@@ -123,7 +123,8 @@ class EmailTemplateController extends Controller
         $emailTemplate->name = $request->name;
         $emailTemplate->subject = $request->subject;
         $emailTemplate->template = $request->template;
-        $emailTemplate->type = $request->type ;
+        $emailTemplate->type = $request->type;
+        $emailTemplate->is_campaign = $request->is_campaign;
         $emailTemplate->created_by = \Auth::user()->creatorId();
         $emailTemplate->save();
 
@@ -147,7 +148,7 @@ class EmailTemplateController extends Controller
 
     public function updateEmailTemplate(Request $request)
     {
-        if(!\Auth::user()->can('edit email template')) {
+        if (!\Auth::user()->can('edit email template')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Permission denied.'
@@ -158,14 +159,14 @@ class EmailTemplateController extends Controller
             $request->all(),
             [
                 'id' => 'required|exists:email_templates,id',
-                'name' => 'required|string|unique:email_templates,name,'.$request->id.',id',
+                'name' => 'required|string|unique:email_templates,name,' . $request->id . ',id',
                 'subject' => 'required|string',
                 'template' => 'required|string',
                 'variables' => 'nullable|array'
             ]
         );
 
-        if($validator->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => $validator->errors()
@@ -178,7 +179,8 @@ class EmailTemplateController extends Controller
         $emailTemplate->name = $request->name;
         $emailTemplate->subject = $request->subject;
         $emailTemplate->template = $request->template;
-        $emailTemplate->type = $request->type ;
+        $emailTemplate->type = $request->type;
+        $emailTemplate->is_campaign = $request->is_campaign;
         $emailTemplate->created_by = \Auth::user()->creatorId();
         $emailTemplate->save();
 
@@ -215,7 +217,7 @@ class EmailTemplateController extends Controller
 
     public function deleteEmailTemplate(Request $request)
     {
-        if(!\Auth::user()->can('delete email template')) {
+        if (!\Auth::user()->can('delete email template')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Permission denied.'
@@ -229,7 +231,7 @@ class EmailTemplateController extends Controller
             ]
         );
 
-        if($validator->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => $validator->errors()->first()
@@ -365,7 +367,6 @@ class EmailTemplateController extends Controller
                     'message' => 'You do not have any Leads Records.'
                 ]);
             }
-
         } elseif ($request->type == 'agency') {
 
             $EmailMarkittingAgencyEmails = Agency::whereIn('id', explode(',', $request->Leads))->get();
@@ -392,7 +393,7 @@ class EmailTemplateController extends Controller
                         'pipeline_id' => $EmailMarkitting->pipeline_id,
                         'template_id' => $request->id,
                         'related_type' => 'organization',
-                         'priority' => '3',
+                        'priority' => '3',
                         'related_id' => $EmailMarkitting->id,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -421,114 +422,92 @@ class EmailTemplateController extends Controller
 
 
 
-$leadIds = explode(',', $request->Leads);
-$users = collect();
+            $leadIds = explode(',', $request->Leads);
+            $users = collect();
 
-foreach (array_chunk($leadIds, 1000) as $chunkIds) {
+            foreach (array_chunk($leadIds, 1000) as $chunkIds) {
 
-    $chunkUsers = User::select(
-        'users.id',
-        'users.name',
-        'users.email',
-        'users.phone',
-        'brands.name as BrandName',
-        'branches.name as BranchName',
-        'regions.name as RegionName',
-        'users.brand_id',
-        'users.branch_id',
-        'users.region_id',
-    )
+                $chunkUsers = User::select(
+                    'users.id',
+                    'users.name',
+                    'users.email',
+                    'users.phone',
+                    'brands.name as BrandName',
+                    'branches.name as BranchName',
+                    'regions.name as RegionName',
+                    'users.brand_id',
+                    'users.branch_id',
+                    'users.region_id',
+                )
 
-        // FIXED — changed alias to brands
-        ->leftJoin('users as brands', 'brands.id', '=', 'users.brand_id')
-        ->leftJoin('branches', 'branches.id', '=', 'users.branch_id')
-        ->leftJoin('regions', 'regions.id', '=', 'users.region_id')
-        ->whereIn('users.id', $chunkIds)
-        ->get();
+                    // FIXED — changed alias to brands
+                    ->leftJoin('users as brands', 'brands.id', '=', 'users.brand_id')
+                    ->leftJoin('branches', 'branches.id', '=', 'users.branch_id')
+                    ->leftJoin('regions', 'regions.id', '=', 'users.region_id')
+                    ->whereIn('users.id', $chunkIds)
+                    ->get();
 
-    $users = $users->merge($chunkUsers);
-}
+                $users = $users->merge($chunkUsers);
+            }
 
-if ($users->isNotEmpty()) {
+            if ($users->isNotEmpty()) {
 
-    foreach ($users->chunk(1000) as $chunk) {
+                foreach ($users->chunk(1000) as $chunk) {
 
-        $insertData = [];
+                    $insertData = [];
 
-        foreach ($chunk as $lead) {
+                    foreach ($chunk as $lead) {
 
-            // FIXED — use $lead not $users
-            $replacedHtml = str_replace(
-                ['{lead_name}', '{lead_email}', '{lead_pipeline}', '{lead_stage}', '{lead_subject}', '{sender}', '{student_name}'],
-                [
-                    $lead->name,
-                    $lead->email,
-                    $lead->PipelinesName,
-                    $lead->StageName,
-                    $lead->userSubject,
-                    auth()->user()->name,
-                    $lead->name
-                ],
-                $request->content
-            );
+                        // FIXED — use $lead not $users
+                        $replacedHtml = str_replace(
+                            ['{lead_name}', '{lead_email}', '{lead_pipeline}', '{lead_stage}', '{lead_subject}', '{sender}', '{student_name}'],
+                            [
+                                $lead->name,
+                                $lead->email,
+                                $lead->PipelinesName,
+                                $lead->StageName,
+                                $lead->userSubject,
+                                auth()->user()->name,
+                                $lead->name
+                            ],
+                            $request->content
+                        );
 
-            $insertData[] = [
-                'to' => $lead->email,
-                'subject' => $request->subject,
-                'created_by' => auth()->id(),
-                'brand_id' => $lead->brand_id,
-                'from_email' => $request->from,
-                'branch_id' => $lead->branch_id,
-                'region_id' => $lead->region_id,
-                'sender_id' => auth()->id(),
-                'content' => $replacedHtml,
-                'stage_id' => $lead->stage_id,
-                'pipeline_id' => $lead->pipeline_id,
-                'template_id' => $request->id,
-                'related_type' => 'applications',
-                'priority' => '3',
-                'related_id' => $lead->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
+                        $insertData[] = [
+                            'to' => $lead->email,
+                            'subject' => $request->subject,
+                            'created_by' => auth()->id(),
+                            'brand_id' => $lead->brand_id,
+                            'from_email' => $request->from,
+                            'branch_id' => $lead->branch_id,
+                            'region_id' => $lead->region_id,
+                            'sender_id' => auth()->id(),
+                            'content' => $replacedHtml,
+                            'stage_id' => $lead->stage_id,
+                            'pipeline_id' => $lead->pipeline_id,
+                            'template_id' => $request->id,
+                            'related_type' => 'applications',
+                            'priority' => '3',
+                            'related_id' => $lead->id,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
 
-        EmailSendingQueue::insert($insertData);
-    }
+                    EmailSendingQueue::insert($insertData);
+                }
 
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Your email campaign has been successfully established.'
-    ]);
-}
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Your email campaign has been successfully established.'
+                ]);
+            }
 
-return response()->json([
-    'status' => 'error',
-    'message' => 'You do not have any applications Records.'
-]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        }elseif ($request->type == 'organization') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You do not have any applications Records.'
+            ]);
+        } elseif ($request->type == 'organization') {
             $EmailMarkittingOrgEmails = User::select(['users.*'])->join('organizations', 'organizations.user_id', '=', 'users.id')->where('users.type', 'organization')->whereIn('users.id', explode(',', $request->Leads))->get();
             if ($EmailMarkittingOrgEmails->isNotEmpty() || $EmailMarkittingOrgEmails->count() > 0) {
                 foreach ($EmailMarkittingOrgEmails as $EmailMarkitting) {
@@ -552,7 +531,7 @@ return response()->json([
                         'pipeline_id' => $EmailMarkitting->pipeline_id,
                         'template_id' => $request->id,
                         'related_type' => 'organization',
-                         'priority' => '3',
+                        'priority' => '3',
                         'related_id' => $EmailMarkitting->id,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -596,7 +575,7 @@ return response()->json([
                         'pipeline_id' => $EmailMarkitting->pipeline_id,
                         'template_id' => $request->id,
                         'related_type' => 'file_import',
-                         'priority' => '3',
+                        'priority' => '3',
                         'related_id' => $EmailMarkitting->id,
                         'created_at' => now(),
                         'updated_at' => now()
@@ -622,230 +601,230 @@ return response()->json([
 
 
     private function executeLeadQuery()
-{
-    $usr = \Auth::user();
+    {
+        $usr = \Auth::user();
 
-    // Pagination calculation
-    $start = 0;
-    if (!empty($_GET['perPage'])) {
-        $num_results_on_page = $_GET['perPage'];
-    } else {
-        $num_results_on_page = env("RESULTS_ON_PAGE", 50);
-    }
-    if (isset($_GET['page'])) {
-        $page = $_GET['page'];
-        $num_results_on_page = isset($_GET['num_results_on_page']) ? $_GET['num_results_on_page'] : $num_results_on_page;
-        $start = ($page - 1) * $num_results_on_page;
-    } else {
-        $num_results_on_page = isset($_GET['num_results_on_page']) ? $_GET['num_results_on_page'] : $num_results_on_page;
-    }
-
-    // Filters
-    $filters = $this->leadsFilter();
-
-    if ($usr->can('view email marketing queue') || $usr->can('view email marketing queue') || \Auth::user()->type == 'super admin' || \Auth::user()->type == 'Admin Team') {
-
-        $pipeline = Pipeline::first();
-
-        // Initialize variables
-        $companies = FiltersBrands();
-        $brand_ids = array_keys($companies);
-
-        // Build the leads query with complete email statistics
-        $subquery = \DB::table('email_sending_queues')
-            ->select(
-
-                'subject',
-                'sender_id',
-                \DB::raw('MIN(id) as id'),
-                \DB::raw('SUM(CASE WHEN is_send = \'0\' THEN 1 ELSE 0 END) as count_status_0'),
-                \DB::raw('SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END) as count_status_1'),
-                // Email engagement statistics
-                \DB::raw('COUNT(*) as total_emails'),
-                \DB::raw('SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END) as sent_emails'),
-                \DB::raw('SUM(CASE WHEN processed_at IS NOT NULL THEN 1 ELSE 0 END) as processed_emails'),
-                \DB::raw('SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) as delivered_emails'),
-                \DB::raw('SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END) as opened_emails'),
-                \DB::raw('SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) as clicked_emails'),
-                \DB::raw('SUM(CASE WHEN bounced_at IS NOT NULL THEN 1 ELSE 0 END) as bounced_emails'),
-                // Complete engagement rates
-                \DB::raw('ROUND((SUM(CASE WHEN processed_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)), 2) as processing_rate'),
-                \DB::raw('ROUND((SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END), 0)), 2) as delivery_rate'),
-                \DB::raw('ROUND((SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END), 0)), 2) as open_rate'),
-                \DB::raw('ROUND((SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END), 0)), 2) as click_rate'),
-                \DB::raw('ROUND((SUM(CASE WHEN bounced_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END), 0)), 2) as bounce_rate'),
-                \DB::raw('ROUND((SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END), 0)), 2) as click_to_open_rate')
-            )
-            ->groupBy('subject', 'sender_id');
-
-        // Use DB::raw to wrap the subquery
-        $email_sending_queues_query = \DB::table(\DB::raw("({$subquery->toSql()}) as sq"))
-            ->mergeBindings($subquery)
-            ->join('email_sending_queues as esq', function($join) {
-                $join->on('sq.subject', '=', 'esq.subject')
-                     ->on('sq.sender_id', '=', 'esq.sender_id') ;
-            })
-            ->select(
-    \DB::raw('MIN(sq.id) as id'),
-    'sq.subject',
-    'sq.sender_id',
-
-    \DB::raw('MAX(sq.total_emails) as total_emails'),
-    \DB::raw('MAX(sq.sent_emails) as sent_emails'),
-    \DB::raw('MAX(sq.processed_emails) as processed_emails'),
-    \DB::raw('MAX(sq.delivered_emails) as delivered_emails'),
-    \DB::raw('MAX(sq.opened_emails) as opened_emails'),
-    \DB::raw('MAX(sq.clicked_emails) as clicked_emails'),
-    \DB::raw('MAX(sq.bounced_emails) as bounced_emails'),
-
-    \DB::raw('MAX(sq.processing_rate) as processing_rate'),
-    \DB::raw('MAX(sq.delivery_rate) as delivery_rate'),
-    \DB::raw('MAX(sq.open_rate) as open_rate'),
-    \DB::raw('MAX(sq.click_rate) as click_rate'),
-    \DB::raw('MAX(sq.bounce_rate) as bounce_rate'),
-    \DB::raw('MAX(sq.click_to_open_rate) as click_to_open_rate')
-)
-->groupBy('sq.subject', 'sq.sender_id');;
-
-        if (!empty($_GET['Assigned'])) {
-            $email_sending_queues_query->whereNotNull('esq.sender_id');
-        }
-        if (!empty($_GET['Unassigned'])) {
-            $email_sending_queues_query->whereNull('esq.sender_id');
-        }
-
-        // Apply user type-based filtering
-        $userType = \Auth::user()->type;
-        if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
-            // No additional filtering needed
-        } elseif ($userType === 'company') {
-            $email_sending_queues_query->where('esq.brand_id', \Auth::user()->id);
-        } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
-            $email_sending_queues_query->whereIn('esq.brand_id', $brand_ids);
-        } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
-            $email_sending_queues_query->where('esq.region_id', \Auth::user()->region_id);
-        } elseif (($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
-            $email_sending_queues_query->where('esq.branch_id', \Auth::user()->branch_id);
+        // Pagination calculation
+        $start = 0;
+        if (!empty($_GET['perPage'])) {
+            $num_results_on_page = $_GET['perPage'];
         } else {
-            $email_sending_queues_query->where('esq.sender_id', \Auth::user()->id);
+            $num_results_on_page = env("RESULTS_ON_PAGE", 50);
+        }
+        if (isset($_GET['page'])) {
+            $page = $_GET['page'];
+            $num_results_on_page = isset($_GET['num_results_on_page']) ? $_GET['num_results_on_page'] : $num_results_on_page;
+            $start = ($page - 1) * $num_results_on_page;
+        } else {
+            $num_results_on_page = isset($_GET['num_results_on_page']) ? $_GET['num_results_on_page'] : $num_results_on_page;
         }
 
-         $email_sending_queues_query->where('esq.priority', '3');
+        // Filters
+        $filters = $this->leadsFilter();
 
-        // Apply dynamic filters
-        foreach ($filters as $column => $value) {
-            switch ($column) {
-                case 'name':
-                    $email_sending_queues_query->whereIn('esq.id', $value);
-                    break;
-                case 'brand_id':
-                    $email_sending_queues_query->where('esq.brand_id', $value);
-                    break;
-                case 'region_id':
-                    $email_sending_queues_query->where('esq.region_id', $value);
-                    break;
-                case 'branch_id':
-                    $email_sending_queues_query->where('esq.branch_id', $value);
-                    break;
-                case 'stage_id':
-                    $email_sending_queues_query->whereIn('stage_id', $value);
-                    break;
-                case 'lead_assigned_user':
-                    if ($value == null) {
-                        $email_sending_queues_query->whereNull('esq.sender_id');
-                    } else {
-                        $email_sending_queues_query->where('esq.sender_id', $value);
-                    }
-                    break;
-                case 'users':
-                    $email_sending_queues_query->whereIn('esq.sender_id', $value);
-                    break;
-                case 'status':
+        if ($usr->can('view email marketing queue') || $usr->can('view email marketing queue') || \Auth::user()->type == 'super admin' || \Auth::user()->type == 'Admin Team') {
 
-                    if ($value == 'nonprocessed') {
+            $pipeline = Pipeline::first();
+
+            // Initialize variables
+            $companies = FiltersBrands();
+            $brand_ids = array_keys($companies);
+
+            // Build the leads query with complete email statistics
+            $subquery = \DB::table('email_sending_queues')
+                ->select(
+
+                    'subject',
+                    'sender_id',
+                    \DB::raw('MIN(id) as id'),
+                    \DB::raw('SUM(CASE WHEN is_send = \'0\' THEN 1 ELSE 0 END) as count_status_0'),
+                    \DB::raw('SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END) as count_status_1'),
+                    // Email engagement statistics
+                    \DB::raw('COUNT(*) as total_emails'),
+                    \DB::raw('SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END) as sent_emails'),
+                    \DB::raw('SUM(CASE WHEN processed_at IS NOT NULL THEN 1 ELSE 0 END) as processed_emails'),
+                    \DB::raw('SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) as delivered_emails'),
+                    \DB::raw('SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END) as opened_emails'),
+                    \DB::raw('SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) as clicked_emails'),
+                    \DB::raw('SUM(CASE WHEN bounced_at IS NOT NULL THEN 1 ELSE 0 END) as bounced_emails'),
+                    // Complete engagement rates
+                    \DB::raw('ROUND((SUM(CASE WHEN processed_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)), 2) as processing_rate'),
+                    \DB::raw('ROUND((SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END), 0)), 2) as delivery_rate'),
+                    \DB::raw('ROUND((SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END), 0)), 2) as open_rate'),
+                    \DB::raw('ROUND((SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END), 0)), 2) as click_rate'),
+                    \DB::raw('ROUND((SUM(CASE WHEN bounced_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN is_send = \'1\' THEN 1 ELSE 0 END), 0)), 2) as bounce_rate'),
+                    \DB::raw('ROUND((SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END), 0)), 2) as click_to_open_rate')
+                )
+                ->groupBy('subject', 'sender_id');
+
+            // Use DB::raw to wrap the subquery
+            $email_sending_queues_query = \DB::table(\DB::raw("({$subquery->toSql()}) as sq"))
+                ->mergeBindings($subquery)
+                ->join('email_sending_queues as esq', function ($join) {
+                    $join->on('sq.subject', '=', 'esq.subject')
+                        ->on('sq.sender_id', '=', 'esq.sender_id');
+                })
+                ->select(
+                    \DB::raw('MIN(sq.id) as id'),
+                    'sq.subject',
+                    'sq.sender_id',
+
+                    \DB::raw('MAX(sq.total_emails) as total_emails'),
+                    \DB::raw('MAX(sq.sent_emails) as sent_emails'),
+                    \DB::raw('MAX(sq.processed_emails) as processed_emails'),
+                    \DB::raw('MAX(sq.delivered_emails) as delivered_emails'),
+                    \DB::raw('MAX(sq.opened_emails) as opened_emails'),
+                    \DB::raw('MAX(sq.clicked_emails) as clicked_emails'),
+                    \DB::raw('MAX(sq.bounced_emails) as bounced_emails'),
+
+                    \DB::raw('MAX(sq.processing_rate) as processing_rate'),
+                    \DB::raw('MAX(sq.delivery_rate) as delivery_rate'),
+                    \DB::raw('MAX(sq.open_rate) as open_rate'),
+                    \DB::raw('MAX(sq.click_rate) as click_rate'),
+                    \DB::raw('MAX(sq.bounce_rate) as bounce_rate'),
+                    \DB::raw('MAX(sq.click_to_open_rate) as click_to_open_rate')
+                )
+                ->groupBy('sq.subject', 'sq.sender_id');;
+
+            if (!empty($_GET['Assigned'])) {
+                $email_sending_queues_query->whereNotNull('esq.sender_id');
+            }
+            if (!empty($_GET['Unassigned'])) {
+                $email_sending_queues_query->whereNull('esq.sender_id');
+            }
+
+            // Apply user type-based filtering
+            $userType = \Auth::user()->type;
+            if (in_array($userType, ['super admin', 'Admin Team']) || \Auth::user()->can('level 1')) {
+                // No additional filtering needed
+            } elseif ($userType === 'company') {
+                $email_sending_queues_query->where('esq.brand_id', \Auth::user()->id);
+            } elseif (in_array($userType, ['Project Director', 'Project Manager']) || \Auth::user()->can('level 2')) {
+                $email_sending_queues_query->whereIn('esq.brand_id', $brand_ids);
+            } elseif (($userType === 'Region Manager' || \Auth::user()->can('level 3')) && !empty(\Auth::user()->region_id)) {
+                $email_sending_queues_query->where('esq.region_id', \Auth::user()->region_id);
+            } elseif (($userType === 'Branch Manager' || in_array($userType, ['Admissions Officer', 'Admissions Manager', 'Marketing Officer'])) || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
+                $email_sending_queues_query->where('esq.branch_id', \Auth::user()->branch_id);
+            } else {
+                $email_sending_queues_query->where('esq.sender_id', \Auth::user()->id);
+            }
+
+            $email_sending_queues_query->where('esq.priority', '3');
+
+            // Apply dynamic filters
+            foreach ($filters as $column => $value) {
+                switch ($column) {
+                    case 'name':
+                        $email_sending_queues_query->whereIn('esq.id', $value);
+                        break;
+                    case 'brand_id':
+                        $email_sending_queues_query->where('esq.brand_id', $value);
+                        break;
+                    case 'region_id':
+                        $email_sending_queues_query->where('esq.region_id', $value);
+                        break;
+                    case 'branch_id':
+                        $email_sending_queues_query->where('esq.branch_id', $value);
+                        break;
+                    case 'stage_id':
+                        $email_sending_queues_query->whereIn('stage_id', $value);
+                        break;
+                    case 'lead_assigned_user':
+                        if ($value == null) {
+                            $email_sending_queues_query->whereNull('esq.sender_id');
+                        } else {
+                            $email_sending_queues_query->where('esq.sender_id', $value);
+                        }
+                        break;
+                    case 'users':
+                        $email_sending_queues_query->whereIn('esq.sender_id', $value);
+                        break;
+                    case 'status':
+
+                        if ($value == 'nonprocessed') {
+                            $email_sending_queues_query->where('esq.status', '1');
+                            $email_sending_queues_query->where('esq.is_send', '0');
+                        } else if ($value == 'failed') {
+                            $email_sending_queues_query->where('esq.status', '1');
+                            $email_sending_queues_query->where('esq.is_send', '2');
+                        } else {
+                            $email_sending_queues_query->where('esq.status', $value);
+                        }
+                        break;
+                    case 'nonprocessed':
                         $email_sending_queues_query->where('esq.status', '1');
                         $email_sending_queues_query->where('esq.is_send', '0');
-                    } else if ($value == 'failed') {
+                        break;
+                    case 'failed':
                         $email_sending_queues_query->where('esq.status', '1');
                         $email_sending_queues_query->where('esq.is_send', '2');
-                    } else {
-                        $email_sending_queues_query->where('esq.status', $value);
-                    }
-                    break;
-                case 'nonprocessed':
-                    $email_sending_queues_query->where('esq.status', '1');
-                    $email_sending_queues_query->where('esq.is_send', '0');
-                    break;
-                case 'failed':
-                    $email_sending_queues_query->where('esq.status', '1');
-                    $email_sending_queues_query->where('esq.is_send', '2');
-                    break;
-                case 'created_at_from':
-                    $email_sending_queues_query->whereDate('esq.created_at', '>=', $value);
-                    break;
-                case 'created_at_to':
-                    $email_sending_queues_query->whereDate('esq.created_at', '<=', $value);
-                    break;
-                case 'search':
-                    $email_sending_queues_query
-                        ->where(function($q) use ($value) {
-                            $q->where('esq.subject', 'like', "%{$value}%")
-                              ->orWhere('esq.content', 'like', "%{$value}%")
-                              ->orWhere('esq.to', 'like', "%{$value}%");
-                        });
-                    break;
-                case 'tag':
-                    $email_sending_queues_query->whereRaw('FIND_IN_SET(?, esq.tag_ids)', [$value]);
-                    break;
-                // Add email engagement filters
-                case 'delivery_status':
-                    if ($value === 'delivered') {
-                        $email_sending_queues_query->whereNotNull('esq.delivered_at');
-                    } elseif ($value === 'not_delivered') {
-                        $email_sending_queues_query->whereNull('esq.delivered_at')->where('esq.is_send', '1');
-                    }
-                    break;
-                case 'open_status':
-                    if ($value === 'opened') {
-                        $email_sending_queues_query->whereNotNull('esq.opened_at');
-                    } elseif ($value === 'not_opened') {
-                        $email_sending_queues_query->whereNull('esq.opened_at')->whereNotNull('esq.delivered_at');
-                    }
-                    break;
-                case 'bounce_status':
-                    if ($value === 'bounced') {
-                        $email_sending_queues_query->whereNotNull('esq.bounced_at');
-                    } elseif ($value === 'not_bounced') {
-                        $email_sending_queues_query->whereNull('esq.bounced_at')->where('esq.is_send', '1');
-                    }
-                    break;
-                case 'processing_status':
-                    if ($value === 'processed') {
-                        $email_sending_queues_query->whereNotNull('esq.processed_at');
-                    } elseif ($value === 'not_processed') {
-                        $email_sending_queues_query->whereNull('esq.processed_at');
-                    }
-                    break;
+                        break;
+                    case 'created_at_from':
+                        $email_sending_queues_query->whereDate('esq.created_at', '>=', $value);
+                        break;
+                    case 'created_at_to':
+                        $email_sending_queues_query->whereDate('esq.created_at', '<=', $value);
+                        break;
+                    case 'search':
+                        $email_sending_queues_query
+                            ->where(function ($q) use ($value) {
+                                $q->where('esq.subject', 'like', "%{$value}%")
+                                    ->orWhere('esq.content', 'like', "%{$value}%")
+                                    ->orWhere('esq.to', 'like', "%{$value}%");
+                            });
+                        break;
+                    case 'tag':
+                        $email_sending_queues_query->whereRaw('FIND_IN_SET(?, esq.tag_ids)', [$value]);
+                        break;
+                    // Add email engagement filters
+                    case 'delivery_status':
+                        if ($value === 'delivered') {
+                            $email_sending_queues_query->whereNotNull('esq.delivered_at');
+                        } elseif ($value === 'not_delivered') {
+                            $email_sending_queues_query->whereNull('esq.delivered_at')->where('esq.is_send', '1');
+                        }
+                        break;
+                    case 'open_status':
+                        if ($value === 'opened') {
+                            $email_sending_queues_query->whereNotNull('esq.opened_at');
+                        } elseif ($value === 'not_opened') {
+                            $email_sending_queues_query->whereNull('esq.opened_at')->whereNotNull('esq.delivered_at');
+                        }
+                        break;
+                    case 'bounce_status':
+                        if ($value === 'bounced') {
+                            $email_sending_queues_query->whereNotNull('esq.bounced_at');
+                        } elseif ($value === 'not_bounced') {
+                            $email_sending_queues_query->whereNull('esq.bounced_at')->where('esq.is_send', '1');
+                        }
+                        break;
+                    case 'processing_status':
+                        if ($value === 'processed') {
+                            $email_sending_queues_query->whereNotNull('esq.processed_at');
+                        } elseif ($value === 'not_processed') {
+                            $email_sending_queues_query->whereNull('esq.processed_at');
+                        }
+                        break;
+                }
             }
+
+            // Count total records and retrieve paginated email_sending_queues
+            $total_records = $email_sending_queues_query->paginate($num_results_on_page)->total();
+            $email_sending_queues = $email_sending_queues_query->orderBy('esq.created_at', 'desc')
+                ->skip($start)
+                ->limit($num_results_on_page)
+                ->get();
+
+            return [
+                'total_records' => $total_records,
+                'email_sending_queues' => $email_sending_queues,
+                'companies' => $companies,
+                'pipeline' => $pipeline,
+                'num_results_on_page' => $num_results_on_page
+            ];
         }
-
-        // Count total records and retrieve paginated email_sending_queues
-        $total_records = $email_sending_queues_query->paginate($num_results_on_page)->total();
-        $email_sending_queues = $email_sending_queues_query->orderBy('esq.created_at', 'desc')
-            ->skip($start)
-            ->limit($num_results_on_page)
-            ->get();
-
-        return [
-            'total_records' => $total_records,
-            'email_sending_queues' => $email_sending_queues,
-            'companies' => $companies,
-            'pipeline' => $pipeline,
-            'num_results_on_page' => $num_results_on_page
-        ];
     }
-}
-        private function leadsFilter()
+    private function leadsFilter()
     {
         $filters = [];
         if (isset($_GET['name']) && !empty($_GET['name'])) {
@@ -906,7 +885,7 @@ return response()->json([
             $filters['tag'] = $_GET['tag'];
         }
 
-         if ($_GET['status'] != '') {
+        if ($_GET['status'] != '') {
             $filters['status'] = $_GET['status'];
         }
         if (isset($_GET['search']) && !empty($_GET['search'])) {
@@ -954,7 +933,7 @@ return response()->json([
             ], 500);
         }
     }
-        public function email_marketing_queue(Request $request)
+    public function email_marketing_queue(Request $request)
     {
         try {
             if (\Auth::user()->type == 'Agent') {
@@ -1000,25 +979,25 @@ return response()->json([
         try {
             // Fetch single email queue record
             $emailQueue = EmailSendingQueue::select(
-                    'email_sending_queues.id as id',
-                    'email_sending_queues.status as status',
-                    'email_sending_queues.rejectapprovecoment as reason',
-                    'email_sending_queues.brand_id',
-                    'email_sending_queues.created_at',
-                    'email_sending_queues.updated_at',
-                    'email_sending_queues.content',
-                    'email_sending_queues.to',
-                    'email_sending_queues.branch_id',
-                    'email_sending_queues.region_id',
-                    'email_sending_queues.sender_id',
-                    'email_sending_queues.stage_id',
-                    'brands.name as brand_name',
-                    'branches.name as branch_name',
-                    'regions.name as region_name',
-                    'email_sending_queues.from_email',
-                    'assigned_to.name as sender_name',
-                    'lead_stages.name as stage_name'
-                )
+                'email_sending_queues.id as id',
+                'email_sending_queues.status as status',
+                'email_sending_queues.rejectapprovecoment as reason',
+                'email_sending_queues.brand_id',
+                'email_sending_queues.created_at',
+                'email_sending_queues.updated_at',
+                'email_sending_queues.content',
+                'email_sending_queues.to',
+                'email_sending_queues.branch_id',
+                'email_sending_queues.region_id',
+                'email_sending_queues.sender_id',
+                'email_sending_queues.stage_id',
+                'brands.name as brand_name',
+                'branches.name as branch_name',
+                'regions.name as region_name',
+                'email_sending_queues.from_email',
+                'assigned_to.name as sender_name',
+                'lead_stages.name as stage_name'
+            )
                 ->leftJoin('lead_stages', 'email_sending_queues.stage_id', '=', 'lead_stages.id')
                 ->leftJoin('users', 'users.id', '=', 'email_sending_queues.brand_id')
                 ->leftJoin('branches', 'branches.id', '=', 'email_sending_queues.branch_id')
@@ -1040,8 +1019,8 @@ return response()->json([
             return response()->json([
                 'status' => 'success',
                 'data' =>  $emailQueue,
-            200]);
-
+                200
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -1081,7 +1060,6 @@ return response()->json([
                 'status' => 'success',
                 'data' => [],
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -1279,62 +1257,61 @@ return response()->json([
     {
         $usr = \Auth::user();
 
-            $file = $request->file('leads_file');
+        $file = $request->file('leads_file');
 
-            $column_arr = [];
+        $column_arr = [];
 
-            $file = $request->file('leads_file');
-            $extension = $file->getClientOriginalExtension();
-            if ($extension == 'csv') {
-                $response = $this->csvSheetDataSaved($request, $file);
+        $file = $request->file('leads_file');
+        $extension = $file->getClientOriginalExtension();
+        if ($extension == 'csv') {
+            $response = $this->csvSheetDataSaved($request, $file);
+        } else {
+            $response =  $this->excelSheetDataSaved($request, $file);
+        }
+
+        if (!empty($response)) {
+            // Check if contains IDs (like 43,5566,767)
+            if (preg_match('/\d+(,\d+)*/', $response)) {
+                return response()->json([
+                    'status' => 'success',
+                    'LeadsId' => $response,
+                    'message' => 'Import successfully created!',
+                ], 200);
             } else {
-                $response =  $this->excelSheetDataSaved($request, $file);
-            }
-
-            if (!empty($response)) {
-                // Check if contains IDs (like 43,5566,767)
-                if (preg_match('/\d+(,\d+)*/', $response)) {
-                    return response()->json([
-                        'status' => 'success',
-                        'LeadsId' => $response,
-                        'message' => 'Import successfully created!',
-                    ], 200);
-                } else {
-                    // Any other unexpected value
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Something went wrong.',
-                    ], 500);
-                }
-            } else {
-                // Empty response → already exist
+                // Any other unexpected value
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Import already exists!',
-                ], 200);
+                    'message' => 'Something went wrong.',
+                ], 500);
             }
-
+        } else {
+            // Empty response → already exist
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Import already exists!',
+            ], 200);
+        }
     }
 
 
     public function email_marketing_queue_list(Request $request)
-{
-    try {
+    {
+        try {
 
-        $validator = \Validator::make($request->all(), [
-            'subject'   => 'required|string',
-            'sender_id' => 'required|exists:users,id',
-            'type'      => 'required|in:delivered,bounced,opened,clicked,processed',
-        ]);
+            $validator = \Validator::make($request->all(), [
+                'subject'   => 'required|string',
+                'sender_id' => 'required|exists:users,id',
+                'type'      => 'required|in:delivered,bounced,opened,clicked,processed',
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        $query = EmailSendingQueue::select(
+            $query = EmailSendingQueue::select(
                 'email_sending_queues.id',
                 'email_sending_queues.subject',
                 'email_sending_queues.to',
@@ -1348,79 +1325,78 @@ return response()->json([
                 'email_sending_queues.created_at',
                 'assigned_to.name as sender_name'
             )
-            ->leftJoin(
-                'users as assigned_to',
-                'assigned_to.id',
-                '=',
-                'email_sending_queues.sender_id'
-            );
+                ->leftJoin(
+                    'users as assigned_to',
+                    'assigned_to.id',
+                    '=',
+                    'email_sending_queues.sender_id'
+                );
 
-        // Subject Filter
-        if ($request->filled('subject')) {
-            $query->where(
-                'email_sending_queues.subject',
-                'LIKE',
-                '%' . $request->subject . '%'
-            );
-        }
-
-        // Sender Filter
-        if ($request->filled('sender_id')) {
-            $query->where(
-                'email_sending_queues.sender_id',
-                $request->sender_id
-            );
-        }
-
-        /**
-         * type values:
-         * delivered
-         * bounced
-         * opened
-         * clicked
-         * processed
-         */
-        if ($request->filled('type')) {
-
-            switch ($request->type) {
-
-                case 'delivered':
-                    $query->whereNotNull('email_sending_queues.delivered_at');
-                    break;
-
-                case 'bounced':
-                    $query->whereNotNull('email_sending_queues.bounced_at');
-                    break;
-
-                case 'opened':
-                    $query->whereNotNull('email_sending_queues.opened_at');
-                    break;
-
-                case 'clicked':
-                    $query->whereNotNull('email_sending_queues.clicked_at');
-                    break;
-
-                case 'processed':
-                    $query->whereNotNull('email_sending_queues.processed_at');
-                    break;
+            // Subject Filter
+            if ($request->filled('subject')) {
+                $query->where(
+                    'email_sending_queues.subject',
+                    'LIKE',
+                    '%' . $request->subject . '%'
+                );
             }
+
+            // Sender Filter
+            if ($request->filled('sender_id')) {
+                $query->where(
+                    'email_sending_queues.sender_id',
+                    $request->sender_id
+                );
+            }
+
+            /**
+             * type values:
+             * delivered
+             * bounced
+             * opened
+             * clicked
+             * processed
+             */
+            if ($request->filled('type')) {
+
+                switch ($request->type) {
+
+                    case 'delivered':
+                        $query->whereNotNull('email_sending_queues.delivered_at');
+                        break;
+
+                    case 'bounced':
+                        $query->whereNotNull('email_sending_queues.bounced_at');
+                        break;
+
+                    case 'opened':
+                        $query->whereNotNull('email_sending_queues.opened_at');
+                        break;
+
+                    case 'clicked':
+                        $query->whereNotNull('email_sending_queues.clicked_at');
+                        break;
+
+                    case 'processed':
+                        $query->whereNotNull('email_sending_queues.processed_at');
+                        break;
+                }
+            }
+
+            $emails = $query
+                ->orderBy('email_sending_queues.id', 'DESC')
+                ->paginate($request->per_page ?? 20);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $emails
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        $emails = $query
-            ->orderBy('email_sending_queues.id', 'DESC')
-            ->paginate($request->per_page ?? 20);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => $emails
-        ]);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage()
-        ], 500);
     }
-}
 }
