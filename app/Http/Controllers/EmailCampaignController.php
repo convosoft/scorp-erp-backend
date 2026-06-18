@@ -253,6 +253,10 @@ class EmailCampaignController extends Controller
                     ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
                     ->whereNotNull('opened_at'),
 
+                'total_bounced' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->whereNotNull('bounced_at'),
+
                 // Clicked emails
                 'total_clicked' => EmailSendingQueue::selectRaw('COUNT(*)')
                     ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
