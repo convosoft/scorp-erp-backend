@@ -536,5 +536,61 @@ class EmailCampaignController extends Controller
             'data' => $campaign->fresh(),
         ]);
     }
-}
 
+    public function previewEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id'           => 'required|integer|exists:email_campaigns,id',
+            'recipient_id' => 'nullable|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'errors',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $campaign = EmailCampaign::with('recipients')->find($request->id);
+
+        if (!$campaign) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Campaign not found.',
+            ], 404);
+        }
+
+
+        // Determine which recipient ID to use for parsing
+        // If a specific recipient_id is passed, use it; otherwise use the first recipient
+        $recipientId = $request->recipient_id;
+
+        if (!$recipientId && $campaign->recipients->isNotEmpty()) {
+            $recipientId = $campaign->recipients->first()->recipient_id;
+        }
+
+        $recipientType = $campaign->recipient_type;
+
+        // Parse subject and body using placeholder resolution
+        $parsedSubject = $campaign->subject;
+        $parsedBody    = $campaign->body;
+
+        if ($recipientId) {
+            $parsedSubject = parseEmailTemplate($campaign->subject, $recipientId, $recipientType);
+            $parsedBody    = parseEmailTemplate($campaign->body, $recipientId, $recipientType);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'campaign_id'    => $campaign->id,
+                'campaign_name'  => $campaign->campaign_name,
+                'from_email'     => $campaign->from_email,
+                'recipient_type' => $campaign->recipient_type,
+                'recipient_id'   => $recipientId,
+                'subject'        => $parsedSubject,
+                'body'           => $parsedBody,
+            ],
+        ]);
+    }
+}

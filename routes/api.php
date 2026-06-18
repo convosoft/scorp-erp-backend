@@ -1160,5 +1160,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email-marketing/campaigns/approve', [EmailCampaignController::class, 'approveCampaign']);
     Route::post('/email-marketing/campaigns/reject', [EmailCampaignController::class, 'rejectCampaign']);
     Route::post('/email-marketing/campaigns/detail', [EmailCampaignController::class, 'getCampaignDetail']);
+    Route::post('/email-marketing/campaigns/preview', [EmailCampaignController::class, 'previewEmail']);
     Route::post('/email-marketing/getEmailCampaigns', [EmailCampaignController::class, 'getEmailCampaigns']);
 });
