@@ -3,6 +3,9 @@
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Region;
+use App\Models\Lead;
+use App\Models\Deal;
+use App\Models\DealApplication;
 use App\Models\University;
 use App\Models\ActivityLog;
 use App\Models\LogActivity;
