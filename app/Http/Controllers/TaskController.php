@@ -1636,7 +1636,7 @@ class TaskController extends Controller
     }
 
 
-    public function updateTaskStatus(Request $request, $status)
+   public function updateTaskStatus(Request $request, $status)
     {
 
 
@@ -1655,7 +1655,7 @@ class TaskController extends Controller
 
         $id = $request->input('id');
         $dealTask = DealTask::find($id);
-        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator', 'Product Coordinator Manager'])) {
+        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator','Product Coordinator Manager'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized or invalid task'
@@ -1683,6 +1683,7 @@ class TaskController extends Controller
             ];
             addLogActivity($data);
             $stageRequest->tasks_type_status = '1';
+             $dealTask->status = 1;
         } else {
             $data = [
                 'type' => 'info',
@@ -1714,50 +1715,50 @@ class TaskController extends Controller
         if ($dealApplication) {
             $deal = Deal::find($dealApplication->deal_id);
 
-            if ($deal) {
-                // Get all applications for this deal
-                $applications = DealApplication::where('deal_id', $dealApplication->deal_id)->get();
+        if ($deal) {
+            // Get all applications for this deal
+            $applications = DealApplication::where('deal_id', $dealApplication->deal_id)->get();
 
-                // ✅ Check if ALL applications are lost (stage_id = 12)
-                $allLost = $applications->every(function ($app) {
-                    return $app->stage_id == 12;
-                });
+            // ✅ Check if ALL applications are lost (stage_id = 12)
+            $allLost = $applications->every(function ($app) {
+                return $app->stage_id == 12;
+            });
 
-                if ($allLost) {
-                    $deal->stage_id = 7; // Lost
+            if ($allLost) {
+                $deal->stage_id = 7; // Lost
+                $deal->save();
+            } else {
+                // ❗ Otherwise, get latest NON-lost stage
+                $latestStage = $applications
+                    ->where('stage_id', '!=', 12)
+                    ->sortByDesc('stage_id')
+                    ->first();
+
+                if ($latestStage) {
+                    if ($latestStage->stage_id == '0') {
+                        $deal->stage_id = 0;
+                    } elseif (in_array($latestStage->stage_id, [1, 2])) {
+                        $deal->stage_id = 1;
+                    } elseif (in_array($latestStage->stage_id, [3, 4])) {
+                        $deal->stage_id = 2;
+                    } elseif (in_array($latestStage->stage_id, [5, 6])) {
+                        $deal->stage_id = 3;
+                    } elseif (in_array($latestStage->stage_id, [7, 8])) {
+                        $deal->stage_id = 4;
+                    } elseif (in_array($latestStage->stage_id, [9, 10])) {
+                        $deal->stage_id = 5;
+                    } elseif ($latestStage->stage_id == 11) {
+                        $deal->stage_id = 6;
+                    }
+
                     $deal->save();
                 } else {
-                    // ❗ Otherwise, get latest NON-lost stage
-                    $latestStage = $applications
-                        ->where('stage_id', '!=', 12)
-                        ->sortByDesc('stage_id')
-                        ->first();
-
-                    if ($latestStage) {
-                        if ($latestStage->stage_id == '0') {
-                            $deal->stage_id = 0;
-                        } elseif (in_array($latestStage->stage_id, [1, 2])) {
-                            $deal->stage_id = 1;
-                        } elseif (in_array($latestStage->stage_id, [3, 4])) {
-                            $deal->stage_id = 2;
-                        } elseif (in_array($latestStage->stage_id, [5, 6])) {
-                            $deal->stage_id = 3;
-                        } elseif (in_array($latestStage->stage_id, [7, 8])) {
-                            $deal->stage_id = 4;
-                        } elseif (in_array($latestStage->stage_id, [9, 10])) {
-                            $deal->stage_id = 5;
-                        } elseif ($latestStage->stage_id == 11) {
-                            $deal->stage_id = 6;
-                        }
-
-                        $deal->save();
-                    } else {
-                        // No applications found → default stage
-                        $deal->stage_id = 0;
-                        $deal->save();
-                    }
+                    // No applications found → default stage
+                    $deal->stage_id = 0;
+                    $deal->save();
                 }
             }
+        }
 
             $lastStageHistory = StageHistory::where('type', 'application')
                 ->where('type_id', $applicationId)
@@ -1814,6 +1815,7 @@ class TaskController extends Controller
             'message' => 'Application not found'
         ], 404);
     }
+
 
     public function RejectTaskStatus(Request $request)
     {
