@@ -626,17 +626,14 @@ class EmailCampaignController extends Controller
         $parsedBody    = $request->body;
 
         if ($recipientId) {
-            $parsedSubject = parseEmailTemplate($campaign->subject, $recipientId, $recipientType);
-            $parsedBody    = parseEmailTemplate($campaign->body, $recipientId, $recipientType);
+            $parsedSubject = parseEmailTemplate($request->subject, $recipientId, $recipientType);
+            $parsedBody    = parseEmailTemplate($request->body, $recipientId, $recipientType);
         }
 
         return response()->json([
             'status' => 'success',
             'data'   => [
-                'campaign_id'    => $campaign->id,
-                'campaign_name'  => $campaign->campaign_name,
-                'from_email'     => $campaign->from_email,
-                'recipient_type' => $campaign->recipient_type,
+                'recipient_type' => $request->recipient_type,
                 'recipient_id'   => $recipientId,
                 'subject'        => $parsedSubject,
                 'body'           => $parsedBody,
