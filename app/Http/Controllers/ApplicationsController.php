@@ -725,8 +725,8 @@ class ApplicationsController extends Controller
             $filters['assigned_to'] = $request->input('lead_assigned_user');
         }
 
-        if ($request->filled('tag_id')) {
-            $filters['tag_id'] = $request->input('tag_id');
+        if ($request->filled('tag')) {
+            $filters['tag_id'] = $request->input('tag');
         }
 
         return $filters;
