@@ -27,6 +27,7 @@ use App\Mail\SendDealEmail;
 use App\Models\ActivityLog;
 use App\Models\CustomField;
 use App\Models\SavedFilter;
+use App\Models\TaskTag;
 use App\Models\Notification;
 use App\Models\StageHistory;
 use Illuminate\Http\Request;
@@ -1694,9 +1695,12 @@ class GeneralController extends Controller
                 'agencies' => $agencies,
                 'countries' => $countries,
                 'tags' => $tags,
+                'tasktags' => $tasktags,
             ]
         ]);
     }
+
+
 
 
 
@@ -2343,6 +2347,17 @@ class GeneralController extends Controller
             'next_id'      => $hasMore ? $data->last()->id : null, // 👈 cursor
             'has_more'     => $hasMore,
             'data'         => $data,
+        ]);
+    }
+
+    public function getCitiesOnid(Request $request)
+    {
+        $countryCode = $request->input('code');
+        $country_code = Country::where('id', $countryCode)->first()?->country_code;
+        $cities = City::where('country_code', $country_code)->pluck('name', 'id')->toArray();
+        return response()->json([
+            'status' => 'success',
+            'data' => $cities
         ]);
     }
 }
