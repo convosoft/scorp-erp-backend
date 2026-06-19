@@ -459,7 +459,7 @@ class ApplicationsController extends Controller
         foreach ($filters as $column => $value) {
 
             if ($column === 'name') {
-                $app_query->whereIn('da.name', (array)$value);
+                $app_query->where('da.name',$value);
             } elseif ($column === 'stage_id') {
 
                 $app_query->whereIn('da.stage_id', (array)$value);
