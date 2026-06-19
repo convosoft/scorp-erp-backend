@@ -2215,8 +2215,8 @@ if (!function_exists('uploadFileToS3')) {
                 }
 
                 $data = [
-                    'student_id' => $admission->student_id ?? '',
-                    'student_name' => $admission->student_name ?? '',
+                    'student_id' => $admission->id ?? '',
+                    'student_name' => $admission->name ?? '',
                     'student_email' => $admission->email ?? '',
                     'student_phone' => $admission->phone ?? '',
                     'admission_number' => $admission->admission_number ?? '',
@@ -2225,12 +2225,8 @@ if (!function_exists('uploadFileToS3')) {
                     'intake' => $admission->intake ?? '',
                     'semester' => $admission->semester ?? '',
                     'academic_year' => $admission->academic_year ?? '',
-                    'campus_name' => optional($admission->campus)->name ?? '',
+                    'campus_name' => $admission->campus ?? '',
                     'university_name' => optional($admission->university)->name ?? '',
-                    'course_name' => optional($admission->course)->name ?? '',
-                    'program_name' => optional($admission->program)->name ?? '',
-                    'fee_amount' => $admission->fee_amount ?? '',
-                    'scholarship_amount' => $admission->scholarship_amount ?? '',
                     'brand_name' => optional($admission->brand)->name ?? '',
                     'branch_name' => optional($admission->branch)->name ?? '',
                 ];
