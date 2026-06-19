@@ -681,8 +681,8 @@ class ApplicationsController extends Controller
             $filters['created_by'] = $request->input('created_by');
         }
 
-        if ($request->filled('universities')) {
-            $filters['university_id'] = $request->input('universities');
+        if ($request->filled('university_id')) {
+            $filters['university_id'] = $request->input('university_id');
         }
 
         if ($request->filled('brand')) {
@@ -709,12 +709,13 @@ class ApplicationsController extends Controller
             $filters['assigned_to'] = $request->input('lead_assigned_user');
         }
 
-        if ($request->filled('tag')) {
-            $filters['tag'] = $request->input('tag');
+        if ($request->filled('tag_id')) {
+            $filters['tag_id'] = $request->input('tag_id');
         }
 
         return $filters;
     }
+
 
     public function getDetailApplication(Request $request)
     {
