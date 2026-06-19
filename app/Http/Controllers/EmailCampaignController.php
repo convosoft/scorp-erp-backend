@@ -597,4 +597,50 @@ class EmailCampaignController extends Controller
             ],
         ]);
     }
+
+    public function previewEmailByTypeID(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'subject' => 'required|string',
+            'body' => 'required|string',
+            'recipient_id' => 'required|integer',
+            'recipient_type' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'errors',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+
+
+        // Determine which recipient ID to use for parsing
+        // If a specific recipient_id is passed, use it; otherwise use the first recipient
+        $recipientId = $request->recipient_id;
+        $recipientType = $request->recipient_type;
+
+
+        // Parse subject and body using placeholder resolution 
+        $parsedBody    = $request->body;
+
+        if ($recipientId) {
+            $parsedSubject = parseEmailTemplate($campaign->subject, $recipientId, $recipientType);
+            $parsedBody    = parseEmailTemplate($campaign->body, $recipientId, $recipientType);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'campaign_id'    => $campaign->id,
+                'campaign_name'  => $campaign->campaign_name,
+                'from_email'     => $campaign->from_email,
+                'recipient_type' => $campaign->recipient_type,
+                'recipient_id'   => $recipientId,
+                'subject'        => $parsedSubject,
+                'body'           => $parsedBody,
+            ],
+        ]);
+    }
 }
