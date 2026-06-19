@@ -2256,7 +2256,7 @@ if (!function_exists('uploadFileToS3')) {
                     'student_name' => $application->name ?? '',
                     'course_name' => optional($application->course)->name ?? '',
                     'university_name' => optional($application->university)->name ?? '',
-                    'intake' => $application->intake ?? '',
+                    'intake' => $application->intake . ' ' . $application->intakeYear ?? '',
                     'brand_name' => optional($application->brand)->name ?? '',
                     'branch_name' => optional($application->branch)->name ?? '',
                 ];
