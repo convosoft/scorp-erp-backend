@@ -494,8 +494,24 @@ class ApplicationsController extends Controller
         }
 
         // Search
-        if ($request->filled('search')) {
+        if ($request->filled('search') ) {
             $g_search = $request->input('search');
+
+            if (strpos($g_search, 'APC') === 0) {
+                $numericId = preg_replace('/^[A-Z]+/', '', $g_search);
+                $app_query->where('deal_applications.id', $numericId);
+            } else {
+                $app_query->where(function ($query) use ($g_search) {
+                    $query->where('da.name', 'like', "%{$g_search}%")
+                        ->orWhere('da.application_key', 'like', "%{$g_search}%")
+                        ->orWhere('da.course', 'like', "%{$g_search}%");
+                });
+            }
+        }
+
+        // Search
+        if ($request->filled('name') || ) {
+            $g_search = $request->input('name');
 
             if (strpos($g_search, 'APC') === 0) {
                 $numericId = preg_replace('/^[A-Z]+/', '', $g_search);
