@@ -2217,10 +2217,10 @@ if (!function_exists('uploadFileToS3')) {
                 $data = [
                     'student_id' => $admission->id ?? '',
                     'student_name' => $admission->name ?? '',
-                    'student_email' => $admission->email ?? '',
-                    'student_phone' => $admission->phone ?? '',
+                    'student_email' => optional($admission->client)->email ?? '',
+                    'student_phone' => optional($admission->client)->phone ?? '',
                     'admission_number' => $admission->admission_number ?? '',
-                    'admission_status' => $admission->status ?? '',
+                    'admission_status' => optional($admission->stage)->name ?? '',
                     'admission_date' => $admission->admission_date ?? '',
                     'intake' => $admission->intake ?? '',
                     'semester' => $admission->semester ?? '',
