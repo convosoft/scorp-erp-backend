@@ -1332,7 +1332,7 @@ class EmailTemplateController extends Controller
 
             $validator = \Validator::make($request->all(), [
                 'subject'   => 'required|string',
-                'sender_id' => 'required|exists:users,id',
+                'campaign_id' => 'required|integer|exists:email_campaigns,id',
                 'type'      => 'required|in:delivered,bounced,opened,clicked,processed',
             ]);
 
@@ -1364,20 +1364,20 @@ class EmailTemplateController extends Controller
                     'email_sending_queues.sender_id'
                 );
 
-            // Subject Filter
-            if ($request->filled('subject')) {
-                $query->where(
-                    'email_sending_queues.subject',
-                    'LIKE',
-                    '%' . $request->subject . '%'
-                );
-            }
+            // // Subject Filter
+            // if ($request->filled('subject')) {
+            //     $query->where(
+            //         'email_sending_queues.subject',
+            //         'LIKE',
+            //         '%' . $request->subject . '%'
+            //     );
+            // }
 
             // Sender Filter
-            if ($request->filled('sender_id')) {
+            if ($request->filled('campaign_id')) {
                 $query->where(
-                    'email_sending_queues.sender_id',
-                    $request->sender_id
+                    'email_sending_queues.campaign_id',
+                    $request->campaign_id
                 );
             }
 
