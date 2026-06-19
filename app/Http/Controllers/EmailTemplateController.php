@@ -1274,7 +1274,7 @@ class EmailTemplateController extends Controller
                 $EmailMarkittingFileEmail->save();
 
                 // Collect newly created ID
-                $createdIds[] = $EmailMarkittingFileEmail->id;
+                $createdIds[] = $EmailMarkittingFileEmail;
             }
         }
 
