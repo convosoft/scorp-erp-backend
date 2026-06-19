@@ -385,7 +385,8 @@ class TaskController extends Controller
                             }
                                         }
             if (!$request->filled('status') && !$request->filled('tasks_type_status')) {
-                $tasksQuery->where('deal_tasks.status', 0) ;
+                $tasksQuery->where('deal_tasks.status', 0)
+                ->where('deal_tasks.tasks_type_status', "0");
             }
 
             if ($request->filled('assigned_by_me') && $request->assigned_by_me == true) {
@@ -643,7 +644,7 @@ class TaskController extends Controller
             // }
 
               if (!$request->filled('status') && !$request->filled('tasks_type_status')) {
-                $finalQuery->where('deal_tasks.status', 0) ;
+                $finalQuery->where('deal_tasks.status', 0)->where('deal_tasks.tasks_type_status', "0") ;
             }
 
             // Apply sorting
