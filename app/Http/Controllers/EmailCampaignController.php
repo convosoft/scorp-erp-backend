@@ -105,13 +105,63 @@ class EmailCampaignController extends Controller
             ], 422);
         }
 
-        $campaign = EmailCampaign::find($request->id);
+        $campaign = EmailCampaign::with('recipients')->find($request->id);
 
         if ($campaign->status !== 'pending_approval') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Only pending approval campaigns can be approved.'
             ], 422);
+        }
+
+        // Fetch stage and pipeline details in bulk to prevent N+1 queries
+        $recipientIds = $campaign->recipients->pluck('recipient_id')->toArray();
+        $recipientStages = [];
+        $recipientPipelines = [];
+
+        if ($campaign->recipient_type === 'leads') {
+            $stagesAndPipelines = \DB::table('leads')
+                ->whereIn('id', $recipientIds)
+                ->select('id', 'stage_id', 'pipeline_id')
+                ->get()
+                ->keyBy('id');
+            foreach ($stagesAndPipelines as $id => $row) {
+                $recipientStages[$id] = $row->stage_id;
+                $recipientPipelines[$id] = $row->pipeline_id;
+            }
+        } elseif ($campaign->recipient_type === 'admissions') {
+            $stagesAndPipelines = \DB::table('deals')
+                ->whereIn('id', $recipientIds)
+                ->select('id', 'stage_id', 'pipeline_id')
+                ->get()
+                ->keyBy('id');
+            foreach ($stagesAndPipelines as $id => $row) {
+                $recipientStages[$id] = $row->stage_id;
+                $recipientPipelines[$id] = $row->pipeline_id;
+            }
+        } elseif ($campaign->recipient_type === 'applications') {
+            $stagesAndPipelines = \DB::table('deal_applications')
+                ->whereIn('id', $recipientIds)
+                ->select('id', 'stage_id')
+                ->get()
+                ->keyBy('id');
+            foreach ($stagesAndPipelines as $id => $row) {
+                $recipientStages[$id] = $row->stage_id;
+            }
+        }
+
+        // Map recipient_type to related_type for the queue
+        $relatedType = 'lead';
+        if ($campaign->recipient_type === 'leads') {
+            $relatedType = 'lead';
+        } elseif ($campaign->recipient_type === 'admissions') {
+            $relatedType = 'admission';
+        } elseif ($campaign->recipient_type === 'applications') {
+            $relatedType = 'application';
+        } elseif ($campaign->recipient_type === 'agents') {
+            $relatedType = 'agent';
+        } elseif ($campaign->recipient_type === 'import') {
+            $relatedType = 'file_import';
         }
 
         $campaign->update([
@@ -121,11 +171,45 @@ class EmailCampaignController extends Controller
             'comments' => $request->comments,
         ]);
 
+        $insertData = [];
+        foreach ($campaign->recipients as $recipient) {
+            $parsedSubject = parseEmailTemplate($campaign->subject, $recipient->recipient_id, $campaign->recipient_type);
+            $parsedBody = parseEmailTemplate($campaign->body, $recipient->recipient_id, $campaign->recipient_type);
+
+            $insertData[] = [
+                'campaign_id'  => $campaign->id,
+                'to'           => $recipient->email,
+                'subject'      => $parsedSubject,
+                'created_by'   => Auth::id(),
+                'brand_id'     => $campaign->brand_id,
+                'from_email'   => $campaign->from_email ?? 'hr@scorp.co',
+                'branch_id'    => $campaign->branch_id,
+                'region_id'    => $campaign->region_id,
+                'sender_id'    => $campaign->email_sender_id ?? Auth::id(),
+                'content'      => $parsedBody,
+                'stage_id'     => $recipientStages[$recipient->recipient_id] ?? null,
+                'pipeline_id'  => $recipientPipelines[$recipient->recipient_id] ?? null,
+                'template_id'  => $campaign->template_id,
+                'related_type' => $relatedType,
+                'priority'     => '3',
+                'related_id'   => $recipient->recipient_id,
+                'is_send'      => '0',
+                'status'       => '1',
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ];
+        }
+
+        // Chunk insert into database (1000 records at a time)
+        foreach (array_chunk($insertData, 1000) as $chunk) {
+            EmailSendingQueue::insert($chunk);
+        }
+
         addLogActivity([
             'type' => 'info',
             'note' => json_encode([
-                'title' => 'Email Campaign Approved',
-                'message' => "Email campaign '{$campaign->campaign_name}' has been approved. Comments: {$request->comments}"
+                'title' => $campaign->campaign_name . ' Email Campaign Approved',
+                'message' => "Email campaign '{$campaign->campaign_name}' has been approved and queued for sending. Comments: {$request->comments}"
             ]),
             'module_id' => $campaign->id,
             'module_type' => 'email_campaign',
