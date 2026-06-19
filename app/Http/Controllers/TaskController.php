@@ -642,7 +642,7 @@ class TaskController extends Controller
             //     $finalQuery->where('deal_tasks.status', 0) ;
             // }
 
-              if (!$request->has('status') && !$request->filled('tasks_type_status')) {
+              if (!$request->filled('status') && !$request->filled('tasks_type_status')) {
                 $finalQuery->where('deal_tasks.status', 0) ;
             }
 
@@ -669,6 +669,7 @@ class TaskController extends Controller
             //  die();
 
             // echo "==========";
+
             //  echo $sql;
             //  echo $sql2;
 
