@@ -454,12 +454,12 @@ class ApplicationsController extends Controller
         // Filters
         $filters = $this->ApplicationFilters($request);
 
-         // dd($filters);
+        // dd($filters);
 
         foreach ($filters as $column => $value) {
 
             if ($column === 'name') {
-                $app_query->where('da.name',$value);
+                $app_query->where('da.name', $value);
             } elseif ($column === 'stage_id') {
 
                 $app_query->whereIn('da.stage_id', (array)$value);
@@ -498,7 +498,7 @@ class ApplicationsController extends Controller
         }
 
         // Search
-        if ($request->filled('search') ) {
+        if ($request->filled('search')) {
             $g_search = $request->input('search');
 
             if (strpos($g_search, 'APC') === 0) {
@@ -514,7 +514,7 @@ class ApplicationsController extends Controller
         }
 
         // Search
-        if ($request->filled('name')  ) {
+        if ($request->filled('name')) {
             $g_search = $request->input('name');
 
             if (strpos($g_search, 'APC') === 0) {
@@ -815,11 +815,14 @@ class ApplicationsController extends Controller
         // Filters
         $filters = $this->ApplicationFilters($request);
 
+        // dd($filters);
+
         foreach ($filters as $column => $value) {
 
             if ($column === 'name') {
-                $app_query->whereIn('da.name', (array)$value);
+                $app_query->where('da.name', $value);
             } elseif ($column === 'stage_id') {
+
                 $app_query->whereIn('da.stage_id', (array)$value);
             } elseif ($column === 'university_id') {
                 $app_query->whereIn('da.university_id', (array)$value);
@@ -846,8 +849,12 @@ class ApplicationsController extends Controller
                 $app_query->whereDate('da.created_at', '>=', $value);
             } elseif ($column === 'created_at_to') {
                 $app_query->whereDate('da.created_at', '<=', $value);
-            } elseif ($column === 'tag_id') {
-                $app_query->whereRaw('FIND_IN_SET(?, da.tag_ids)', [$value]);
+            } elseif ($column === 'tag_id' && is_array($value)) {
+                $app_query->where(function ($q) use ($value) {
+                    foreach ($value as $tagId) {
+                        $q->orWhereRaw('FIND_IN_SET(?, da.tag_ids)', [$tagId]);
+                    }
+                });
             }
         }
 
@@ -867,6 +874,21 @@ class ApplicationsController extends Controller
             }
         }
 
+        // Search
+        if ($request->filled('name')) {
+            $g_search = $request->input('name');
+
+            if (strpos($g_search, 'APC') === 0) {
+                $numericId = preg_replace('/^[A-Z]+/', '', $g_search);
+                $app_query->where('deal_applications.id', $numericId);
+            } else {
+                $app_query->where(function ($query) use ($g_search) {
+                    $query->where('da.name', 'like', "%{$g_search}%")
+                        ->orWhere('da.application_key', 'like', "%{$g_search}%")
+                        ->orWhere('da.course', 'like', "%{$g_search}%");
+                });
+            }
+        }
 
 
 
