@@ -17,6 +17,7 @@ class EmailCampaign extends Model
         'region_id',
         'branch_id',
         'from_email',
+        'reply_email',
         'subject',
         'body',
         'filters_json',
