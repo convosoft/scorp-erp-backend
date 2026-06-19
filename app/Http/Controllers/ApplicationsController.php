@@ -488,8 +488,12 @@ class ApplicationsController extends Controller
                 $app_query->whereDate('da.created_at', '>=', $value);
             } elseif ($column === 'created_at_to') {
                 $app_query->whereDate('da.created_at', '<=', $value);
-            } elseif ($column === 'tag_id') {
-                $app_query->whereRaw('FIND_IN_SET(?, da.tag_ids)', [$value]);
+            } elseif ($column === 'tag_id' && is_array($value)) {
+                $app_query->where(function ($q) use ($value) {
+                    foreach ($value as $tagId) {
+                        $q->orWhereRaw('FIND_IN_SET(?, da.tag_ids)', [$tagId]);
+                    }
+                });
             }
         }
 
