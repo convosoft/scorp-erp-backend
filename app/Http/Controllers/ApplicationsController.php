@@ -510,7 +510,7 @@ class ApplicationsController extends Controller
         }
 
         // Search
-        if ($request->filled('name') || ) {
+        if ($request->filled('name')  ) {
             $g_search = $request->input('name');
 
             if (strpos($g_search, 'APC') === 0) {
