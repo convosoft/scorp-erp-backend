@@ -672,8 +672,10 @@ class TaskController extends Controller
 
             //  echo $sql;
             //  echo $sql2;
+        if($request->has('debug') && $request->debug == 'sql'){
+            dd($sql,$sql2 );
 
-           // dd($sql,$sql2 );
+           }
 
             //  get tasks
             // Paginate results
