@@ -2200,6 +2200,8 @@ if (!function_exists('uploadFileToS3')) {
                     'lead_status' => $lead->status ?? '',
                     'lead_assigned_to' => optional($lead->assignedUser)->name ?? '',
                     'lead_created_date' => optional($lead->created_at)->format('Y-m-d') ?? '',
+                    'brand_name' => optional($lead->brand)->name ?? '',
+                    'branch_name' => optional($lead->branch)->name ?? '',
                 ];
 
                 break;
@@ -2229,6 +2231,8 @@ if (!function_exists('uploadFileToS3')) {
                     'program_name' => optional($admission->program)->name ?? '',
                     'fee_amount' => $admission->fee_amount ?? '',
                     'scholarship_amount' => $admission->scholarship_amount ?? '',
+                    'brand_name' => optional($admission->brand)->name ?? '',
+                    'branch_name' => optional($admission->branch)->name ?? '',
                 ];
 
                 break;
@@ -2257,6 +2261,8 @@ if (!function_exists('uploadFileToS3')) {
                     'course_name' => optional($application->course)->name ?? '',
                     'university_name' => optional($application->university)->name ?? '',
                     'intake' => $application->intake ?? '',
+                    'brand_name' => optional($application->brand)->name ?? '',
+                    'branch_name' => optional($application->branch)->name ?? '',
                 ];
 
                 break;
@@ -2282,41 +2288,42 @@ if (!function_exists('uploadFileToS3')) {
                     'otp' => '',
                     'profile_status' => $agent->profile_status ?? '',
                     'comment' => '',
+                    'brand_name' => optional($agent->brand)->name ?? '',
+                    'branch_name' => optional($agent->branch)->name ?? '',
                 ];
 
                 break;
         }
 
-        // $data = array_merge($data, [
-        //     'employee_name' => '',
-        //     'employee_email' => '',
-        //     'DOB' => '',
-        //     'leave_status' => '',
-        //     'branch_manager_email' => '',
-        //     'project_manager_email' => '',
-        //     'attendnace_date' => '',
-        //     'employee_designation' => '',
-        //     'project_manager_name' => '',
-        //     'branch_manager_name' => '',
-        //     'termination_date' => '',
-        //     'termination_reason' => '',
-        //     'suspension_date' => '',
-        //     'suspension_reason' => '',
-        //     'suspension_end_date' => '',
-        //     'document_name' => '',
-        //     'document_expiry' => '',
-        //     'employee_status' => '',
+        $data = array_merge($data, [
+            // 'employee_name' => '',
+            // 'employee_email' => '',
+            // 'DOB' => '',
+            // 'leave_status' => '',
+            // 'branch_manager_email' => '',
+            // 'project_manager_email' => '',
+            // 'attendnace_date' => '',
+            // 'employee_designation' => '',
+            // 'project_manager_name' => '',
+            // 'branch_manager_name' => '',
+            // 'termination_date' => '',
+            // 'termination_reason' => '',
+            // 'suspension_date' => '',
+            // 'suspension_reason' => '',
+            // 'suspension_end_date' => '',
+            // 'document_name' => '',
+            // 'document_expiry' => '',
+            // 'employee_status' => '',
 
-        //     'brand_name' => '',
-        //     'branch_name' => '',
 
-        //     'company_name' => config('app.name'),
-        //     'portal_link' => 'https://newerp.scorp-erp.com',
-        //     'login_url' => 'https://newerp.scorp-erp.com/login',
 
-        //     'date_today' => now()->format('Y-m-d'),
-        //     'current_year' => date('Y'),
-        // ]);
+            'company_name' => config('app.name'),
+            'portal_link' => 'https://newerp.scorp-erp.com',
+            'login_url' => 'https://newerp.scorp-erp.com/login',
+
+            'date_today' => now()->format('Y-m-d'),
+            'current_year' => date('Y'),
+        ]);
 
         // Universal Tags  
 
