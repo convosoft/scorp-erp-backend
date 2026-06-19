@@ -669,7 +669,9 @@ class TaskController extends Controller
             //  die();
 
             // echo "==========";
-            // echo $sql2;
+             echo $sql;
+             echo $sql2;
+
            // dd($sql,$sql2 );
 
             //  get tasks
