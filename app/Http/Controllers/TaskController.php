@@ -384,7 +384,7 @@ class TaskController extends Controller
 
                             }
                                         }
-            if (!$request->has('status') && !$request->filled('tasks_type_status')) {
+            if (!$request->filled('status') && !$request->filled('tasks_type_status')) {
                 $tasksQuery->where('deal_tasks.status', 0) ;
             }
 
