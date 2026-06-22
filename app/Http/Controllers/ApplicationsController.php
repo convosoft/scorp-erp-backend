@@ -1233,7 +1233,7 @@ class ApplicationsController extends Controller
                     function ($attribute, $value, $fail) use ($user_id, $user, $university) {
                         if (DealApplication::where('contact_id', $user_id)
                             ->where('university_id', $value)
-                            ->where('stage_id','!=', 12)
+                            ->where('stage_id','!=', 11)
                             ->exists()
                         ) {
                             $fail(($user?->name ?? '') . ' - ' .
