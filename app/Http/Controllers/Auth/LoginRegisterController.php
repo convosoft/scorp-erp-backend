@@ -83,7 +83,7 @@ class LoginRegisterController extends Controller
         unset($userArray['roles']);
 
         $Branch = Branch::where('branches.id', $user->branch_id)->first();
-        $data['is_user_b2b'] =  $Branch->is_b2b;
+        $data['is_user_b2b'] = $Branch->is_b2b ?? 0;
         $data['user'] = $userArray;
         // $data['roles'] = $user->getRoleNames(); // Get user roles
         // $data['permissions'] = $user->getAllPermissions()->pluck('name'); // Get user permissions
@@ -216,7 +216,7 @@ class LoginRegisterController extends Controller
         $data['token'] = $user->createToken($request->email)->plainTextToken;
         $Branch = Branch::where('branches.id', $user->branch_id)->first();
         if (!empty($Branch)) {
-            $data['is_user_b2b'] =  $Branch->is_b2b;
+            $data['is_user_b2b'] = $Branch->is_b2b ?? 0;
         } else {
             $data['is_user_b2b'] =  0;
         }
@@ -310,7 +310,7 @@ class LoginRegisterController extends Controller
         $data['token'] = $user->createToken($request->email)->plainTextToken;
 
         $Branch = Branch::where('branches.id', $user->branch_id)->first();
-        $data['is_user_b2b'] =  $Branch->is_b2b;
+        $data['is_user_b2b'] = $Branch->is_b2b ?? 0;
 
         $userArray = $user->toArray();
         unset($userArray['roles']);
