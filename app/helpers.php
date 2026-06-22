@@ -1161,6 +1161,166 @@ if (!function_exists('BrandsRegionsBranches')) {
         $user = \Auth::user();
         $type = $user->type;
         //$super_admins = [];
+        //$project_dm = [];
+
+        //$super_admins = User::whereIn('type', ['super admin'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        if (!empty(request()->segment(1)) && !empty(request()->segment(2))) {
+            if (request()->segment(1) . '/' . request()->segment(2) == 'tages/edit') {
+                $leadTag = LeadTag::find(request()->segment(3));
+                if (!empty($leadTag)) {
+                    $regions = Region::where('brands', $leadTag->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    $branches = Branch::where('region_id', $leadTag->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    $employees = User::where('branch_id', $leadTag->branch_id)->whereNotIn('type', ['client', 'company', 'super admin', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                }
+            }
+        }
+        if (isset($_GET['brand']) && !empty($_GET['brand'])) {
+            $regions = Region::where('brands', $_GET['brand'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        }
+        if (isset($_GET['brand_id']) && !empty($_GET['brand_id'])) {
+            $regions = Region::where('brands', $_GET['brand_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        }
+
+        if (isset($_GET['region_id']) && !empty($_GET['region_id'])) {
+            $branches = Branch::where('region_id', $_GET['region_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            // $regions = Region::where('id', $_GET['region_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        }
+
+        if (isset($_GET['branch_id']) && !empty($_GET['branch_id'])) {
+            // $branches = Branch::where('id', $_GET['branch_id'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $employees = User::where('branch_id', $_GET['branch_id'])->whereNotIn('type', ['client', 'company', 'super admin', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        }
+
+        if ($type == 'super admin' || $type == 'Admin Team' || $type == 'HR' || \Auth::user()->can('level 1')) {
+            $brands = User::where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $employees = User::whereNotIn('type', ['company', 'client', 'team', 'organization', 'super admin'])->where('branch_id', $user->branch_id)->pluck('name', 'id')->toArray();
+        } else if ($type == 'company') {
+            $brands = User::where('type', 'company')->where('id', $user->id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $regions = Region::where('brands', $user->id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        } else if ($type == 'Project Director' || $type == 'Project Manager' || \Auth::user()->can('level 2') || $type == 'Agent') {
+            $companies = FiltersBrands();
+            $brand_ids = array_keys($companies);
+            $brands = User::where('type', 'company')->whereIn('id', $brand_ids)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        } else if ($type == 'Region Manager' || \Auth::user()->can('level 3')) {
+            $brands = User::where('type', 'company')->where('id', $user->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $regions = Region::where('id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $branches = Branch::where('region_id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        } else if ($type == 'Branch Manager' || $type == 'Admissions Officer' || $type == 'Careers Consultant' || $type == 'Admissions Manager' || $type == 'Marketing Officer' || \Auth::user()->can('level 4')) {
+            $brands = User::where('type', 'company')->where('id', $user->brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $regions = Region::where('id', $user->region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $branches = Branch::where('id', $user->branch_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+            $employees = User::where('branch_id', $user->branch_id)->whereNotIn('type', ['client', 'company', 'organization', 'super admin'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+        }
+
+
+        return [
+            'brands' =>   $brands,
+            'regions' =>    $regions,
+            'branches' =>   $branches,
+            'employees' =>   $employees
+        ];
+    }
+
+
+
+
+    if (!function_exists('BrandsRegionsBranchesForEdit')) {
+        function BrandsRegionsBranchesForEdit($brand_id = 0, $region_id = 0, $branch_id = 0)
+        {
+            $brands = [];
+            $regions = [];
+            $branches = [];
+            $employees = [];
+
+            $user = \Auth::user();
+            $type = $user->type;
+
+            //dd($brand_id.' '.$region_id.' '.$branch_id);
+
+
+            //get region of the branch
+            // $regions = Region::select(['regions.id'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $branch_id)->pluck('id')->toArray();
+
+            // $brand_ids = Region::select(['regions.brands'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $branch_id)->pluck('brands')->toArray();
+
+            // //super admins
+            // $admins = User::whereNull('users.branch_id')->whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+
+            // //project directors
+            // $project_directors = User::whereNull('users.branch_id')->whereIn('type', ['Project Director', 'Project Manager'])->where('brand_id', $brand_ids)->pluck('name', 'id')->toArray();
+
+            // $regional_managers = User::whereNull('users.branch_id')->where('type', 'Region Manager')->whereIn('region_id', $regions)->pluck('name', 'id')->toArray();
+
+            $branch = Branch::find($branch_id);
+
+            if ($type == 'super admin' || $type == 'HR' || $type == 'Admin Team' || \Auth::user()->can('level 1')) {
+                $brands = User::where('type', 'company')->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
+                        $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    }
+                }
+            } else if ($type == 'company') {
+                $brands = User::where('type', 'company')->where('id', $user->id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
+                        $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    }
+                }
+            } else if ($type == 'Project Director' || $type == 'Project Manager' || \Auth::user()->can('level 2') || $type == 'Agent') {
+                $companies = FiltersBrands();
+                $brand_ids = array_keys($companies);
+                $brands = User::where('type', 'company')->whereIn('id', $brand_ids)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
+                        $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    }
+                }
+            } else if ($type == 'Region Manager' || \Auth::user()->can('level 3')) {
+                $brands = User::where('type', 'company')->where('id', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $regions = Region::where('brands', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
+                        $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    }
+                }
+            } else if ($type == 'Branch Manager' || $type == 'Admissions Officer' || $type == 'Admissions Manager' || $type == 'Marketing Officer' || \Auth::user()->can('level 4')) {
+                $brands = User::where('type', 'company')->where('id', $brand_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $regions = Region::where('id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                $branches = Branch::where('region_id', $region_id)->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                if (!empty($branch)) {
+                    if ($branch->name == 'Admin') {
+                        $employees = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+                    } else {
+                        $employees = User::whereIn('branch_id', [$user->branch_id, $branch_id])->whereNotIn('type', ['super admin', 'company', 'team', 'client', 'organization'])->orderBy('name', 'ASC')->pluck('name', 'id')->toArray();
+                    }
+                }
+            }
+
+            return [
+                'brands' =>   $brands,
+                'regions' =>   $regions,
+                'branches' =>   $branches,
+                'employees' =>  $employees
+            ];
+        }
+    }
+}
 
 
 function downloadCSV($headers, $data, $filename = 'data.csv')
@@ -2102,62 +2262,62 @@ if (!function_exists('AllUserFiltersBranchUsersFORTASK')) {
 }
 
 
-// if (!function_exists('FiltersBranchUsersFORTASK_FORM_EDIT')) {
-//     function FiltersBranchUsersFORTASK_FORM_EDIT($id)
-//     {
-//         $branch=Branch::find($id);
-//         if(!empty($branch)){
+if (!function_exists('FiltersBranchUsersFORTASK_FORM_EDIT')) {
+    function FiltersBranchUsersFORTASK_FORM_EDIT($id)
+    {
+        $branch=Branch::find($id);
+        if(!empty($branch)){
 
-//          //get region of the branch
-//          $regions = Region::select(['regions.id'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('id')->toArray();
+         //get region of the branch
+         $regions = Region::select(['regions.id'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('id')->toArray();
 
-//          $brand_ids = Region::select(['regions.brands'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('brands')->toArray();
+         $brand_ids = Region::select(['regions.brands'])->join('branches', 'branches.region_id', '=', 'regions.id')->where('branches.id', $id)->pluck('brands')->toArray();
 
-//          //super admins
-//          $admins=[];
-//          if($branch->name == 'Admin'){
-//             $admins = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
-//         }
-//         $Product_Coordinator=[];
-//         if($branch->name == 'Product'){
-//            $Product_Coordinator = User::whereIn('type', ['Product Coordinator'])->pluck('name', 'id')->toArray();
-//        }
+         //super admins
+         $admins=[];
+         if($branch->name == 'Admin'){
+            $admins = User::whereIn('type', ['super admin'])->pluck('name', 'id')->toArray();
+        }
+        $Product_Coordinator=[];
+        if($branch->name == 'Product'){
+           $Product_Coordinator = User::whereIn('type', ['Product Coordinator'])->pluck('name', 'id')->toArray();
+       }
 
-//        $Marketing_team=[];
-//        if($branch->name == 'Marketing'){
-//           $Marketing_team = User::whereIn('type', ['Marketing Officer'])->pluck('name', 'id')->toArray();
-//        }
+       $Marketing_team=[];
+       if($branch->name == 'Marketing'){
+          $Marketing_team = User::whereIn('type', ['Marketing Officer'])->pluck('name', 'id')->toArray();
+       }
 
-//          //project directors
-//          $project_directors = User::whereIn('type', ['Project Director', 'Project Manager'])->where('brand_id', $brand_ids)->pluck('name', 'id')->toArray();
+         //project directors
+         $project_directors = User::whereIn('type', ['Project Director', 'Project Manager'])->where('brand_id', $brand_ids)->pluck('name', 'id')->toArray();
 
-//          $regional_managers = User::where('type', 'Region Manager')->whereIn('region_id', $regions)->pluck('name', 'id')->toArray();
-
-
-//         // $users = User::whereNotIn('type', ['super admin', 'company', 'accountant', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
-//         $users = User::whereNotIn('type', ['super admin', 'company', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
-
-//         $login_user=[\Auth::id() => \Auth::user()->name];
-//         $html = '';
-
-//         if(isset($_GET['page']) && $_GET['page'] == 'lead_list'){
-//             $html .= '<option value="null">Not Assign</option> ';
-//         }
+         $regional_managers = User::where('type', 'Region Manager')->whereIn('region_id', $regions)->pluck('name', 'id')->toArray();
 
 
-//         $unique_users = [];
-//         $users_lists = [$admins, $project_directors, $regional_managers, $users,$Product_Coordinator,$Marketing_team,$login_user];
-//         foreach ($users_lists as $users) {
-//             foreach ($users as $key => $user) {
-//                 if (!isset($unique_users[$key]) && $key > 0) {
-//                     $unique_users[$key] = $user;
-//                 }
-//             }
-//         }
+        // $users = User::whereNotIn('type', ['super admin', 'company', 'accountant', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
+        $users = User::whereNotIn('type', ['super admin', 'company', 'client', 'team'])->where('branch_id', $id)->pluck('name', 'id')->toArray();
 
-//          return $unique_users;
-//      }
-//     }
-// }
+        $login_user=[\Auth::id() => \Auth::user()->name];
+        $html = '';
+
+        if(isset($_GET['page']) && $_GET['page'] == 'lead_list'){
+            $html .= '<option value="null">Not Assign</option> ';
+        }
+
+
+        $unique_users = [];
+        $users_lists = [$admins, $project_directors, $regional_managers, $users,$Product_Coordinator,$Marketing_team,$login_user];
+        foreach ($users_lists as $users) {
+            foreach ($users as $key => $user) {
+                if (!isset($unique_users[$key]) && $key > 0) {
+                    $unique_users[$key] = $user;
+                }
+            }
+        }
+
+         return $unique_users;
+     }
+    }
+}
 
 
