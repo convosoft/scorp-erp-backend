@@ -1248,7 +1248,7 @@ class ApplicationsController extends Controller
         $application->region_id = $deal->region_id;
         $application->assigned_to = $deal->assigned_to;
         $application->campus = $request->campus;
-        $application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
+        //$application->country_id = Country::where('country_code', $request?->countryId)->first()?->id;
         $application->intakeYear = $request->intakeYear;
         $application->course_id = $request->courses_id ?? "0";
         // $application->course_id = $request->courses_id ?? "0";
@@ -2919,7 +2919,7 @@ class ApplicationsController extends Controller
         ]);
     }
 
-    public function application_request_save_deposite(Request $request)
+   public function application_request_save_deposite(Request $request)
     {
         $id = $request->application_id;
         $application = DealApplication::with('university')->find($id);
@@ -2954,7 +2954,8 @@ class ApplicationsController extends Controller
 
         $dealTask = \App\Models\DealTask::where('related_to', $id)
             ->where('related_type', 'application')
-            ->where('tasks_type', 'Compliance')
+            ->where('tasks_type', 'Quality')
+            ->latest('id')
             ->first();
         if (!empty($dealTask)) {
             // dd(2);
@@ -2996,6 +2997,7 @@ class ApplicationsController extends Controller
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
+            $dealTask->tasks_type = 'Quality';
             $dealTask->save();
         } else {
             $dealTask = new \App\Models\DealTask();
@@ -3036,6 +3038,7 @@ class ApplicationsController extends Controller
                 $dealTask->stage_request = $request->stage_id;
                 $dealTask->tasks_type = 'Compliance';
             }
+            $dealTask->tasks_type = 'Quality';
             $dealTask->save();
         }
         $inputs = $request->except(['_token', '_method', 'submit']);
