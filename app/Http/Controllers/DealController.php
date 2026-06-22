@@ -99,6 +99,9 @@ class DealController extends Controller
         if (isset($_POST['tag']) && !empty($_POST['tag'])) {
             $filters['tag'] = $_POST['tag'];
         }
+        if (isset($_POST['created_by']) && !empty($_POST['created_by'])) {
+            $filters['created_by'] = $_POST['created_by'];
+        }
         return $filters;
     }
 
@@ -851,8 +854,10 @@ class DealController extends Controller
         if (!$user->can('edit deal') && $deal->created_by != $user->ownerId() && $user->type != 'super admin') {
             return response()->json([
                 'status' => 'error',
-                'message' => __('Permission Denied.')
-            ], 200);
+                'message' => [
+                    'permission' => [__('Permission Denied.')]
+                ]
+            ], 422);
         }
 
         // Get related user
