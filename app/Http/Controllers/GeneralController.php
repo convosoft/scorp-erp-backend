@@ -6,7 +6,6 @@ use Session;
 use App\Models\Deal;
 use App\Models\Lead;
 use App\Models\User;
-use App\Models\TaskTag;
 use App\Models\Label;
 use App\Models\Stage;
 use App\Models\Branch;
