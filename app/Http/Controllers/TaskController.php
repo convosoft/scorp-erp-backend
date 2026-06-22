@@ -100,6 +100,9 @@ class TaskController extends Controller
         if (isset($_POST['university_id']) && !empty($_POST['university_id'])) {
             $filters['university_id'] = $_POST['university_id'];
         }
+        if (isset($_POST['tag_id']) && !empty($_POST['tag_id'])) {
+            $filters['tag_id'] = $_POST['tag_id'];
+        }
 
         return $filters;
     }
@@ -801,6 +804,15 @@ class TaskController extends Controller
             ];
             addLogActivity($logData);
         }
+        if ($dealTask->related_type != 'task') {
+            addLogActivity([
+                'type' => 'success',
+                'note' => json_encode($remarks),
+                'module_id' => $dealTask->id,
+                'module_type' => 'task',
+                'notification_type' => 'Task created'
+            ]);
+        }
 
 
 
@@ -891,21 +903,23 @@ class TaskController extends Controller
         $is_status_change = $dealTask->status !== $request->status;
 
         // Update Task Details
-        $dealTask->related_to = $request->related_to;
-        $dealTask->related_type = $request->related_type;
-        $dealTask->name = $request->task_name;
+        if ($request->filled('related_to') && $request->related_to!='null') {
+            $dealTask->related_to = $request->related_to;
+        }
+        $dealTask->related_type = $request->related_type ?? $dealTask->related_type;
+        $dealTask->name = $request->task_name ?? $dealTask->task_name;
         $dealTask->branch_id = $request->branch_id ?? $dealTask->branch_id;
         $dealTask->assigned_to = $request->assigned_to ?? $dealTask->assigned_to;
         $dealTask->brand_id = $request->brand_id ?? $dealTask->brand_id;
-        $dealTask->assigned_type = $request->assign_type;
+        $dealTask->assigned_type = $request->assign_type ?? $dealTask->assign_type;
         $dealTask->region_id = $request->region_id ?? $dealTask->region_id;
-        $dealTask->due_date = $request->due_date;
-        $dealTask->start_date = $request->start_date;
-        $dealTask->date = $request->start_date;
+        $dealTask->due_date = $request->due_date ?? $dealTask->due_date;
+        $dealTask->start_date = $request->start_date ?? $dealTask->start_date;
+        $dealTask->date = $request->start_date ?? $dealTask->start_date;
         $dealTask->status = $request->status ?? $dealTask->status;
-        $dealTask->remainder_date = $request->remainder_date;
-        $dealTask->description = $request->description;
-        $dealTask->visibility = $request->visibility;
+        $dealTask->remainder_date = $request->remainder_date ?? $dealTask->remainder_date;
+        $dealTask->description = $request->description ?? $dealTask->description;
+        $dealTask->visibility = $request->visibility ?? $dealTask->visibility;
         $dealTask->priority = 1;
         $dealTask->time = $request->remainder_time ?? $dealTask->time;
 
@@ -1161,7 +1175,6 @@ class TaskController extends Controller
         $applied_meta = \DB::table('meta')
             ->select('meta_key', 'meta_value')
             ->where('parent_id', $task->related_to)
-            ->where('stage_id', 6)
             ->get()
             ->map(function ($item) {
                 return (array) $item;
@@ -1231,6 +1244,7 @@ class TaskController extends Controller
                     ->select(
                         'deals.id',
                         'deals.name',
+                        'deals.drive_link',
                         'clientUser.name as clientUserName',
                         'sources.name as sourceName',
                         'clientUser.id as clientUserID',
@@ -2066,4 +2080,74 @@ class TaskController extends Controller
             'message' => 'ID is required'
         ], 400);
     }
+     public function taskAddTags(Request $request)
+{
+    try {
+
+        // Validation
+        $validator = \Validator::make($request->all(), [
+            'selectedIds' => 'required|string',
+            'tagid' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'msg' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $ids = explode(',', $request->selectedIds);
+
+        $dealTasks = DealTask::whereIn('id', $ids)->get();
+
+        if ($dealTasks->count() == 0) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No tasks found'
+            ], 404);
+        }
+
+        foreach ($dealTasks as $dealTask) {
+
+            $existingTags = $dealTask->tag_ids ? explode(',', $dealTask->tag_ids) : [];
+
+            // Prevent duplicate tag
+            if (!in_array($request->tagid, $existingTags)) {
+
+                $existingTags[] = $request->tagid;
+                $dealTask->tag_ids = implode(',', $existingTags);
+                $dealTask->save();
+
+                // Activity Log
+                $data = [
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => 'Task Tag Added',
+                        'message' => 'Tag ID '.$request->tagid.' added to task ID '.$dealTask->id
+                    ]),
+                    'module_id' => $dealTask->id,
+                    'module_type' => 'task',
+                    'notification_type' => 'Task Tag Added Successfully'
+                ];
+
+                addLogActivity($data);
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Task tag added successfully'
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'msg' => 'Something went wrong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }
