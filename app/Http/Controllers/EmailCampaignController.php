@@ -350,6 +350,13 @@ class EmailCampaignController extends Controller
                 'total_clicked' => EmailSendingQueue::selectRaw('COUNT(*)')
                     ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
                     ->whereNotNull('clicked_at'),
+                'total_failed' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->where('is_send', '0')->where('status', '2'),
+
+                'total_non_processed' => EmailSendingQueue::selectRaw('COUNT(*)')
+                    ->whereColumn('email_sending_queues.campaign_id', 'email_campaigns.id')
+                    ->where('is_send', '0')->where('status', '1'),
             ]);
 
         // 🔎 SEARCH (name / subject / email)
