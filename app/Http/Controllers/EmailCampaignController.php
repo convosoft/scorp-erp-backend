@@ -109,7 +109,8 @@ class EmailCampaignController extends Controller
 
         $campaign = EmailCampaign::with('recipients')->find($request->id);
 
-        $senderDetails = User::where('id', $campaign->email_sender_id)->first();
+        $senderDetails = User::with(['branch', 'region', 'brand'])->where('id', $campaign->email_sender_id)->first();
+
 
         if ($campaign->status !== 'pending_approval') {
             return response()->json([
@@ -646,7 +647,7 @@ class EmailCampaignController extends Controller
 
         $campaign = EmailCampaign::with('recipients')->find($request->id);
 
-        $senderDetails = User::where('id', $campaign->email_sender_id)->first();
+        $senderDetails =  User::with(['branch', 'region', 'brand'])->where('id', $campaign->email_sender_id)->first();
 
         if (!$campaign) {
             return response()->json([
@@ -713,7 +714,7 @@ class EmailCampaignController extends Controller
         $recipientType = $request->recipient_type;
 
 
-        $senderDetails = User::where('id', auth()->id())->first();
+        $senderDetails =  User::with(['branch', 'region', 'brand'])->where('id', auth()->id())->first();
 
         // Parse subject and body using placeholder resolution
         $parsedBody    = $request->body;

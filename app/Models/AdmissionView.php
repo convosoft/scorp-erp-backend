@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class AdmissionView extends Model
 {
 
- protected $table = 'admission_view';
+    protected $table = 'admission_view';
 
- protected $appends = ['tags'];
+    protected $appends = ['tags'];
 
 
     public function applications()
@@ -20,8 +20,7 @@ class AdmissionView extends Model
 
     public function labels()
     {
-        if($this->labels)
-        {
+        if ($this->labels) {
             return Label::whereIn('id', explode(',', $this->labels))->get();
         }
 
@@ -76,31 +75,34 @@ class AdmissionView extends Model
 
 
 
-public function leadDetails()
-{
-    return $this->belongsTo(Lead::class,"id","is_converted");
-}
-public function client()
-{
-    return $this->hasOneThrough(
-        User::class,        // Final model
-        ClientDeal::class,  // Intermediate model
-        'deal_id',          // Foreign key on client_deals
-        'id',               // Foreign key on users
-        'id',               // Local key on deals
-        'client_id'         // Local key on client_deals
-    );
-}
+    public function leadDetails()
+    {
+        return $this->belongsTo(Lead::class, "id", "is_converted");
+    }
+    public function client()
+    {
+        return $this->hasOneThrough(
+            User::class,        // Final model
+            ClientDeal::class,  // Intermediate model
+            'deal_id',          // Foreign key on client_deals
+            'id',               // Foreign key on users
+            'id',               // Local key on deals
+            'client_id'         // Local key on client_deals
+        );
+    }
 
- public function getTagsAttribute()
+    public function getTagsAttribute()
     {
         return LeadTag::whereRaw("FIND_IN_SET(id, ?)", [$this->tag_ids])->get();
     }
 
-     public function deal()
+    public function deal()
     {
         return $this->belongsTo(Deal::class, 'id');
     }
 
-
+    public function contactDetail()
+    {
+        return $this->hasOne(AdmissionContactDetail::class, 'id');
+    }
 }

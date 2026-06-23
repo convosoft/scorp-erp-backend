@@ -700,8 +700,9 @@ class ApplicationsController extends Controller
                 'd.university_id',
                 'd.brand_id',
                 'd.branch_id',
-                'client.name as client_name',
-                'client.email as client_email',
+                'client.contact_name as client_name',
+                'client.contact_email as client_email',
+                'client.contact_phone as client_phone',
             )
 
 
@@ -712,12 +713,12 @@ class ApplicationsController extends Controller
             ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
             ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
             ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
-            ->leftJoin('users as client', 'client.id', '=', 'da.contact_id')
+            ->leftJoin('admission_contact_details as client', 'client.deal_id', '=', 'da.deal_id')
             ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
         $app_query->where('client.is_email_bogus', 0);
 
-        $app_query->whereNotNull('client.email');
+        $app_query->whereNotNull('client.contact_email');
 
 
         if ($request->filled('country') && is_array($request->country)) {
@@ -1233,7 +1234,7 @@ class ApplicationsController extends Controller
                     function ($attribute, $value, $fail) use ($user_id, $user, $university) {
                         if (DealApplication::where('contact_id', $user_id)
                             ->where('university_id', $value)
-                            ->where('stage_id','!=', 11)
+                            ->where('stage_id', '!=', 11)
                             ->exists()
                         ) {
                             $fail(($user?->name ?? '') . ' - ' .

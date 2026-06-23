@@ -2216,9 +2216,9 @@ if (!function_exists('uploadFileToS3')) {
 
                 $data = [
                     'student_id' => $admission->id ?? '',
-                    'student_name' => $admission->name ?? '',
-                    'student_email' => optional($admission->client)->email ?? '',
-                    'student_phone' => optional($admission->client)->phone ?? '',
+                    'student_name' => $admission->contact_detail->contact_name ?? '',
+                    'student_email' => optional($admission->contact_detail)->contact_email ?? '',
+                    'student_phone' => optional($admission->contact_detail)->contact_phone ?? '',
                     'admission_number' => $admission->admission_number ?? '',
                     'admission_status' => optional($admission->stage)->name ?? '',
                     'admission_date' => $admission->admission_date ?? '',
@@ -2243,6 +2243,9 @@ if (!function_exists('uploadFileToS3')) {
 
                 $data = [
                     'application_id' => $application->id ?? '',
+                    'student_name' => $application->deal->contact_detail->contact_name ?? '',
+                    'student_email' => optional($application->deal->contact_detail)->contact_email ?? '',
+                    'student_phone' => optional($application->deal->contact_detail)->contact_phone ?? '',
                     'application_number' => $application->application_number ?? '',
                     'application_status' => $application->status ?? '',
                     'application_stage' => optional($application->stage)->name ?? '',
@@ -2253,7 +2256,6 @@ if (!function_exists('uploadFileToS3')) {
                     'visa_status' => $application->visa_status ?? '',
                     'application_remarks' => $application->remarks ?? '',
                     'assigned_officer' => optional($application->assignedUser)->name ?? '',
-                    'student_name' => $application->name ?? '',
                     'course_name' => optional($application->course)->name ?? '',
                     'university_name' => optional($application->university)->name ?? '',
                     'intake' => $application->intake . ' ' . $application->intakeYear ?? '',
