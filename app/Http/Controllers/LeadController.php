@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdmissionContactDetail;
 use App\Models\Agency;
 use App\Models\Branch;
 use App\Models\ClientDeal;
@@ -2349,6 +2350,14 @@ class LeadController extends Controller
         $lead->is_converted = $deal->id;
         $lead->save();
 
+        // Create Admission Contact Details
+        AdmissionContactDetail::create([
+            'deal_id' => $deal->id,
+            'contact_name' => $request->client_name ?? $client->name ?? $lead->name ?? '',
+            'contact_phone' => $request->client_phone ?? $client->phone ?? $lead->phone ?? '',
+            'contact_email' => $request->client_email ?? $client->email ?? $lead->email ?? '',
+            'created_by' => \Auth::id(),
+        ]);
         // Add logs
         $data = [
             'type' => 'info',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Session;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AdmissionContactDetail;
 use App\Models\Deal;
 use App\Models\Lead;
 use App\Models\User;
@@ -995,6 +996,8 @@ class DealController extends Controller
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:deals,id',
             'name' => 'required',
+            'lead_phone' => 'required',
+            'email' => 'required',
             'intake_month' => 'required',
             'intake_year' => 'required',
             'brand_id' => 'required|gt:0',
@@ -1078,6 +1081,25 @@ class DealController extends Controller
         $deal->status = 'Active';
         $deal->created_by = $deal->created_by;
         $deal->save();
+
+        // Update or Create Admission Contact Details
+        $admissionContact = AdmissionContactDetail::where('deal_id', $deal->id)->first();
+        if ($admissionContact) {
+            $admissionContact->update([
+                'contact_name'   => $request->name,
+                'contact_phone'  => $request->lead_phone,
+                'contact_email'  => $request->email,
+                'created_by'     => \Auth::id(),
+            ]);
+        } else {
+            AdmissionContactDetail::create([
+                'deal_id'        => $deal->id,
+                'contact_name'   => $request->name,
+                'contact_phone'  => $request->lead_phone,
+                'contact_email'  => $request->email,
+                'created_by'     => \Auth::id(),
+            ]);
+        }
 
         // Update User
         if ($user_who_have_password) {

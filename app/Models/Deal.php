@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Deal extends Model
 {
-    protected $with = ['pipeline:id,name','stage:id,name','source:id,name','assignedUser:id,name','created_by:id,name','brand:id,name','branch:id,name','region:id,name','lead']; //  Always eager load this relationship
+    protected $with = ['contactDetail', 'pipeline:id,name', 'stage:id,name', 'source:id,name', 'assignedUser:id,name', 'created_by:id,name', 'brand:id,name', 'branch:id,name', 'region:id,name', 'lead']; //  Always eager load this relationship
     protected $fillable = [
         'name',
         'price',
@@ -48,8 +48,7 @@ class Deal extends Model
 
     public function labels()
     {
-        if($this->labels)
-        {
+        if ($this->labels) {
             return Label::whereIn('id', explode(',', $this->labels))->get();
         }
 
@@ -78,8 +77,7 @@ class Deal extends Model
 
     public function courses()
     {
-        if($this->courses)
-        {
+        if ($this->courses) {
             return Course::whereIn('id', explode(',', $this->courses))->get();
         }
 
@@ -94,8 +92,7 @@ class Deal extends Model
 
     public function products()
     {
-        if($this->products)
-        {
+        if ($this->products) {
             return ProductService::whereIn('id', explode(',', $this->products))->get();
         }
 
@@ -104,8 +101,7 @@ class Deal extends Model
 
     public function sources()
     {
-        if($this->sources)
-        {
+        if ($this->sources) {
             return Source::whereIn('id', explode(',', $this->sources))->get();
         }
 
@@ -156,8 +152,7 @@ class Deal extends Model
     {
         $total = 0;
 
-        foreach($deals as $deal)
-        {
+        foreach ($deals as $deal) {
             $total += $deal->price;
         }
 
@@ -165,48 +160,51 @@ class Deal extends Model
     }
 
     public function assignedUser()
-{
-    return $this->belongsTo(User::class, 'assigned_to');
-}
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
     public function created_by()
-{
-    return $this->belongsTo(User::class, 'created_by');
-}
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
-public function brand()
-{
-    return $this->belongsTo(User::class, 'brand_id');
-}
+    public function brand()
+    {
+        return $this->belongsTo(User::class, 'brand_id');
+    }
 
-public function branch()
-{
-    return $this->belongsTo(Branch::class, 'branch_id');
-}
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
 
-public function region()
-{
-    return $this->belongsTo(Region::class, 'region_id');
-}
+    public function region()
+    {
+        return $this->belongsTo(Region::class, 'region_id');
+    }
 
-public function source()
-{
-    return $this->belongsTo(Source::class, 'source_id');
-}
-public function lead()
-{
-    return $this->belongsTo(Lead::class,"id","is_converted");
-}
-public function client()
-{
-    return $this->hasOneThrough(
-        User::class,        // Final model
-        ClientDeal::class,  // Intermediate model
-        'deal_id',          // Foreign key on client_deals
-        'id',               // Foreign key on users
-        'id',               // Local key on deals
-        'client_id'         // Local key on client_deals
-    );
-}
+    public function source()
+    {
+        return $this->belongsTo(Source::class, 'source_id');
+    }
+    public function lead()
+    {
+        return $this->belongsTo(Lead::class, "id", "is_converted");
+    }
+    public function client()
+    {
+        return $this->hasOneThrough(
+            User::class,        // Final model
+            ClientDeal::class,  // Intermediate model
+            'deal_id',          // Foreign key on client_deals
+            'id',               // Foreign key on users
+            'id',               // Local key on deals
+            'client_id'         // Local key on client_deals
+        );
+    }
 
-
+    public function contactDetail()
+    {
+        return $this->hasOne(AdmissionContactDetail::class, 'deal_id');
+    }
 }
