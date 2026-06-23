@@ -103,6 +103,6 @@ class AdmissionView extends Model
 
     public function contactDetail()
     {
-        return $this->hasOne(AdmissionContactDetail::class, 'id');
+        return $this->hasOne(AdmissionContactDetail::class, 'deal_id');
     }
 }
