@@ -700,9 +700,9 @@ class ApplicationsController extends Controller
                 'd.university_id',
                 'd.brand_id',
                 'd.branch_id',
-                'client.contact_name as client_name',
-                'client.contact_email as client_email',
-                'client.contact_phone as client_phone',
+                'contact_details.contact_name as client_name',
+                'contact_details.contact_email as client_email',
+                'contact_details.contact_phone as client_phone',
             )
 
 
@@ -713,7 +713,9 @@ class ApplicationsController extends Controller
             ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
             ->leftJoin('users as au', 'au.id', '=', 'd.assigned_to')
             ->leftJoin('users as b', 'b.id', '=', 'd.brand_id')
-            ->leftJoin('admission_contact_details as client', 'client.deal_id', '=', 'da.deal_id')
+            ->leftJoin('admission_contact_details as contact_details', 'contact_details.deal_id', '=', 'da.deal_id')
+            ->leftJoin('users as client', 'client.id', '=', 'da.contact_id')
+
             ->leftJoin('branches as br', 'br.id', '=', 'd.branch_id');
 
         $app_query->where('client.is_email_bogus', 0);
