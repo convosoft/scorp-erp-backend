@@ -1412,6 +1412,14 @@ class EmailTemplateController extends Controller
                     case 'processed':
                         $query->whereNotNull('email_sending_queues.processed_at');
                         break;
+
+                    case 'failed':
+                        $query->where('email_sending_queues.is_send', '0')->where('email_sending_queues.status', '2');
+                        break;
+
+                    case 'not_processed':
+                        $query->where('email_sending_queues.is_send', '0')->where('email_sending_queues.status', '1');
+                        break;
                 }
             }
 
