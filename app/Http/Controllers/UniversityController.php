@@ -1501,6 +1501,9 @@ class UniversityController extends Controller
 
         $id = $request->id;
         $university = University::where('id', $id)->first();
+        if ($university->international_status == 0) {
+            $request->type = 2;
+        }
         $courses = Course::where('university_id', $id)->where('type', $request->type)->get();
 
         $monthNames = [
