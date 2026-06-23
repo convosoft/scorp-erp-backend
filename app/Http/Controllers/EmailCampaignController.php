@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmailCampaign;
+use App\Models\User;
 use App\Models\EmailCampaignRecipient;
 use App\Models\EmailSendingQueue;
 use Illuminate\Http\Request;
@@ -108,6 +109,8 @@ class EmailCampaignController extends Controller
 
         $campaign = EmailCampaign::with('recipients')->find($request->id);
 
+        $senderDetails = User::where('id', $campaign->email_sender_id)->first();
+
         if ($campaign->status !== 'pending_approval') {
             return response()->json([
                 'status' => 'error',
@@ -174,8 +177,8 @@ class EmailCampaignController extends Controller
 
         $insertData = [];
         foreach ($campaign->recipients as $recipient) {
-            $parsedSubject = parseEmailTemplate($campaign->subject, $recipient->recipient_id, $campaign->recipient_type);
-            $parsedBody = parseEmailTemplate($campaign->body, $recipient->recipient_id, $campaign->recipient_type);
+            $parsedSubject = parseEmailTemplate($campaign->subject, $recipient->recipient_id, $campaign->recipient_type, $senderDetails);
+            $parsedBody    = parseEmailTemplate($campaign->body, $recipient->recipient_id, $campaign->recipient_type, $senderDetails);
 
             $insertData[] = [
                 'campaign_id'  => $campaign->id,
@@ -643,6 +646,8 @@ class EmailCampaignController extends Controller
 
         $campaign = EmailCampaign::with('recipients')->find($request->id);
 
+        $senderDetails = User::where('id', $campaign->email_sender_id)->first();
+
         if (!$campaign) {
             return response()->json([
                 'status'  => 'error',
@@ -666,8 +671,8 @@ class EmailCampaignController extends Controller
         $parsedBody    = $campaign->body;
 
         if ($recipientId) {
-            $parsedSubject = parseEmailTemplate($campaign->subject, $recipientId, $recipientType);
-            $parsedBody    = parseEmailTemplate($campaign->body, $recipientId, $recipientType);
+            $parsedSubject = parseEmailTemplate($campaign->subject, $recipientId, $recipientType, $senderDetails);
+            $parsedBody    = parseEmailTemplate($campaign->body, $recipientId, $recipientType, $senderDetails);
         }
 
         return response()->json([
@@ -708,12 +713,14 @@ class EmailCampaignController extends Controller
         $recipientType = $request->recipient_type;
 
 
-        // Parse subject and body using placeholder resolution 
+        $senderDetails = User::where('id', auth()->id())->first();
+
+        // Parse subject and body using placeholder resolution
         $parsedBody    = $request->body;
 
         if ($recipientId) {
-            $parsedSubject = parseEmailTemplate($request->subject, $recipientId, $recipientType);
-            $parsedBody    = parseEmailTemplate($request->body, $recipientId, $recipientType);
+            $parsedSubject = parseEmailTemplate($request->subject, $recipientId, $recipientType, $senderDetails);
+            $parsedBody    = parseEmailTemplate($request->body, $recipientId, $recipientType, $senderDetails);
         }
 
         return response()->json([

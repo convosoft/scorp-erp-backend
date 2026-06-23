@@ -2172,7 +2172,7 @@ if (!function_exists('uploadFileToS3')) {
         return Storage::disk('s3')->url($path);
     }
 
-    function parseEmailTemplate($template, $id, $type)
+    function parseEmailTemplate($template, $id, $type, $senderDetails)
     {
         $data = [];
 
@@ -2292,27 +2292,12 @@ if (!function_exists('uploadFileToS3')) {
         }
 
         $data = array_merge($data, [
-            // 'employee_name' => '',
-            // 'employee_email' => '',
-            // 'DOB' => '',
-            // 'leave_status' => '',
-            // 'branch_manager_email' => '',
-            // 'project_manager_email' => '',
-            // 'attendnace_date' => '',
-            // 'employee_designation' => '',
-            // 'project_manager_name' => '',
-            // 'branch_manager_name' => '',
-            // 'termination_date' => '',
-            // 'termination_reason' => '',
-            // 'suspension_date' => '',
-            // 'suspension_reason' => '',
-            // 'suspension_end_date' => '',
-            // 'document_name' => '',
-            // 'document_expiry' => '',
-            // 'employee_status' => '',
-
-
-
+            'sender_name' => $senderDetails->name,
+            'sender_email' => $senderDetails->email,
+            'sender_phone' => $senderDetails->phone,
+            'sender_brand' => $senderDetails->brand->name,
+            'sender_region' => $senderDetails->region->name,
+            'sender_branch' => $senderDetails->branch->name,
             'company_name' => config('app.name'),
             'portal_link' => 'https://newerp.scorp-erp.com',
             'login_url' => 'https://newerp.scorp-erp.com/login',
