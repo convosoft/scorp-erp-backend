@@ -2241,6 +2241,8 @@ if (!function_exists('uploadFileToS3')) {
                     return $template;
                 }
 
+                dd($application);
+
                 $data = [
                     'application_id' => $application->id ?? '',
                     'student_name' => $application->deal->contact_detail->contact_name ?? '',
