@@ -2216,9 +2216,9 @@ if (!function_exists('uploadFileToS3')) {
 
                 $data = [
                     'student_id' => $admission->id ?? '',
-                    'student_name' => $admission->contact_detail->contact_name ?? '',
-                    'student_email' => optional($admission->contact_detail)->contact_email ?? '',
-                    'student_phone' => optional($admission->contact_detail)->contact_phone ?? '',
+                    'student_name' => $admission->contactDetail->contact_name ?? '',
+                    'student_email' => optional($admission->contactDetail)->contact_email ?? '',
+                    'student_phone' => optional($admission->contactDetail)->contact_phone ?? '',
                     'admission_number' => $admission->admission_number ?? '',
                     'admission_status' => optional($admission->stage)->name ?? '',
                     'admission_date' => $admission->admission_date ?? '',
@@ -2241,13 +2241,13 @@ if (!function_exists('uploadFileToS3')) {
                     return $template;
                 }
 
-                dd($application->deal);
+                dd($application->deal->contactDetail->contact_name);
 
                 $data = [
                     'application_id' => $application->id ?? '',
-                    'student_name' => $application->deal->contact_detail->contact_name ?? '',
-                    'student_email' => optional($application->deal->contact_detail)->contact_email ?? '',
-                    'student_phone' => optional($application->deal->contact_detail)->contact_phone ?? '',
+                    'student_name' => $application->deal->contactDetail->contact_name ?? '',
+                    'student_email' => optional($application->deal->contactDetail)->contact_email ?? '',
+                    'student_phone' => optional($application->deal->contactDetail)->contact_phone ?? '',
                     'application_number' => $application->application_number ?? '',
                     'application_status' => $application->status ?? '',
                     'application_stage' => optional($application->stage)->name ?? '',
