@@ -294,8 +294,8 @@ class EmailCampaignController extends Controller
             'created_by' => 'nullable|integer',
             'approved_by' => 'nullable|integer',
 
-            'from_date' => 'nullable|date',
-            'to_date' => 'nullable|date',
+            'created_at_from' => 'nullable|date',
+            'created_at_to' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -404,12 +404,12 @@ class EmailCampaignController extends Controller
         }
 
         // Date filters
-        if ($request->filled('from_date')) {
-            $query->whereDate('created_at', '>=', $request->from_date);
+        if ($request->filled('created_at_from')) {
+            $query->whereDate('created_at', '>=', $request->created_at_from);
         }
 
-        if ($request->filled('to_date')) {
-            $query->whereDate('created_at', '<=', $request->to_date);
+        if ($request->filled('created_at_to')) {
+            $query->whereDate('created_at', '<=', $request->created_at_to);
         }
 
         // 🔐 ROLE-BASED ACCESS CONTROL
