@@ -2241,7 +2241,7 @@ if (!function_exists('uploadFileToS3')) {
                     return $template;
                 }
 
-                dd($application);
+                dd($application->deal);
 
                 $data = [
                     'application_id' => $application->id ?? '',
