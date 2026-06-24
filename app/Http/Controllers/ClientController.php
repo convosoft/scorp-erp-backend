@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\Plan;
 use App\Models\User;
 use App\Models\Stage;
+use App\Models\Branch;
 use App\Models\Invoice;
 use App\Models\Utility;
 use App\Models\Contract;
@@ -499,6 +500,24 @@ class ClientController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Client not found.'], 404);
         }
 
+        $user = \Auth::user();
+
+        $branch_query = Branch::select(['branches.*']);
+
+        if ($user->type == 'super admin' || $user->type == 'Admin Team' || $user->type == 'HR') {
+            // all branches
+        } elseif ($user->type == 'company') {
+            $branch_query->where('brands', $user->id);
+        } else {
+            $branch_query->whereIn('brands', array_keys(FiltersBrands()));
+        }
+
+        if ($user->type == 'Region Manager') {
+            $branch_query->where('region_id', $user->region_id);
+        }
+
+        $allBranches = $branch_query->pluck('id')->toArray();
+
 
 
         $lead = Lead::select('leads.*')
@@ -507,23 +526,65 @@ class ClientController extends Controller
             ->where('cd.client_id', $request->id)
             ->first();
 
-        $deals = Deal::join('client_deals', 'client_deals.deal_id', 'deals.id')
+        $deals = Deal::join('client_deals', 'client_deals.deal_id', '=', 'deals.id')
             ->where('client_deals.client_id', $request->id)
             ->select('deals.*')
             ->get();
+
+
+        $deals->transform(function ($deal) use ($user, $allBranches) {
+
+            $canOpen = false;
+
+            if (in_array($user->type, ['super admin', 'Admin Team', 'Product Coordinator'])) {
+                $canOpen = true;
+            } elseif ($user->type == 'Project Manager' && in_array($deal->brand_id, array_keys(FiltersBrands()))) {
+                $canOpen = true;
+            } elseif ($user->type == 'Admissions Officer' && in_array($deal->branch_id, $allBranches)) {
+                $canOpen = true;
+            }
+
+            $deal->can_open = $canOpen;
+
+            return $deal;
+        });
 
         $applications = Deal::query()
             ->join('deal_applications as da', 'da.deal_id', '=', 'deals.id')
             ->join('client_deals as cd', 'cd.deal_id', '=', 'deals.id')
             ->leftJoin('universities as u', 'u.id', '=', 'da.university_id')
+            ->leftJoin('application_stages as s', 's.id', '=', 'da.stage_id')
+            ->leftJoin('users as au', 'au.id', '=', 'deals.assigned_to')
             ->where('cd.client_id', $request->id)
             ->select([
                 'da.*',
+                'u.id as university_id',
+                'u.name as university_name',
+                's.name as stage_name',
+                'au.name as assign_user_name',
+                'deals.brand_id',
+                'deals.branch_id',
                 'deals.assigned_to',
-                'u.name as university_name'
             ])
             ->distinct()
             ->get();
+
+        $applications->transform(function ($app) use ($user, $allBranches) {
+
+            $canOpen = false;
+
+            if (in_array($user->type, ['super admin', 'Admin Team', 'Product Coordinator'])) {
+                $canOpen = true;
+            } elseif ($user->type == 'Project Manager' && in_array($app->brand_id, array_keys(FiltersBrands()))) {
+                $canOpen = true;
+            } elseif ($user->type == 'Admissions Officer' && in_array($app->branch_id, $allBranches)) {
+                $canOpen = true;
+            }
+
+            $app->can_open = $canOpen;
+
+            return $app;
+        });
 
         $stages = Stage::pluck('name', 'id');
 

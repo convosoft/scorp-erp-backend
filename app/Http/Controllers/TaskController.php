@@ -100,6 +100,9 @@ class TaskController extends Controller
         if (isset($_POST['university_id']) && !empty($_POST['university_id'])) {
             $filters['university_id'] = $_POST['university_id'];
         }
+        if (isset($_POST['tag_id']) && !empty($_POST['tag_id'])) {
+            $filters['tag_id'] = $_POST['tag_id'];
+        }
 
         return $filters;
     }
@@ -213,17 +216,16 @@ class TaskController extends Controller
 
         return [];
     }
-    public function userTasksGet(Request $request)
+   public function userTasksGet(Request $request)
     {
+         ini_set('memory_limit', '4G');
         // Pagination setup
         $perPage = $request->input('perPage', env("RESULTS_ON_PAGE", 50));
         $page = $request->input('page', 1);
         $start = ($page - 1) * $perPage;
 
-        if (
-            \Auth::user()->can('view task') || \Auth::user()->can('manage task') ||
-            \Auth::user()->type == 'super admin' || \Auth::user()->type == 'company'
-        ) {
+        if (\Auth::user()->can('view task') || \Auth::user()->can('manage task') ||
+            \Auth::user()->type == 'super admin' || \Auth::user()->type == 'company') {
 
             // Base query for tasks
             $tasksQuery = DealTask::select(
@@ -237,13 +239,13 @@ class TaskController extends Controller
                 'deal_tasks.created_by',
                 'deal_tasks.assigned_to'
             )
-                ->join('users', 'users.id', '=', 'deal_tasks.assigned_to')
-                ->join('users as brand', 'brand.id', '=', 'deal_tasks.brand_id')
-                ->leftJoin('deal_applications', function ($join) {
-                    $join->on('deal_applications.id', '=', 'deal_tasks.related_to')
-                        ->where('deal_tasks.related_type', '=', 'application');
-                })
-                ->leftJoin('universities', 'universities.id', '=', 'deal_applications.university_id');
+            ->join('users', 'users.id', '=', 'deal_tasks.assigned_to')
+            ->join('users as brand', 'brand.id', '=', 'deal_tasks.brand_id')
+            ->leftJoin('deal_applications', function ($join) {
+                $join->on('deal_applications.id', '=', 'deal_tasks.related_to')
+                     ->where('deal_tasks.related_type', '=', 'application');
+            })
+            ->leftJoin('universities', 'universities.id', '=', 'deal_applications.university_id');
 
             // Filter by origin country if provided
             if ($request->has('country') && !empty($request->country)) {
@@ -254,7 +256,7 @@ class TaskController extends Controller
 
                 if ($country_code) {
                     $tasksQuery->where('uni_status', '0')
-                        ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name]);
+                               ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name]);
                 }
             }
 
@@ -270,17 +272,24 @@ class TaskController extends Controller
                 } elseif (\Auth::user()->type == 'Project Director' || \Auth::user()->type == 'Project Manager' || \Auth::user()->can('level 2')) {
                     $tasksQuery->whereIn('deal_tasks.brand_id', $FiltersBrands);
                 } elseif (\Auth::user()->type == 'Region Manager' || (\Auth::user()->can('level 3') && !empty(\Auth::user()->region_id))) {
-                    $tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);
-                } elseif (
-                    \Auth::user()->type == 'Branch Manager' || \Auth::user()->type == 'Admissions Officer' ||
-                    \Auth::user()->type == 'Careers Consultant' || \Auth::user()->type == 'Admissions Manager' ||
-                    \Auth::user()->type == 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))
-                ) {
-                    $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
+
+                    if($request->brand==3751){
+
+                    }else{$tasksQuery->where('deal_tasks.region_id', \Auth::user()->region_id);}
+                } elseif (\Auth::user()->type == 'Branch Manager' || \Auth::user()->type == 'Admissions Officer' ||
+                         \Auth::user()->type == 'Careers Consultant' || \Auth::user()->type == 'Admissions Manager' ||
+                         \Auth::user()->type == 'Marketing Officer' || (\Auth::user()->can('level 4') && !empty(\Auth::user()->branch_id))) {
+                    if($request->brand==3751){
+
+                    }else{
+                        $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
+                    }
+
+
                 } elseif (\Auth::user()->type === 'Agent') {
-                    $tasksQuery->where(function ($q) {
+                    $tasksQuery->where(function($q) {
                         $q->where('deal_tasks.assigned_to', \Auth::user()->id)
-                            ->orWhere('deal_tasks.created_by', \Auth::user()->id);
+                          ->orWhere('deal_tasks.created_by', \Auth::user()->id);
                     });
                 } else {
                     $tasksQuery->where('deal_tasks.branch_id', \Auth::user()->branch_id);
@@ -295,20 +304,30 @@ class TaskController extends Controller
                 if ($column === 'subjects') {
                     if (is_array($value) && count($value) > 0) {
                         $chunks = array_chunk($value, 500);
-                        $tasksQuery->where(function ($q) use ($chunks) {
+                        $tasksQuery->where(function($q) use ($chunks) {
                             foreach ($chunks as $chunk) {
                                 $q->orWhereIn('deal_tasks.id', $chunk);
                             }
                         });
                     }
                 } elseif ($column === 'assigned_to') {
-                    $tasksQuery->where('deal_tasks.assigned_to', $value);
+                   // $tasksQuery->where('deal_tasks.assigned_to', $value);
+                        if (is_array($value)) {
+                            $tasksQuery->whereIn('deal_tasks.assigned_to', $value);
+
+                        } else {
+                            $tasksQuery->where('deal_tasks.assigned_to', $value);
+                        }
                 } elseif ($column === 'brand_id') {
                     $tasksQuery->where('deal_tasks.brand_id', $value);
                 } elseif ($column === 'region_id') {
                     $tasksQuery->where('deal_tasks.region_id', $value);
                 } elseif ($column === 'university_id') {
-                    $tasksQuery->where('deal_applications.university_id', $value);
+                    if (is_array($value) && count($value) > 0) {
+                            $tasksQuery->whereIn('deal_applications.university_id', $value);
+                        } elseif (!empty($value)) {
+                            $tasksQuery->where('deal_applications.university_id', $value);
+                        }
                 } elseif ($column === 'branch_id') {
                     $tasksQuery->where('deal_tasks.branch_id', $value);
                 } elseif ($column === 'due_date') {
@@ -317,14 +336,14 @@ class TaskController extends Controller
                     if (is_array($value)) {
                         if (in_array(2, $value)) {
                             $tasksQuery->where('deal_tasks.status', 0)
-                                ->whereDate('deal_tasks.due_date', '<', now());
+                                      ->whereDate('deal_tasks.due_date', '<', now());
                         } else {
                             $tasksQuery->whereIn('deal_tasks.status', $value);
                         }
                     } else {
                         if ($value == 2) {
                             $tasksQuery->where('deal_tasks.status', 0)
-                                ->whereDate('deal_tasks.due_date', '<', now());
+                                      ->whereDate('deal_tasks.due_date', '<', now());
                         } else {
                             $tasksQuery->where('deal_tasks.status', $value);
                         }
@@ -343,26 +362,43 @@ class TaskController extends Controller
 
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
-                if ($status != 'All') {
+                if($status!='All'){
                     if ($status == '1') {
                         $tasksQuery->where('deal_tasks.tasks_type_status', "1");
-                        //  ->where('deal_tasks.status', 1);
+                                //  ->where('deal_tasks.status', 1);
                     } elseif ($status == '2') {
                         $tasksQuery->where('deal_tasks.tasks_type_status', "2");
                     } else {
                         $tasksQuery->where('deal_tasks.tasks_type_status', "0");
                     }
                 }
-            } elseif (!$request->has('status')) {
+            }
+
+            if ($request->filled('tag_id') ) {
+                    if (is_array($value) && count($value) > 0) {
+
+                                $tasksQuery->where(function ($q) use ($value) {
+                                    foreach ($value as $tag) {
+                                        $q->orWhereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$tag]);
+                                    }
+                                });
+
+                            } elseif (!empty($value)) {
+
+                                $tasksQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$value]);
+
+                            }
+                                        }
+            if (!$request->filled('status') && !$request->filled('tasks_type_status')) {
                 $tasksQuery->where('deal_tasks.status', 0)
-                    ->where('deal_tasks.tasks_type_status', "0");
+                ->where('deal_tasks.tasks_type_status', "0");
             }
 
             if ($request->filled('assigned_by_me') && $request->assigned_by_me == true) {
                 $tasksQuery->where('deal_tasks.created_by', \Auth::id());
             }
 
-            // Filter by origin country if provided
+              // Filter by origin country if provided
             if ($request->filled('country')) {
                 $country =  $request->country;
 
@@ -371,29 +407,32 @@ class TaskController extends Controller
 
                 if ($country_code) {
                     $tasksQuery->where('uni_status', '0')
-                        ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country', $country_code->id);
+                               ->whereRaw("FIND_IN_SET(?, country)", [$country_code->name])->orWhere('country',$country_code->id);
                 }
             }
 
-            // Additional filters
+              // Additional filters
             if ($request->filled('fetcttype')) {
                 $fetcttype  =   $request->fetcttype;
 
-                if ($fetcttype == 'assignedbyme') {
+                if( $fetcttype=='assignedbyme'){
                     $tasksQuery->where('deal_tasks.created_by', \Auth::id());
                 }
 
-                if ($fetcttype == 'yourtask') {
+                if( $fetcttype=='yourtask'){
                     $tasksQuery->where('deal_tasks.assigned_to', \Auth::id());
                 }
 
-                if ($fetcttype == 'Quality') {
+                if( $fetcttype=='Quality'){
                     $tasksQuery->where('deal_tasks.tasks_type', 'Quality');
                 }
 
-                if ($fetcttype == 'Compliance') {
+                if( $fetcttype=='Compliance'){
                     $tasksQuery->where('deal_tasks.tasks_type', 'Compliance');
                 }
+
+
+
             }
 
             if ($request->fetcttype == 'agenttask') {
@@ -422,72 +461,73 @@ class TaskController extends Controller
             // Insert IDs in batches
             foreach (array_chunk($mergedResults, 1000) as $chunk) {
                 \DB::table($tempTable)->insert(
-                    array_map(function ($id) {
-                        return ['id' => $id];
-                    }, $chunk)
+                    array_map(function($id) { return ['id' => $id]; }, $chunk)
                 );
             }
 
             // Build final query with all joins and selects
             // Build final query with all joins and selects
             $finalQuery = DealTask::select(
-                'deal_applications.university_id',
-                'deal_tasks.stage_request',
-                'deal_tasks.tasks_type',
-                'deal_tasks.tasks_type_status',
-                'deal_tasks.name',
-                'deal_tasks.brand_id',
-                'deal_tasks.id',
-                'deal_tasks.due_date',
-                'deal_tasks.status',
-                'deal_tasks.assigned_to',
-                'deal_tasks.created_by',
-                'brandname.name as brand_name',
-                'users.name as user_name',
-                'users.name as assigned_to_name',
-                'deal_tasks.tag_ids',
-            )
+                    'deal_applications.university_id',
+                    'deal_tasks.stage_request',
+                    'deal_tasks.tasks_type',
+                    'deal_tasks.tasks_type_status',
+                    'deal_tasks.name',
+                    'deal_tasks.brand_id',
+                    'deal_tasks.id',
+                    'deal_tasks.due_date',
+                    'deal_tasks.status',
+                    'deal_tasks.assigned_to',
+                    'deal_tasks.created_by',
+                    'brandname.name as brand_name',
+                    'users.name as user_name',
+                    'users.name as assigned_to_name',
+                    'deal_tasks.tag_ids',
+                )
                 ->join($tempTable, 'deal_tasks.id', '=', "{$tempTable}.id")
                 ->join('users', 'users.id', '=', 'deal_tasks.assigned_to')
                 ->join('users as brandname', 'brandname.id', '=', 'deal_tasks.brand_id')
                 ->leftJoin('deal_applications', function ($join) {
                     $join->on('deal_applications.id', '=', 'deal_tasks.related_to')
-                        ->where('deal_tasks.related_type', '=', 'application');
+                         ->where('deal_tasks.related_type', '=', 'application');
                 });
 
-            // Search functionality
-            // if (isset($_GET['ajaxCall']) && $_GET['ajaxCall'] == 'true' && isset($_GET['search']) && !empty($_GET['search'])) {
-            //     $search = $_GET['search'];
-            //     $finalQuery->where(function($q) use ($search) {
-            //         $q->where('deal_tasks.name', 'like', "%{$search}%")
-            //           ->orWhere('brandname.name', 'like', "%{$search}%")
-            //           ->orWhere('users.name', 'like', "%{$search}%")
-            //           ->orWhere('deal_tasks.due_date', 'like', "%{$search}%");
-            //     });
-            // }
-
             $_GET = $_POST;
+            if ( isset($_GET['search']) && !empty($_GET['search'])) {
+                $search = $_GET['search'];
+                $finalQuery->where(function($q) use ($search) {
+                    $q->where('deal_tasks.name', 'like', "%{$search}%")
+                      ->orWhere('brandname.name', 'like', "%{$search}%")
+                      ->orWhere('users.name', 'like', "%{$search}%")
+                      ->orWhere('deal_tasks.due_date', 'like', "%{$search}%");
+                });
+            }
 
 
-            // Additional filters
+
+
+              // Additional filters
             if ($request->filled('fetcttype')) {
                 $fetcttype  =   $request->fetcttype;
 
-                if ($fetcttype == 'yourtask') {
-                    $finalQuery->where('deal_tasks.assigned_to', \Auth::id());
-                }
-
-                if ($fetcttype == 'assignedbyme') {
+                if( $fetcttype=='assignedbyme'){
                     $finalQuery->where('deal_tasks.created_by', \Auth::id());
                 }
 
-                if ($fetcttype == 'Quality') {
+                if( $fetcttype=='yourtask'){
+                    $finalQuery->where('deal_tasks.assigned_to', \Auth::id());
+                }
+
+                if( $fetcttype=='Quality'){
                     $finalQuery->where('deal_tasks.tasks_type', 'Quality');
                 }
 
-                if ($fetcttype == 'Compliance') {
+                if( $fetcttype=='Compliance'){
                     $finalQuery->where('deal_tasks.tasks_type', 'Compliance');
                 }
+
+
+
             }
 
             if ($request->fetcttype == 'agenttask') {
@@ -515,7 +555,7 @@ class TaskController extends Controller
                 if ($column === 'subjects') {
                     if (is_array($value) && count($value) > 0) {
                         $chunks = array_chunk($value, 500);
-                        $finalQuery->where(function ($q) use ($chunks) {
+                        $finalQuery->where(function($q) use ($chunks) {
                             foreach ($chunks as $chunk) {
                                 $q->orWhereIn('deal_tasks.id', $chunk);
                             }
@@ -525,31 +565,54 @@ class TaskController extends Controller
                     // $filteredValues = array_filter($value, function ($val) {
                     //     return !empty($val);
                     // });
-                    $finalQuery->where('deal_tasks.assigned_to', $value);
+                    //$finalQuery->where('deal_tasks.assigned_to', $value);
+
+                     if (is_array($value)) {
+                            $finalQuery->whereIn('deal_tasks.assigned_to', $value);
+
+                        } else {
+                            $finalQuery->where('deal_tasks.assigned_to', $value);
+                        }
                 } elseif ($column === 'brand_id') {
                     $finalQuery->where('deal_tasks.brand_id', $value);
                 } elseif ($column === 'region_id') {
                     $finalQuery->where('deal_tasks.region_id', $value);
                 } elseif ($column === 'university_id') {
-                    $finalQuery->whereIn('deal_applications.university_id', $value);
+                    if (is_array($value) && count($value) > 0) {
+                            $finalQuery->whereIn('deal_applications.university_id', $value);
+                        } elseif (!empty($value)) {
+                            $finalQuery->where('deal_applications.university_id', $value);
+                        }
                 } elseif ($column === 'branch_id') {
                     $finalQuery->where('deal_tasks.branch_id', $value);
                 } elseif ($column === 'due_date') {
                     $finalQuery->whereDate('deal_tasks.due_date', $value);
                 } elseif ($column === 'tag_id') {
-                    $finalQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$value]);
-                } elseif ($column === 'status') {
+                    if (is_array($value) && count($value) > 0) {
+
+                                $finalQuery->where(function ($q) use ($value) {
+                                    foreach ($value as $tag) {
+                                        $q->orWhereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$tag]);
+                                    }
+                                });
+
+                            } elseif (!empty($value)) {
+
+                                $finalQuery->whereRaw('FIND_IN_SET(?, deal_tasks.tag_ids)', [$value]);
+
+                            }
+                                        } elseif ($column === 'status') {
                     if (is_array($value)) {
                         if (in_array(2, $value)) {
                             $finalQuery->where('deal_tasks.status', 0)
-                                ->whereDate('deal_tasks.due_date', '<', now());
+                                      ->whereDate('deal_tasks.due_date', '<', now());
                         } else {
                             $finalQuery->whereIn('deal_tasks.status', $value);
                         }
                     } else {
                         if ($value == 2) {
                             $finalQuery->where('deal_tasks.status', 0)
-                                ->whereDate('deal_tasks.due_date', '<', now());
+                                      ->whereDate('deal_tasks.due_date', '<', now());
                         } else {
                             $finalQuery->where('deal_tasks.status', $value);
                         }
@@ -562,50 +625,63 @@ class TaskController extends Controller
             }
 
             // Additional filters
-            if (!empty($_GET['tasks_type'])) {
-                $finalQuery->where('deal_tasks.tasks_type', $_GET['tasks_type']);
+            if (  $request->filled('task_type')) {
+                $finalQuery->where('deal_tasks.tasks_type', $request->task_type);
             }
 
             if ($request->filled('tasks_type_status')) {
                 $status = $request->tasks_type_status;
-                if ($status != 'All') {
+                if($status!='All'){
                     if ($status == '1') {
-                        $finalQuery->where('deal_tasks.tasks_type_status', "1");
+                    $finalQuery->where('deal_tasks.tasks_type_status', "1")
+                              ;
                     } elseif ($status == '2') {
                         $finalQuery->where('deal_tasks.tasks_type_status', "2");
                     } else {
                         $finalQuery->where('deal_tasks.tasks_type_status', "0");
                     }
                 }
-            } elseif (!isset($_GET['status'])) {
-                $finalQuery->where('deal_tasks.status', 0)
-                    ->where('deal_tasks.tasks_type_status', "0");
+            }
+
+            // if (!isset($_GET['status']) && !empty($_GET['tasks_type_status'])) {
+            //     dd('ooo');
+            //     $finalQuery->where('deal_tasks.status', 0) ;
+            // }
+
+              if (!$request->filled('status') && !$request->filled('tasks_type_status')) {
+                $finalQuery->where('deal_tasks.status', 0)->where('deal_tasks.tasks_type_status', "0") ;
             }
 
             // Apply sorting
-            if (!empty($_GET['tasks_type_status'])) {
-                $status = $_GET['tasks_type_status'];
-                if ($status == '1') {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "1");
-                } elseif ($status == '2') {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "2");
-                } else {
-                    $finalQuery->where('deal_tasks.tasks_type_status', "0");
-                }
-            } elseif (!isset($_GET['status'])) {
-                $finalQuery->where('deal_tasks.status', 0)
-                    ->where('deal_tasks.tasks_type_status', "0");
-            }
+            // if (!empty($_GET['tasks_type_status'])) {
+            //     $status = $_GET['tasks_type_status'];
+            //     if ($status == '1') {
+            //         $finalQuery->where('deal_tasks.tasks_type_status', "1")
+            //                   ;
+            //     } elseif ($status == '2') {
+            //         $finalQuery->where('deal_tasks.tasks_type_status', "2");
+            //     } else {
+            //         $finalQuery->where('deal_tasks.tasks_type_status', "0");
+            //     }
+            // } elseif (!isset($_GET['status'])) {
+            //     $finalQuery->where('deal_tasks.status', 0)
+            //               ->where('deal_tasks.tasks_type_status', "0");
+            // }
 
-            $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
+             $sql2 = str_replace('?', "'%s'", $finalQuery->toSql());
             $sql2 = vsprintf($sql2, $finalQuery->getBindings());
             //  echo $sql2; sdf
 
             //  die();
 
             // echo "==========";
-            // echo $sql2;
-            // dd($sql,$sql2 );
+
+            //  echo $sql;
+            //  echo $sql2;
+        if($request->has('debug') && $request->debug == 'sql'){
+            dd($sql,$sql2 );
+
+           }
 
             //  get tasks
             // Paginate results
@@ -623,10 +699,10 @@ class TaskController extends Controller
                 'per_page' => $paginatedTasks->perPage(),
                 'message' => 'Tasks fetched successfully'
             ]);
-        } else {
+        }else{
             return response()->json([
-                'status' => 'error',
-                'message' => __('Permission Denied.')
+                    'status' => 'error',
+                    'message' => __('Permission Denied.')
             ], 403);
         }
 
@@ -728,6 +804,15 @@ class TaskController extends Controller
             ];
             addLogActivity($logData);
         }
+        if ($dealTask->related_type != 'task') {
+            addLogActivity([
+                'type' => 'success',
+                'note' => json_encode($remarks),
+                'module_id' => $dealTask->id,
+                'module_type' => 'task',
+                'notification_type' => 'Task created'
+            ]);
+        }
 
 
 
@@ -818,21 +903,23 @@ class TaskController extends Controller
         $is_status_change = $dealTask->status !== $request->status;
 
         // Update Task Details
-        $dealTask->related_to = $request->related_to;
-        $dealTask->related_type = $request->related_type;
-        $dealTask->name = $request->task_name;
+        if ($request->filled('related_to') && $request->related_to!='null') {
+            $dealTask->related_to = $request->related_to;
+        }
+        $dealTask->related_type = $request->related_type ?? $dealTask->related_type;
+        $dealTask->name = $request->task_name ?? $dealTask->task_name;
         $dealTask->branch_id = $request->branch_id ?? $dealTask->branch_id;
         $dealTask->assigned_to = $request->assigned_to ?? $dealTask->assigned_to;
         $dealTask->brand_id = $request->brand_id ?? $dealTask->brand_id;
-        $dealTask->assigned_type = $request->assign_type;
+        $dealTask->assigned_type = $request->assign_type ?? $dealTask->assign_type;
         $dealTask->region_id = $request->region_id ?? $dealTask->region_id;
-        $dealTask->due_date = $request->due_date;
-        $dealTask->start_date = $request->start_date;
-        $dealTask->date = $request->start_date;
+        $dealTask->due_date = $request->due_date ?? $dealTask->due_date;
+        $dealTask->start_date = $request->start_date ?? $dealTask->start_date;
+        $dealTask->date = $request->start_date ?? $dealTask->start_date;
         $dealTask->status = $request->status ?? $dealTask->status;
-        $dealTask->remainder_date = $request->remainder_date;
-        $dealTask->description = $request->description;
-        $dealTask->visibility = $request->visibility;
+        $dealTask->remainder_date = $request->remainder_date ?? $dealTask->remainder_date;
+        $dealTask->description = $request->description ?? $dealTask->description;
+        $dealTask->visibility = $request->visibility ?? $dealTask->visibility;
         $dealTask->priority = 1;
         $dealTask->time = $request->remainder_time ?? $dealTask->time;
 
@@ -1088,7 +1175,6 @@ class TaskController extends Controller
         $applied_meta = \DB::table('meta')
             ->select('meta_key', 'meta_value')
             ->where('parent_id', $task->related_to)
-            ->where('stage_id', 6)
             ->get()
             ->map(function ($item) {
                 return (array) $item;
@@ -1158,6 +1244,7 @@ class TaskController extends Controller
                     ->select(
                         'deals.id',
                         'deals.name',
+                        'deals.drive_link',
                         'clientUser.name as clientUserName',
                         'sources.name as sourceName',
                         'clientUser.id as clientUserID',
@@ -1563,7 +1650,7 @@ class TaskController extends Controller
     }
 
 
-    public function updateTaskStatus(Request $request, $status)
+   public function updateTaskStatus(Request $request, $status)
     {
 
 
@@ -1582,7 +1669,7 @@ class TaskController extends Controller
 
         $id = $request->input('id');
         $dealTask = DealTask::find($id);
-        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator', 'Product Coordinator Manager'])) {
+        if (!$dealTask || !in_array(\Auth::user()->type, ['super admin', 'Product Coordinator','Product Coordinator Manager'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized or invalid task'
@@ -1610,6 +1697,7 @@ class TaskController extends Controller
             ];
             addLogActivity($data);
             $stageRequest->tasks_type_status = '1';
+             $dealTask->status = 1;
         } else {
             $data = [
                 'type' => 'info',
@@ -1641,50 +1729,50 @@ class TaskController extends Controller
         if ($dealApplication) {
             $deal = Deal::find($dealApplication->deal_id);
 
-            if ($deal) {
-                // Get all applications for this deal
-                $applications = DealApplication::where('deal_id', $dealApplication->deal_id)->get();
+        if ($deal) {
+            // Get all applications for this deal
+            $applications = DealApplication::where('deal_id', $dealApplication->deal_id)->get();
 
-                // ✅ Check if ALL applications are lost (stage_id = 12)
-                $allLost = $applications->every(function ($app) {
-                    return $app->stage_id == 12;
-                });
+            // ✅ Check if ALL applications are lost (stage_id = 12)
+            $allLost = $applications->every(function ($app) {
+                return $app->stage_id == 12;
+            });
 
-                if ($allLost) {
-                    $deal->stage_id = 7; // Lost
+            if ($allLost) {
+                $deal->stage_id = 7; // Lost
+                $deal->save();
+            } else {
+                // ❗ Otherwise, get latest NON-lost stage
+                $latestStage = $applications
+                    ->where('stage_id', '!=', 12)
+                    ->sortByDesc('stage_id')
+                    ->first();
+
+                if ($latestStage) {
+                    if ($latestStage->stage_id == '0') {
+                        $deal->stage_id = 0;
+                    } elseif (in_array($latestStage->stage_id, [1, 2])) {
+                        $deal->stage_id = 1;
+                    } elseif (in_array($latestStage->stage_id, [3, 4])) {
+                        $deal->stage_id = 2;
+                    } elseif (in_array($latestStage->stage_id, [5, 6])) {
+                        $deal->stage_id = 3;
+                    } elseif (in_array($latestStage->stage_id, [7, 8])) {
+                        $deal->stage_id = 4;
+                    } elseif (in_array($latestStage->stage_id, [9, 10])) {
+                        $deal->stage_id = 5;
+                    } elseif ($latestStage->stage_id == 11) {
+                        $deal->stage_id = 6;
+                    }
+
                     $deal->save();
                 } else {
-                    // ❗ Otherwise, get latest NON-lost stage
-                    $latestStage = $applications
-                        ->where('stage_id', '!=', 12)
-                        ->sortByDesc('stage_id')
-                        ->first();
-
-                    if ($latestStage) {
-                        if ($latestStage->stage_id == '0') {
-                            $deal->stage_id = 0;
-                        } elseif (in_array($latestStage->stage_id, [1, 2])) {
-                            $deal->stage_id = 1;
-                        } elseif (in_array($latestStage->stage_id, [3, 4])) {
-                            $deal->stage_id = 2;
-                        } elseif (in_array($latestStage->stage_id, [5, 6])) {
-                            $deal->stage_id = 3;
-                        } elseif (in_array($latestStage->stage_id, [7, 8])) {
-                            $deal->stage_id = 4;
-                        } elseif (in_array($latestStage->stage_id, [9, 10])) {
-                            $deal->stage_id = 5;
-                        } elseif ($latestStage->stage_id == 11) {
-                            $deal->stage_id = 6;
-                        }
-
-                        $deal->save();
-                    } else {
-                        // No applications found → default stage
-                        $deal->stage_id = 0;
-                        $deal->save();
-                    }
+                    // No applications found → default stage
+                    $deal->stage_id = 0;
+                    $deal->save();
                 }
             }
+        }
 
             $lastStageHistory = StageHistory::where('type', 'application')
                 ->where('type_id', $applicationId)
@@ -1741,6 +1829,7 @@ class TaskController extends Controller
             'message' => 'Application not found'
         ], 404);
     }
+
 
     public function RejectTaskStatus(Request $request)
     {
@@ -2060,4 +2149,74 @@ class TaskController extends Controller
             'message' => 'ID is required'
         ], 400);
     }
+     public function taskAddTags(Request $request)
+{
+    try {
+
+        // Validation
+        $validator = \Validator::make($request->all(), [
+            'selectedIds' => 'required|string',
+            'tagid' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'msg' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $ids = explode(',', $request->selectedIds);
+
+        $dealTasks = DealTask::whereIn('id', $ids)->get();
+
+        if ($dealTasks->count() == 0) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No tasks found'
+            ], 404);
+        }
+
+        foreach ($dealTasks as $dealTask) {
+
+            $existingTags = $dealTask->tag_ids ? explode(',', $dealTask->tag_ids) : [];
+
+            // Prevent duplicate tag
+            if (!in_array($request->tagid, $existingTags)) {
+
+                $existingTags[] = $request->tagid;
+                $dealTask->tag_ids = implode(',', $existingTags);
+                $dealTask->save();
+
+                // Activity Log
+                $data = [
+                    'type' => 'info',
+                    'note' => json_encode([
+                        'title' => 'Task Tag Added',
+                        'message' => 'Tag ID '.$request->tagid.' added to task ID '.$dealTask->id
+                    ]),
+                    'module_id' => $dealTask->id,
+                    'module_type' => 'task',
+                    'notification_type' => 'Task Tag Added Successfully'
+                ];
+
+                addLogActivity($data);
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Task tag added successfully'
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'msg' => 'Something went wrong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }
