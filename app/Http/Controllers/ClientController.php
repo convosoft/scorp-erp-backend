@@ -519,6 +519,7 @@ class ClientController extends Controller
             ->where('cd.client_id', $request->id)
             ->select([
                 'da.*',
+                'd.assigned_to',
                 'u.name as university_name'
             ])
             ->distinct()
