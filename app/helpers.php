@@ -2208,7 +2208,7 @@ if (!function_exists('uploadFileToS3')) {
 
             case 'admissions':
 
-                $admission = Deal::with(['stage', 'university', 'brand', 'branch'])->find($id);
+                $admission = Deal::find($id);
 
                 if (!$admission) {
                     return $template;
