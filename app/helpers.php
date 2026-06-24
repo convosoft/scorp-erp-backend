@@ -2208,7 +2208,7 @@ if (!function_exists('uploadFileToS3')) {
 
             case 'admissions':
 
-                $admission = Deal::with(['contact_detail', 'stage', 'university', 'brand', 'branch'])->find($id);
+                $admission = Deal::with(['stage', 'university', 'brand', 'branch'])->find($id);
 
                 if (!$admission) {
                     return $template;
@@ -2235,7 +2235,7 @@ if (!function_exists('uploadFileToS3')) {
 
             case 'applications':
 
-                $application = DealApplication::with(['deal', 'deal.contact_detail'])->find($id);
+                $application = DealApplication::with(['deal'])->find($id);
 
                 if (!$application) {
                     return $template;
