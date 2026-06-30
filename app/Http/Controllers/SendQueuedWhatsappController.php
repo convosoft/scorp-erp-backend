@@ -40,7 +40,7 @@ class SendQueuedWhatsappController extends Controller
                     'text' => $queue->message,
                 ]);
 
-                dd($response->body());
+                dd($response->body(), $response->successful());
 
                 if ($response->successful()) {
                     $resData = $response->json();
