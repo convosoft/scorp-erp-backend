@@ -2050,6 +2050,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'id' => 'required|integer|exists:users,id',
             'name' => 'required|string|max:120',
+            'whatsapp_api_key' => 'nullable|string',
             'email' => 'required|email|unique:users,email,' . $request->id,
             'website_link' => 'required|url',
             'drive_link' => 'required|url',
@@ -2095,6 +2096,7 @@ class UserController extends Controller
 
             $user->reply_email = $request->reply_email;
             $user->from_email = $request->from_email;
+            $user->whatsapp_api_key = $request->whatsapp_api_key;
             $user->save();
 
             // Log changed fields only

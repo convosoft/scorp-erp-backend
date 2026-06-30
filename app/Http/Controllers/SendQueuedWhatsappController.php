@@ -15,7 +15,8 @@ class SendQueuedWhatsappController extends Controller
      */
     public function handle(Request $request)
     {
-        $queues = WhatsappSendingQueue::where('is_send', '0')
+        $queues = WhatsappSendingQueue::with('brand')
+            ->where('is_send', '0')
             ->where('status', '1')
             ->limit(350)
             ->get();
@@ -23,11 +24,46 @@ class SendQueuedWhatsappController extends Controller
         $sendcount = 0;
         $failcount = 0;
 
-        $apiKey = config('services.wasender.api_key');
         $baseUrl = config('services.wasender.base_url', 'https://www.wasenderapi.com/api');
+        $apiStatusCache = [];
 
         foreach ($queues as $queue) {
             try {
+                $brand = $queue->brand;
+                if (!$brand || empty($brand->whatsapp_api_key)) {
+                    $queue->status = '3';
+                    $queue->error_message = 'Brand does not have a whatsapp_api_key configured.';
+                    $queue->processed_at = now();
+                    $queue->save();
+                    $failcount++;
+                    continue;
+                }
+
+                $apiKey = $brand->whatsapp_api_key;
+
+                // Cache status endpoint calls to avoid repeated requests for the same api key
+                if (!isset($apiStatusCache[$apiKey])) {
+                    try {
+                        $statusResponse = Http::withHeaders([
+                            'Authorization' => 'Bearer ' . $apiKey,
+                        ])->get($baseUrl . '/status');
+
+                        $statusData = $statusResponse->json();
+                        $apiStatusCache[$apiKey] = $statusData['status'] ?? 'unknown';
+                    } catch (\Exception $ex) {
+                        $apiStatusCache[$apiKey] = 'error: ' . $ex->getMessage();
+                    }
+                }
+
+                if ($apiStatusCache[$apiKey] !== 'connected') {
+                    $queue->status = '4';
+                    $queue->error_message = "WhatsApp session is not connected. Status: " . $apiStatusCache[$apiKey];
+                    $queue->processed_at = now();
+                    $queue->save();
+                    $failcount++;
+                    continue;
+                }
+
                 $toPhone = $queue->phone;
                 // Clean the phone number to be digits only for WASender API
                 $toPhone = preg_replace('/[^0-9]/', '', $toPhone);
