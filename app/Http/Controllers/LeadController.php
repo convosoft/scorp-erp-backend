@@ -768,6 +768,7 @@ class LeadController extends Controller
             'id',
             'name',
             'email',
+            'phone',
         ])
             ->where('is_converted', 0)
             ->orderBy('created_at', 'desc')
