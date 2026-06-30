@@ -106,6 +106,8 @@ use App\Http\Controllers\SendQueuedSmsController;
 use App\Http\Controllers\TaskTagController;
 use App\Http\Controllers\ToolkitPathController;
 use App\Http\Controllers\TypesDocumentController;
+use App\Http\Controllers\WhatsappCampaignController;
+use App\Http\Controllers\SendQueuedWhatsappController;
 
 /*
 |--------------------------------------------------------------------------
@@ -133,6 +135,8 @@ Route::get('/sendQueuedEmailsCrm', [SendQueuedEmailsController::class, 'handleCr
 Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sms sendng  all  cron
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
 // Route::post('/emailit/webhook', [EmailitWebhookController::class, 'handle']);
+
+Route::post('/whatsapp-marketing/processQueue', [SendQueuedWhatsappController::class, 'handle']);
 
 Route::post('/brandDetailPublic', [UserController::class, 'brandDetailPublic']);
 
@@ -1171,6 +1175,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email-marketing/campaigns/preview', [EmailCampaignController::class, 'previewEmail']);
     Route::post('/email-marketing/campaigns/preview-type-id', [EmailCampaignController::class, 'previewEmailByTypeID']);
     Route::post('/email-marketing/getEmailCampaigns', [EmailCampaignController::class, 'getEmailCampaigns']);
+
+    // WhatsApp marketing campaigns
+    Route::post('/whatsapp-marketing/campaigns/create', [WhatsappCampaignController::class, 'createCampaign']);
+    Route::post('/whatsapp-marketing/campaigns/update', [WhatsappCampaignController::class, 'updateCampaign']);
+    Route::post('/whatsapp-marketing/campaigns/approve', [WhatsappCampaignController::class, 'approveCampaign']);
+    Route::post('/whatsapp-marketing/campaigns/reject', [WhatsappCampaignController::class, 'rejectCampaign']);
+    Route::post('/whatsapp-marketing/campaigns/detail', [WhatsappCampaignController::class, 'getCampaignDetail']);
+    Route::post('/whatsapp-marketing/campaigns/preview', [WhatsappCampaignController::class, 'previewWhatsapp']);
+    Route::post('/whatsapp-marketing/campaigns/preview-type-id', [WhatsappCampaignController::class, 'previewWhatsappByTypeID']);
+    Route::post('/whatsapp-marketing/getWhatsappCampaigns', [WhatsappCampaignController::class, 'getWhatsappCampaigns']);
+
+    // WhatsApp sending queue
+    Route::post('/addToWhatsappQueue', [SendQueuedWhatsappController::class, 'addToWhatsappQueue']);
+    Route::post('/getWhatsappQueueByRelated', [SendQueuedWhatsappController::class, 'getWhatsappQueueByRelated']);
 
 
     Route::post('/getCitiesOnid', [GeneralController::class, 'getCitiesOnid']);
