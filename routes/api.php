@@ -136,7 +136,7 @@ Route::get('/sendQueuedSms', [SendQueuedSmsController::class, 'handle']); //  sm
 Route::post('/sendgrid/webhook', [SendGridWebhookController::class, 'handle']);
 // Route::post('/emailit/webhook', [EmailitWebhookController::class, 'handle']);
 
-Route::post('/whatsapp-marketing/processQueue', [SendQueuedWhatsappController::class, 'handle']);
+Route::get('/whatsapp-marketing/processQueue', [SendQueuedWhatsappController::class, 'handle']);
 
 Route::post('/brandDetailPublic', [UserController::class, 'brandDetailPublic']);
 
