@@ -2024,7 +2024,7 @@ class TaskController extends Controller
         ], 200);
     }
 
-    function taskAddTags(Request $request)
+    function taskAddTags_old(Request $request)
     {
         try {
 
