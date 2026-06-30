@@ -40,10 +40,9 @@ class SendQueuedWhatsappController extends Controller
                     'text' => $queue->message,
                 ]);
 
-                dd($response->body(), $response->successful());
+                $resData = $response->json();
 
-                if ($response->successful()) {
-                    $resData = $response->json();
+                if ($response->successful() && ($resData['success'] ?? false) === true) {
                     $queue->twilio_sid = $resData['id'] ?? $resData['message_id'] ?? null;
                     $queue->is_send = '1';
                     $queue->status = '1';
@@ -53,7 +52,8 @@ class SendQueuedWhatsappController extends Controller
 
                     $sendcount++;
                 } else {
-                    throw new \Exception($response->body());
+                    $errorMessage = $resData['message'] ?? $response->body();
+                    throw new \Exception($errorMessage);
                 }
             } catch (\Exception $e) {
                 $queue->status = '2';
