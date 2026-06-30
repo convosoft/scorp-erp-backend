@@ -470,7 +470,7 @@ class DealController extends Controller
 
         $query = AdmissionView::with(['contactDetail' => function ($q) {
             $q->where('is_email_bogus', 0)        // qualify the condition
-                ->select('admission_contact_details.id', 'admission_contact_details.deal_id', 'contact_name as name', 'contact_email as email'); // qualify the SELECT
+                ->select('admission_contact_details.id', 'admission_contact_details.deal_id', 'contact_name as name', 'contact_email as email', 'contact_phone as phone'); // qualify the SELECT
         }]);
         // Permissions logic
         $companies = FiltersBrands();
