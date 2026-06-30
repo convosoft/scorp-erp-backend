@@ -40,4 +40,9 @@ return [
     'mailboxlayer' => [
         'key' => env('MAILBOXLAYER_KEY'),
     ],
+
+    'wasender' => [
+        'api_key' => env('WASENDER_API_KEY'),
+        'base_url' => env('WASENDER_BASE_URL', 'https://www.wasenderapi.com/api'),
+    ],
 ];

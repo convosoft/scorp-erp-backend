@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\WhatsappSendingQueue;
-use Twilio\Rest\Client;
+use Illuminate\Support\Facades\Http;
 use libphonenumber\PhoneNumberUtil;
 use libphonenumber\PhoneNumberFormat;
 
@@ -23,39 +23,36 @@ class SendQueuedWhatsappController extends Controller
         $sendcount = 0;
         $failcount = 0;
 
-        $twilio = new Client(
-            config('services.twilio.sid'),
-            config('services.twilio.token')
-        );
+        $apiKey = config('services.wasender.api_key');
+        $baseUrl = config('services.wasender.base_url', 'https://www.wasenderapi.com/api');
 
         foreach ($queues as $queue) {
             try {
                 $toPhone = $queue->phone;
-                if (!str_starts_with($toPhone, 'whatsapp:')) {
-                    $toPhone = 'whatsapp:' . (str_starts_with($toPhone, '+') ? $toPhone : '+' . $toPhone);
+                // Clean the phone number to be digits only for WASender API
+                $toPhone = preg_replace('/[^0-9]/', '', $toPhone);
+
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type' => 'application/json',
+                ])->post($baseUrl . '/send-message', [
+                    'to' => $toPhone,
+                    'text' => $queue->message,
+                ]);
+
+                if ($response->successful()) {
+                    $resData = $response->json();
+                    $queue->twilio_sid = $resData['id'] ?? $resData['message_id'] ?? null;
+                    $queue->is_send = '1';
+                    $queue->status = '1';
+                    $queue->delivered_at = now();
+                    $queue->processed_at = now();
+                    $queue->save();
+
+                    $sendcount++;
+                } else {
+                    throw new \Exception($response->body());
                 }
-
-                $fromPhone = $queue->from_number ?? config('services.twilio.from');
-                if (!str_starts_with($fromPhone, 'whatsapp:')) {
-                    $fromPhone = 'whatsapp:' . (str_starts_with($fromPhone, '+') ? $fromPhone : '+' . $fromPhone);
-                }
-
-                $message = $twilio->messages->create(
-                    $toPhone,
-                    [
-                        "from" => $fromPhone,
-                        "body" => $queue->message
-                    ]
-                );
-
-                $queue->twilio_sid = $message->sid;
-                $queue->is_send = '1';
-                $queue->status = '1';
-                $queue->delivered_at = now();
-                $queue->processed_at = now();
-                $queue->save();
-
-                $sendcount++;
             } catch (\Exception $e) {
                 $queue->status = '2';
                 $queue->error_message = $e->getMessage();
