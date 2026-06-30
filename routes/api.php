@@ -1185,6 +1185,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/whatsapp-marketing/campaigns/preview', [WhatsappCampaignController::class, 'previewWhatsapp']);
     Route::post('/whatsapp-marketing/campaigns/preview-type-id', [WhatsappCampaignController::class, 'previewWhatsappByTypeID']);
     Route::post('/whatsapp-marketing/getWhatsappCampaigns', [WhatsappCampaignController::class, 'getWhatsappCampaigns']);
+    Route::post('/whatsapp-marketing/whatsapp_marketing_queue_list', [WhatsappCampaignController::class, 'whatsapp_marketing_queue_list']);
 
     // WhatsApp sending queue
     Route::post('/addToWhatsappQueue', [SendQueuedWhatsappController::class, 'addToWhatsappQueue']);
