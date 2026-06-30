@@ -40,6 +40,8 @@ class SendQueuedWhatsappController extends Controller
                     'text' => $queue->message,
                 ]);
 
+                dd($response->body());
+
                 if ($response->successful()) {
                     $resData = $response->json();
                     $queue->twilio_sid = $resData['id'] ?? $resData['message_id'] ?? null;
