@@ -18,6 +18,7 @@ class WhatsappCampaign extends Model
         'branch_id',
         'from_number',
         'body',
+        'attachment',
         'filters_json',
         'total_recipients',
         'status',

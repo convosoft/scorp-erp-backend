@@ -23,6 +23,7 @@ class WhatsappCampaignController extends Controller
             'template_id' => 'nullable|integer',
             'from_number' => 'nullable|string|max:50',
             'body' => 'required|string',
+            'attachment' => 'nullable',
             'filters_json' => 'nullable|array',
             'total_recipients' => 'nullable|integer|min:0',
             'status' => 'required|in:draft,pending_approval',
@@ -39,6 +40,11 @@ class WhatsappCampaignController extends Controller
             ], 422);
         }
 
+        $attachmentPath = null;
+        if ($request->filled('attachment')) {
+            $attachmentPath = $request->attachment;
+        }
+
         $campaign = WhatsappCampaign::create([
             'campaign_name'      => $request->campaign_name,
             'brand_id'           => $request->brand_id,
@@ -49,6 +55,7 @@ class WhatsappCampaignController extends Controller
             'whatsapp_sender_id' => Auth::id(),
             'from_number'        => $request->from_number,
             'body'               => $request->body,
+            'attachment'         => $attachmentPath,
             'filters_json'       => $request->filters_json,
             'total_recipients'   => $request->total_recipients ?? 0,
             'status'             => $request->status,
@@ -175,6 +182,7 @@ class WhatsappCampaignController extends Controller
                 'campaign_id'  => $campaign->id,
                 'phone'        => $recipient->phone,
                 'message'      => $parsedBody,
+                'attachment'   => $campaign->attachment,
                 'created_by'   => Auth::id(),
                 'brand_id'     => $campaign->brand_id,
                 'from_number'  => $campaign->from_number ?? config('services.twilio.from'),
@@ -456,6 +464,7 @@ class WhatsappCampaignController extends Controller
             'template_id' => 'nullable|integer',
             'from_number' => 'nullable|string|max:50',
             'body' => 'required|string',
+            'attachment' => 'nullable',
             'filters_json' => 'nullable|array',
             'total_recipients' => 'nullable|integer|min:0',
             'status' => 'required|in:draft,pending_approval',
@@ -516,6 +525,16 @@ class WhatsappCampaignController extends Controller
             ], 403);
         }
 
+        $attachmentPath = $campaign->attachment;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('WhatsappCampaignAttachment'), $fileName);
+            $attachmentPath = 'WhatsappCampaignAttachment/' . $fileName;
+        } elseif ($request->filled('attachment')) {
+            $attachmentPath = $request->attachment;
+        }
+
         $campaign->update([
             'campaign_name'    => $request->campaign_name,
             'brand_id'         => $request->brand_id,
@@ -525,6 +544,7 @@ class WhatsappCampaignController extends Controller
             'template_id'      => $request->template_id,
             'from_number'      => $request->from_number,
             'body'             => $request->body,
+            'attachment'         => $attachmentPath,
             'filters_json'     => $request->filters_json,
             'total_recipients' => $request->total_recipients ?? 0,
             'status'           => $request->status,
@@ -610,6 +630,7 @@ class WhatsappCampaignController extends Controller
                 'recipient_type' => $campaign->recipient_type,
                 'recipient_id'   => $recipientId,
                 'body'           => $parsedBody,
+                'attachment'     => $campaign->attachment ? url($campaign->attachment) : null,
             ],
         ]);
     }
@@ -676,12 +697,12 @@ class WhatsappCampaignController extends Controller
                 'whatsapp_sending_queues.error_message',
                 'assigned_to.name as sender_name'
             )
-            ->leftJoin(
-                'users as assigned_to',
-                'assigned_to.id',
-                '=',
-                'whatsapp_sending_queues.sender_id'
-            );
+                ->leftJoin(
+                    'users as assigned_to',
+                    'assigned_to.id',
+                    '=',
+                    'whatsapp_sending_queues.sender_id'
+                );
 
             if ($request->filled('campaign_id')) {
                 $query->where(

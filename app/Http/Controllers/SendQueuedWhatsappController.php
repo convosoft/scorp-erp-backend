@@ -68,13 +68,28 @@ class SendQueuedWhatsappController extends Controller
                 // Clean the phone number to be digits only for WASender API
                 $toPhone = preg_replace('/[^0-9]/', '', $toPhone);
 
+                $payload = [
+                    'to' => $toPhone,
+                    'text' => $queue->message,
+                ];
+
+                if (!empty($queue->attachment)) {
+                    $attachmentUrl = url($queue->attachment);
+                    $extension = strtolower(pathinfo($queue->attachment, PATHINFO_EXTENSION));
+                    $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+
+                    if (in_array($extension, $imageExtensions)) {
+                        $payload['imageUrl'] = $attachmentUrl;
+                    } else {
+                        $payload['documentUrl'] = $attachmentUrl;
+                        $payload['fileName'] = basename($queue->attachment);
+                    }
+                }
+
                 $response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . $apiKey,
                     'Content-Type' => 'application/json',
-                ])->post($baseUrl . '/send-message', [
-                    'to' => $toPhone,
-                    'text' => $queue->message,
-                ]);
+                ])->post($baseUrl . '/send-message', $payload);
 
                 $resData = $response->json();
 

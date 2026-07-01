@@ -15,6 +15,7 @@ class WhatsappSendingQueue extends Model
         'campaign_id',
         'phone',
         'message',
+        'attachment',
         'created_by',
         'brand_id',
         'from_number',
