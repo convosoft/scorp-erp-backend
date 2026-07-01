@@ -108,6 +108,7 @@ use App\Http\Controllers\ToolkitPathController;
 use App\Http\Controllers\TypesDocumentController;
 use App\Http\Controllers\WhatsappCampaignController;
 use App\Http\Controllers\SendQueuedWhatsappController;
+use App\Http\Controllers\WhatsappTemplateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -1186,6 +1187,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/whatsapp-marketing/campaigns/preview-type-id', [WhatsappCampaignController::class, 'previewWhatsappByTypeID']);
     Route::post('/whatsapp-marketing/getWhatsappCampaigns', [WhatsappCampaignController::class, 'getWhatsappCampaigns']);
     Route::post('/whatsapp-marketing/whatsapp_marketing_queue_list', [WhatsappCampaignController::class, 'whatsapp_marketing_queue_list']);
+
+    // WhatsApp templates
+    Route::post('/addWhatsappTemplate', [WhatsappTemplateController::class, 'addWhatsappTemplate']);
+    Route::post('/getWhatsappTemplatePluck', [WhatsappTemplateController::class, 'getWhatsappTemplatePluck']);
+    Route::get('/getWhatsappTemplates', [WhatsappTemplateController::class, 'getWhatsappTemplates']);
+    Route::post('/getWhatsappTemplateDetail', [WhatsappTemplateController::class, 'getWhatsappTemplateDetail']);
+    Route::post('/updateWhatsappTemplate', [WhatsappTemplateController::class, 'updateWhatsappTemplate']);
+    Route::post('/deleteWhatsappTemplate', [WhatsappTemplateController::class, 'deleteWhatsappTemplate']);
 
     // WhatsApp sending queue
     Route::post('/addToWhatsappQueue', [SendQueuedWhatsappController::class, 'addToWhatsappQueue']);
