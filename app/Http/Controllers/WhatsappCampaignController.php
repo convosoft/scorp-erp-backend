@@ -526,12 +526,7 @@ class WhatsappCampaignController extends Controller
         }
 
         $attachmentPath = $campaign->attachment;
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('WhatsappCampaignAttachment'), $fileName);
-            $attachmentPath = 'WhatsappCampaignAttachment/' . $fileName;
-        } elseif ($request->filled('attachment')) {
+        if ($request->filled('attachment')) {
             $attachmentPath = $request->attachment;
         }
 
